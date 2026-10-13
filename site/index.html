@@ -14,6 +14,19 @@
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/style.css">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>▚</text></svg>">
+<link rel="alternate" hreflang="en" href="https://nexremote.vercel.app/">
+<link rel="alternate" hreflang="tr" href="https://nexremote.vercel.app/tr/">
+<link rel="alternate" hreflang="x-default" href="https://nexremote.vercel.app/">
+<script>
+// Tarayıcı dili Türkçe ise ve kullanıcı dil seçmediyse Türkçe sürümü aç.
+(function () {
+  try {
+    if (localStorage.getItem('site-lang')) return;
+    var lc = (navigator.language || '').toLowerCase();
+    if (lc.indexOf('tr') === 0) location.replace('tr/');
+  } catch (e) {}
+})();
+</script>
 </head>
 <body>
 
@@ -29,6 +42,7 @@
     <a href="#adapters">Adapters</a>
     <a href="#install">Install</a>
     <a href="download/nexremote.zip" class="nav-cta" download>Download</a>
+    <a href="tr/" class="lang-switch" data-lang="tr" hreflang="tr" lang="tr" title="Türkçe">TR</a>
   </nav>
 </header>
 

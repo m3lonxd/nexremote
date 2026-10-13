@@ -31,9 +31,20 @@
     reduce = false;
   }
 
+  /* ----------------------------------------------------------------- dil */
+  /* #arch-diagram data-lang="tr" ise Türkçe etiketler kullanılır. */
+  var host = document.getElementById('arch-diagram');
+  var TR = host && host.getAttribute('data-lang') === 'tr';
+
   /* ----------------------------------------------------------------- nodes */
   /* Soldan sağa akış. accent: true → çekirdek düğüm (yeşil çerçeve). */
-  var NODES = [
+  var NODES = TR ? [
+    { x: 30,  y: 140, w: 150, h: 80,  label: 'Ajan',            sub: 'niyet' },
+    { x: 230, y: 130, w: 190, h: 100, label: 'Adaptör',         sub: 'MCP · CLI · HTTP · metin' },
+    { x: 460, y: 130, w: 200, h: 100, label: 'NexRemote çekirdek', sub: 'gör · bul · tıkla · tuşla', accent: true },
+    { x: 700, y: 45,  w: 250, h: 90,  label: 'GUI backend',     sub: 'AT-SPI · adıyla' },
+    { x: 700, y: 225, w: 250, h: 90,  label: 'TUI backend',     sub: 'tmux · metniyle' }
+  ] : [
     { x: 30,  y: 140, w: 150, h: 80,  label: 'Agent',           sub: 'intent' },
     { x: 230, y: 130, w: 190, h: 100, label: 'Adapter',         sub: 'MCP · CLI · HTTP · text' },
     { x: 460, y: 130, w: 200, h: 100, label: 'NexRemote core',  sub: 'see · find · click · keys', accent: true },
@@ -125,12 +136,17 @@
     '</g>';
 
   /* Akış etiketleri: sade, mono, düşük kontrast. */
-  var labels = '' +
+  var labels = TR ? ('' +
+    '<g class="nr-labels">' +
+      '<text class="flow-label" x="205" y="170" text-anchor="middle">niyet</text>' +
+      '<text class="flow-label" x="440" y="170" text-anchor="middle">çağrı</text>' +
+      '<text class="flow-label" x="500" y="356" text-anchor="middle">sonuç ajana döner</text>' +
+    '</g>') : ('' +
     '<g class="nr-labels">' +
       '<text class="flow-label" x="205" y="170" text-anchor="middle">intent</text>' +
       '<text class="flow-label" x="440" y="170" text-anchor="middle">call</text>' +
       '<text class="flow-label" x="500" y="356" text-anchor="middle">result returns to the agent</text>' +
-    '</g>';
+    '</g>');
 
   /* Paket: hat boyunca ilerleyen tek küçük daire. Hareket azaltmada eklenmez. */
   var packet = reduce ? '' :
@@ -147,9 +163,14 @@
          'viewBox="0 0 1000 360" preserveAspectRatio="xMidYMid meet" ' +
          'role="img" aria-labelledby="nr-arch-title">' +
       '<title id="nr-arch-title">' +
-        'An agent request travels through an adapter into the NexRemote core, ' +
-        'which drives the GUI (AT-SPI) or terminal (tmux) backend, and the result ' +
-        'returns to the agent.' +
+        (TR ?
+          'Bir ajan isteği bir adaptörden geçerek NexRemote çekirdeğine ulaşır, ' +
+          'çekirdek GUI (AT-SPI) veya terminal (tmux) backend\'ini sürer ve sonuç ' +
+          'ajana geri döner.'
+          :
+          'An agent request travels through an adapter into the NexRemote core, ' +
+          'which drives the GUI (AT-SPI) or terminal (tmux) backend, and the result ' +
+          'returns to the agent.') +
       '</title>' +
       style + defs + links +
       /* Paket düğümlerin altında kalır: kutunun içine girer, aralarında görünür. */

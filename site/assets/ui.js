@@ -105,6 +105,16 @@
     targets.forEach(function (el) { io.observe(el); });
   }
 
+  /* ------------------------------------------------ dil seçimi (TR/EN) */
+  // Kullanıcı dil değiştiriciye tıklarsa tercihi sakla (kişisel site
+  // konvansiyonu: localStorage.site-lang). Otomatik yönlendirme bu anahtarı
+  // okur ve bir daha zorlamaz.
+  document.querySelectorAll(".lang-switch").forEach(function (a) {
+    a.addEventListener("click", function () {
+      try { localStorage.setItem("site-lang", a.dataset.lang || ""); } catch (e) {}
+    });
+  });
+
   /* --------------------------------------- (kaldırıldı) GitHub linkleri
      GitHub askıya alındığı sürece indirmeler doğrudan /download/*.zip
      üzerinden veriliyor; index.html'de data-gh yok. Repo açıldığında

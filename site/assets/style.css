@@ -122,6 +122,14 @@ code, pre, .mono { font-family: var(--mono); font-feature-settings: "liga" 0; }
 }
 .nav-cta:hover { border-color: var(--accent); color: var(--accent) !important; }
 
+.lang-switch {
+  font-family: var(--mono); font-size: .8rem; letter-spacing: .03em;
+  border: 1px solid var(--line-2); border-radius: 100px;
+  padding: 5px 11px; color: var(--muted) !important;
+  text-decoration: none; transition: color .2s ease, border-color .2s ease;
+}
+.lang-switch:hover { color: var(--accent) !important; border-color: var(--accent); }
+
 /* ---------------------------------------------------------------- layout */
 main { position: relative; z-index: 1; }
 section { max-width: var(--wrap); margin: 0 auto; padding: clamp(64px,10vw,120px) var(--gutter); }

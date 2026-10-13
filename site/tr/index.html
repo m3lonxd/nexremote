@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="tr" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NexRemote — ajanına eller ver</title>
+<meta name="description" content="NexRemote, bir yapay zekâ ajanının bir masaüstünü ve terminal oturumunu her yerden görmesini ve kontrol etmesini sağlar. MCP, düz kabuk komutu, HTTP veya yalnızca metin bir modelle çalışır.">
+<meta property="og:title" content="NexRemote — ajanına eller ver">
+<meta property="og:description" content="Her AI harness'ı, her model için GUI + terminal kontrolü. Tek bir kabuk komutu yeter.">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="tr_TR">
+<meta name="theme-color" content="#0b0c0e">
+<link rel="alternate" hreflang="en" href="https://nexremote.vercel.app/">
+<link rel="alternate" hreflang="tr" href="https://nexremote.vercel.app/tr/">
+<link rel="alternate" hreflang="x-default" href="https://nexremote.vercel.app/">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>▚</text></svg>">
+</head>
+<body>
+
+<a class="skip" href="#main">İçeriğe geç</a>
+
+<header class="nav">
+  <a class="brand" href="#top" aria-label="NexRemote ana sayfa">
+    <span class="brand-mark" aria-hidden="true">▚</span>
+    <span class="brand-name">nexremote</span>
+  </a>
+  <nav class="nav-links" aria-label="Bölümler">
+    <a href="#how">Nasıl</a>
+    <a href="#adapters">Adaptörler</a>
+    <a href="#install">Kurulum</a>
+    <a href="../download/nexremote.zip" class="nav-cta" download>İndir</a>
+    <a href="../index.html" class="lang-switch" data-lang="en" hreflang="en" lang="en" title="English">EN</a>
+  </nav>
+</header>
+
+<main id="main">
+
+  <!-- ===================== HERO ===================== -->
+  <section class="hero" id="top">
+    <div class="hero-copy">
+      <p class="eyebrow"><span class="dot" aria-hidden="true"></span> Yapay zekâ ajanları · masaüstü + terminal</p>
+      <h1>Ajanına <em>eller</em> ver.</h1>
+      <p class="lede">
+        NexRemote, bir yapay zekâ ajanının gerçek bir masaüstünü görmesini ve gerçek bir
+        terminali sürmesini sağlar — butonları pikselle değil, adıyla. Her harness'a ve her
+        modele takılır: tek bir kabuk komutu çalıştırabilen şey NexRemote'u kullanabilir.
+      </p>
+      <div class="cta-row">
+        <a class="btn btn-primary" href="../download/nexremote.zip" download>.zip indir</a>
+        <a class="btn btn-ghost" href="#how">Nasıl çalışıyor</a>
+      </div>
+      <p class="hero-note">MIT · sıfır bağımlılıklı çekirdek · önce Linux (Wayland ve X11)</p>
+    </div>
+
+    <!-- canlı oturum paneli: hero = ürünün kendisi -->
+    <div class="hero-panel" aria-label="Örnek NexRemote oturumu">
+      <div class="panel-bar">
+        <span class="panel-title">ajan oturumu</span>
+        <span class="panel-chip">canlı</span>
+      </div>
+      <pre class="term" id="hero-term" aria-live="polite"></pre>
+    </div>
+  </section>
+
+  <!-- ===================== TEK KOMUT ===================== -->
+  <section class="band" id="onecommand">
+    <div class="band-left">
+      <h2>Tüm arayüz tek bir kabuk komutu.</h2>
+      <p>
+        İçe aktarılacak SDK yok, uygulanacak tool-calling şeması yok, zorunlu bir MCP
+        istemcisi yok. NexRemote önce bir CLI'dir. Geri kalan her şey onun üzerine
+        kurulmuş bir sarmalayıcıdır.
+      </p>
+    </div>
+    <div class="band-right">
+      <div class="codeblock" data-copy>
+        <pre><code>nexremote observe
+<span class="c-dim"># → pencereler, erişilebilirlik ağacı, terminal oturumları</span>
+nexremote find "Save"
+<span class="c-dim"># → atspi:9:0/0/12  [button] Save  &lt;click&gt;</span>
+nexremote click atspi:9:0/0/12
+<span class="c-dim"># → tıklandı</span></code></pre>
+        <button class="copy-btn" type="button" aria-label="Kopyala">kopyala</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== NASIL ===================== -->
+  <section class="how" id="how">
+    <h2 class="section-title">İki backend, tek sözleşme</h2>
+    <p class="section-sub">
+      Çekirdek nasıl hareket edileceğini bilir. Adaptörler nasıl çağrılacağını bilir.
+      Hiçbiri diğerinin varlığından haberdar değildir.
+    </p>
+
+    <div class="how-grid">
+      <article class="how-item">
+        <span class="how-idx">01</span>
+        <h3>Gör — GUI</h3>
+        <p>
+          Her GTK/Qt uygulamasının zaten yayımladığı erişilebilirlik ağacını okur. Her buton,
+          menü ve alan bir ad, bir rol ve kabul ettiği eylemlerle gelir. Adıyla tıkla;
+          piksel hiç işin içine girmez.
+        </p>
+        <code class="how-code">gui.py · AT-SPI</code>
+      </article>
+      <article class="how-item">
+        <span class="how-idx">02</span>
+        <h3>Gör — terminal</h3>
+        <p>
+          Bir tmux oturumunu sürer ve ekranını metin olarak geri okur. Bir betik, bir REPL ya
+          da koca bir TUI başlat ve ne bastığını izle — hem de sonraki, ayrı bir çağrıda.
+          Oturumlar komutlar arasında yaşar.
+        </p>
+        <code class="how-code">tui.py · tmux / PTY</code>
+      </article>
+      <article class="how-item">
+        <span class="how-idx">03</span>
+        <h3>Konuş — adaptörler</h3>
+        <p>
+          MCP sunucusu, CLI, HTTP API ve tool-calling'i olmayan modeller için düz metin
+          protokolü. Harness'ının anladığı hangisiyse onu göster.
+        </p>
+        <code class="how-code">adapters/ · mcp · http · cli</code>
+      </article>
+    </div>
+  </section>
+
+  <!-- ===================== MİMARİ DİYAGRAMI ===================== -->
+  <section class="arch" id="arch">
+    <h2 class="section-title">Bir istek nasıl yol alır</h2>
+    <p class="section-sub">Ajanın niyetinden gerçek bir tıklamaya — ve geri dönüşüne.</p>
+    <div id="arch-diagram" class="arch-diagram" role="img"
+         aria-label="Diyagram: ajan bir niyet gönderir, adaptör NexRemote çekirdeğini çağırır, çekirdek GUI veya terminal backend'ini sürer ve bir sonuç döner."
+         data-lang="tr">
+      <!-- assets/arch.js tarafından doldurulur -->
+      <noscript>
+        <p class="arch-fallback">Ajan → Adaptör (MCP / CLI / HTTP) → Çekirdek → Backend (AT-SPI / tmux) → sonuç.</p>
+      </noscript>
+    </div>
+  </section>
+
+  <!-- ===================== ADAPTÖRLER ===================== -->
+  <section class="adapters" id="adapters">
+    <h2 class="section-title">Onu nasıl çağıracağını seç</h2>
+    <p class="section-sub">Her yerde aynı beş fiil. Değişen tek şey taşıyıcı.</p>
+
+    <div class="tabs" role="tablist" aria-label="Adaptörler">
+      <button role="tab" aria-selected="true" aria-controls="p-cli" id="t-cli" class="tab is-active">CLI</button>
+      <button role="tab" aria-selected="false" aria-controls="p-mcp" id="t-mcp" class="tab">MCP</button>
+      <button role="tab" aria-selected="false" aria-controls="p-http" id="t-http" class="tab">HTTP</button>
+      <button role="tab" aria-selected="false" aria-controls="p-text" id="t-text" class="tab">Yalnızca metin modeli</button>
+    </div>
+
+    <div class="tab-panels">
+      <div class="tab-panel is-active" id="p-cli" role="tabpanel" aria-labelledby="t-cli">
+        <p>Kabuk komutu çalıştırabilen her harness — proxy'lenmiş veya özel bir CLI dahil.
+           Kaydedilecek hiçbir şey yok.</p>
+        <div class="codeblock" data-copy><pre><code>nexremote run "ls -la" --json
+nexremote screen --session build
+nexremote keys "C-c" --session build</code></pre></div>
+      </div>
+      <div class="tab-panel" id="p-mcp" role="tabpanel" aria-labelledby="t-mcp">
+        <p>Stdio üzerinden on üç araç. Bunu istemcinin MCP yapılandırmasına bırak.</p>
+        <div class="codeblock" data-copy><pre><code>{
+  "mcpServers": {
+    "nexremote": { "command": "nexremote-mcp" }
+  }
+}</code></pre></div>
+      </div>
+      <div class="tab-panel" id="p-http" role="tabpanel" aria-labelledby="t-http">
+        <p>Yalnızca standart kütüphane. Dışarı açmadan önce bir token'a bağla.</p>
+        <div class="codeblock" data-copy><pre><code>nexremote-http --port 8788 --token $SECRET
+
+curl -s -X POST localhost:8788/run \
+  -d '{"command":"uptime"}'</code></pre></div>
+      </div>
+      <div class="tab-panel" id="p-text" role="tabpanel" aria-labelledby="t-text">
+        <p>Tool-calling yok mu? Model <code>nexremote …</code> satırları yazar; döngü
+           onları çalıştırır ve çıktıyı geri besler. Her metin modeliyle çalışır.</p>
+        <div class="codeblock" data-copy><pre><code>nexremote-agent \
+  --model-cmd "ollama run qwen2.5" \
+  --goal "hesap makinesini aç, 7×8 hesapla"</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== KURULUM ===================== -->
+  <section class="install" id="install">
+    <h2 class="section-title">Çalıştır ve başla</h2>
+    <p class="section-sub">İndir, kurucuyu çalıştır, elindekini kontrol et.</p>
+
+    <div class="install-grid">
+      <div class="install-main">
+        <div class="codeblock codeblock-lg" data-copy>
+          <pre><code>curl -LO https://nexremote.vercel.app/download/nexremote.zip
+unzip nexremote.zip && cd nexremote
+./install.sh
+nexremote caps</code></pre>
+          <button class="copy-btn" type="button" aria-label="Kopyala">kopyala</button>
+        </div>
+        <div class="cta-row">
+          <a class="btn btn-primary" href="../download/nexremote.zip" download>.zip indir</a>
+          <a class="btn btn-ghost" href="../download/nexremote.tar.gz" download>.tar.gz indir</a>
+        </div>
+      </div>
+
+      <aside class="deps">
+        <h3>Neye ihtiyaç duyar</h3>
+        <ul class="deps-list">
+          <li><span class="dep-ok" aria-hidden="true">✓</span> <code>tmux</code> <em>terminal backend</em></li>
+          <li><span class="dep-ok" aria-hidden="true">✓</span> <code>wtype</code> <em>Wayland girişi</em></li>
+          <li><span class="dep-ok" aria-hidden="true">✓</span> <code>python3-gi</code> <em>AT-SPI</em></li>
+          <li><span class="dep-opt" aria-hidden="true">○</span> <code>mcp</code> <em>yalnızca MCP adaptörü için</em></li>
+        </ul>
+        <p class="deps-note">Eksik parçalar zarifçe devre dışı kalır — hiç GUI olmadan bile
+           terminal tarafı çalışmaya devam eder.</p>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ===================== DÜRÜST SINIRLAR ===================== -->
+  <section class="limits" id="limits">
+    <h2 class="section-title">Neyi yapmaz</h2>
+    <div class="limits-list">
+      <div>
+        <h3>Electron uygulamaları butonlarını saklar</h3>
+        <p>Discord, VS Code ve benzerleri <code>--force-renderer-accessibility</code> ile
+           başlatılmadıkça iç widget'larını yayımlamaz.</p>
+      </div>
+      <div>
+        <h3>Ekran görüntüsü pikseldir, anlayış değil</h3>
+        <p><code>screenshot</code> bir PNG döner. Onu okumak bir görsel modelin işidir —
+           NexRemote'unsa yapı üzerinden akıl yürütür.</p>
+      </div>
+      <div>
+        <h3>GUI yoksa tıklama da yok</h3>
+        <p>Başsız bir kutuda GUI backend'i kendini kullanılamaz bildirir. Terminal
+           fiilleri çalışmaya devam eder.</p>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="foot">
+  <div class="foot-row">
+    <span class="brand-mark" aria-hidden="true">▚</span>
+    <span>nexremote</span>
+    <span class="foot-sep">·</span>
+    <span>MIT</span>
+    <span class="foot-sep">·</span>
+    <a href="#install">npm install · shell · MCP</a>
+  </div>
+  <p class="foot-note">Bir kabuk istemi yeter diye yapıldı.</p>
+</footer>
+
+<script src="../assets/hero.js" defer></script>
+<script src="../assets/arch.js" defer></script>
+<script src="../assets/ui.js" defer></script>
+</body>
+</html>
