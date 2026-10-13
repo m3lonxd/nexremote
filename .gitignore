@@ -7,3 +7,6 @@ __pycache__/
 # Vercel (site bağlantı artefaktları)
 site/.vercel/
 site/.env.local
+
+# ajan imleci soketi
+/tmp/nexremote-cursor-*.sock

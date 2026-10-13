@@ -207,6 +207,40 @@ def cmd_cleanup(nr, a) -> None:
          ("kapatıldı: " + ", ".join(killed)) if killed else "(kapatılacak oturum yok)")
 
 
+def cmd_cursor(nr, a) -> None:
+    """Görünür fare imlecini (x,y)'ye götür; --click ile tıkla."""
+    ok, msg = nr.pointer_available()
+    if not ok:
+        _out({"ok": False, "error": msg}, a.json, f"imleç kullanılamaz: {msg}")
+        return
+    if a.click:
+        nr.cursor(a.x, a.y, click=True, button=a.button)
+        _out({"ok": True, "x": a.x, "y": a.y, "clicked": True}, a.json,
+             f"imleç ({a.x},{a.y}) → tıklandı")
+    else:
+        nr.cursor_move(a.x, a.y, steps=a.steps, duration=a.duration)
+        _out({"ok": True, "x": a.x, "y": a.y}, a.json,
+             f"imleç ({a.x},{a.y}) → taşındı")
+
+
+def cmd_point(nr, a) -> None:
+    """Bir öğeyi (ref) bul, imleci üzerine GÖRÜNÜR şekilde götür ve tıkla."""
+    gui = nr.backends["gui"]
+    node = gui._resolve(a.ref)
+    b = gui._extents(node) if node is not None else None
+    if not b:
+        _out({"ok": False, "error": "öğe konumu bulunamadı"}, a.json,
+             "öğe konumu bulunamadı")
+        return
+    x, y = b[0] + b[2] // 2, b[1] + b[3] // 2
+    # 1) ajan imleci GÖRÜNÜR şekilde öğeye gitsin
+    nr.cursor(x, y, click=True, button=a.button)
+    # 2) ayrıca AT-SPI ile gerçek tıklama (güvenilir eylem)
+    nr.click(a.ref)
+    _out({"ok": True, "ref": a.ref, "x": x, "y": y}, a.json,
+         f"imleç ({x},{y}) → öğe tıklandı")
+
+
 def cmd_skill(nr, a) -> None:
     """LLM'e verilecek yetenek talimatı — tool-calling olmayan modeller için."""
     print(_SKILL_TEXT)
@@ -309,6 +343,17 @@ def build_parser() -> argparse.ArgumentParser:
     ks.set_defaults(fn=cmd_keys)
     sub.add_parser("sessions", help="oturumları listele").set_defaults(fn=cmd_sessions)
     sub.add_parser("cleanup", help="kendi oturumlarını kapat").set_defaults(fn=cmd_cleanup)
+    cur = sub.add_parser("cursor", help="görünür fare imlecini taşı/tıkla")
+    cur.add_argument("x", type=int); cur.add_argument("y", type=int)
+    cur.add_argument("--click", action="store_true")
+    cur.add_argument("--button", type=int, default=1)
+    cur.add_argument("--steps", type=int, default=24)
+    cur.add_argument("--duration", type=float, default=0.4)
+    cur.set_defaults(fn=cmd_cursor)
+    pt = sub.add_parser("point", help="öğeyi bul, imleci üzerine götür, tıkla")
+    pt.add_argument("ref")
+    pt.add_argument("--button", type=int, default=1)
+    pt.set_defaults(fn=cmd_point)
     sub.add_parser("skill", help="LLM yetenek talimatı").set_defaults(fn=cmd_skill)
     return p
 

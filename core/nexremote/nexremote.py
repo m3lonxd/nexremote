@@ -5,6 +5,7 @@ bu sınıfı sarar. Hiçbir adaptör backend detayını bilmez.
 """
 from __future__ import annotations
 
+import os
 from typing import Any, Optional
 
 from .base import Backend
@@ -87,6 +88,55 @@ class NexRemote:
 
     def focus(self, ref: str) -> bool:
         return self._gui().focus(ref)
+
+    # ------------------------------------------------- görünür fare imleci
+    def cursor(self, x: int, y: int, click: bool = False,
+               button: int = 1, visible: bool = True) -> bool:
+        """AJANIN KENDİ imlecini (x,y)'ye götür; istenirse tıkla.
+
+        Kullanıcının faresine DOKUNMAZ. Saf Xlib ile override-redirect küçük
+        bir pencere kullanır (imleç boyutunda, click-through): arkasındaki her
+        şey normal tıklanabilir kalır. Tıklama AT-SPI ile yapılır.
+        """
+        from . import xcursor as xc
+        if not xc.daemon_running():
+            xc.start_daemon(os.environ.get("DISPLAY", ":1"))
+        if not xc.daemon_running():
+            raise RuntimeError("ajan imleci daemon'ı başlatılamadı")
+        xc.send(f"MOVE {int(x)} {int(y)} 0.5")
+        if click:
+            import time
+            time.sleep(0.5)
+            xc.send("CLICK")
+        return True
+
+    def cursor_move(self, x: int, y: int, steps: int = 24,
+                    duration: float = 0.5) -> bool:
+        """Ajan imlecini yumuşak adımlarla (x,y)'ye taşı."""
+        from . import xcursor as xc
+        if not xc.daemon_running():
+            xc.start_daemon(os.environ.get("DISPLAY", ":1"))
+        if not xc.daemon_running():
+            raise RuntimeError("ajan imleci daemon'ı başlatılamadı")
+        return xc.send(f"MOVE {int(x)} {int(y)} {duration}") == "OK"
+
+    def cursor_hide(self) -> bool:
+        from . import xcursor as xc
+        if xc.daemon_running():
+            xc.send("HIDE")
+            return True
+        return False
+
+    def pointer_available(self) -> tuple[bool, str]:
+        """Ajan imleci kullanılabilir mi? (X11/XWayland + python-xlib)"""
+        try:
+            import Xlib  # noqa
+            from Xlib.ext import shape  # noqa
+        except Exception as e:
+            return (False, f"python-xlib + SHAPE gerekli: {e}")
+        if not os.environ.get("DISPLAY"):
+            return (False, "DISPLAY yok (X11/XWayland gerekir)")
+        return (True, "hazır (ajan imleci: küçük, click-through, kullanıcıyı engellemez)")
 
     # ---------------------------------------------------------------- TUI
     def run(self, command: str, session: str = "default",
