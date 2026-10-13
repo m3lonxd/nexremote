@@ -461,25 +461,40 @@ class TuiBackend(Backend):
 
     # ------------------------------------------------------------ kapat
     def close(self) -> None:
-        """YALNIZCA kendi açtığı nexremote_ oturumlarını kapat.
+        """Süreçle ilgili kaynakları serbest bırak — SADECE PTY oturumları.
 
-        Kullanıcının kendi tmux oturumlarına dokunulmaz.
+        tmux oturumları KALICI tasarlanmıştır: CLI çağrıları arasında yaşamalı
+        ki `run` sonrası ayrı bir `screen` çağrısı ekranı okuyabilsin. Bu yüzden
+        tmux oturumlarına DOKUNULMAZ. Açıkça temizlemek için ``cleanup()`` çağır
+        (`nexremote cleanup`).
         """
+        for ps in self._pty_sessions.values():
+            ps.close()
+        self._pty_sessions.clear()
+
+    def cleanup(self) -> list[str]:
+        """YALNIZCA kendi açtığı ``nexremote_`` önekli tmux oturumlarını kapat.
+
+        Kullanıcının kendi tmux oturumlarına dokunulmaz. Kapatılan adları
+        (öneksiz) döndürür. Bu, açık bir işlemdir (`nexremote cleanup`).
+        """
+        killed: list[str] = []
         if self.tmux:
             try:
                 r = self._tmux("list-sessions", "-F", "#{session_name}")
-                names = []
-                if r.returncode == 0:
-                    names = [ln.strip() for ln in r.stdout.splitlines()
-                             if ln.strip().startswith(SESSION_PREFIX)]
+                names = ([ln.strip() for ln in r.stdout.splitlines()
+                          if ln.strip().startswith(SESSION_PREFIX)]
+                         if r.returncode == 0 else [])
             except (subprocess.TimeoutExpired, OSError):
                 names = []
             for nm in names:
                 try:
                     self._tmux("kill-session", "-t", nm)
+                    killed.append(nm[len(SESSION_PREFIX):])
                 except (subprocess.TimeoutExpired, OSError):
                     pass
             self._owned.clear()
         for ps in self._pty_sessions.values():
             ps.close()
         self._pty_sessions.clear()
+        return killed

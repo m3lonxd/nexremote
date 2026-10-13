@@ -201,6 +201,12 @@ def cmd_sessions(nr, a) -> None:
     _out(ss, a.json, "\n".join(ss) if ss else "(oturum yok)")
 
 
+def cmd_cleanup(nr, a) -> None:
+    killed = nr.cleanup()
+    _out(killed, a.json,
+         ("kapatıldı: " + ", ".join(killed)) if killed else "(kapatılacak oturum yok)")
+
+
 def cmd_skill(nr, a) -> None:
     """LLM'e verilecek yetenek talimatı — tool-calling olmayan modeller için."""
     print(_SKILL_TEXT)
@@ -233,6 +239,14 @@ ile başlar; makine-okunur çıktı için `--json` ekle.
   nexremote screen --session ad      # belirli oturumu oku
   nexremote keys "C-c" --session ad  # terminale tuş gönder
   nexremote sessions                 # oturumları listele
+  nexremote cleanup                  # kendi açtığın oturumları kapat
+
+## TUI oturumları KALICIDIR
+`run`/`keys` ile kurduğun bir terminal oturumu sonraki komutlarında yaşar.
+Yani `nexremote run "vim dosya"` sonra AYRI bir çağrıda `nexremote screen`
+ile vim'in ekranını okuyabilirsin — TUI ajanlarını (htop, vim, ncurses,
+başka bir CLI ajanı) böyle yönetirsin. Bitince `nexremote cleanup` çalıştır;
+bu YALNIZCA kendi oturumlarını kapatır, kullanıcınınkine dokunmaz.
 
 ## Tipik döngü
 1. `nexremote caps`      → ne yapabildiğini öğren
@@ -294,6 +308,7 @@ def build_parser() -> argparse.ArgumentParser:
     ks.add_argument("keys"); ks.add_argument("--session", default="default")
     ks.set_defaults(fn=cmd_keys)
     sub.add_parser("sessions", help="oturumları listele").set_defaults(fn=cmd_sessions)
+    sub.add_parser("cleanup", help="kendi oturumlarını kapat").set_defaults(fn=cmd_cleanup)
     sub.add_parser("skill", help="LLM yetenek talimatı").set_defaults(fn=cmd_skill)
     return p
 

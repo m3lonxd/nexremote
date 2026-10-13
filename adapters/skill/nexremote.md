@@ -42,7 +42,13 @@ nexremote screen                   # aktif oturumun ekranını oku
 nexremote screen --session ad      # belirli oturumu oku
 nexremote keys "C-c" --session ad  # terminale tuş gönder
 nexremote sessions                 # oturumları listele
+nexremote cleanup                  # kendi oturumlarını kapat
 ```
+
+**TUI oturumları KALICIDIR.** `run`/`keys` ile bir oturum kur; sonraki ayrı
+komutlarında yaşar. `nexremote run "vim x"` sonra ayrı çağrıda
+`nexremote screen` ile vim'in ekranını okuyabilirsin — TUI ajanlarını (htop,
+vim, ncurses, başka bir CLI ajanı) böyle yönetirsin. Bitince `nexremote cleanup`.
 
 ## Tipik döngü
 1. `nexremote caps` → yetenekleri öğren

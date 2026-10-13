@@ -105,6 +105,16 @@ class NexRemote:
         except Exception:
             return []
 
+    def cleanup(self) -> list[str]:
+        """Kendi açtığı TUI oturumlarını kapat (tmux). Kullanıcınınkine dokunmaz."""
+        b = self.backends.get("tui")
+        if b is not None and hasattr(b, "cleanup"):
+            try:
+                return b.cleanup()
+            except Exception:
+                return []
+        return []
+
     def close(self) -> None:
         for b in self.backends.values():
             try:
