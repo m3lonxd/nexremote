@@ -8,5 +8,10 @@
     "value": "TAMAM: models.py+base.py+nexremote.py+input.py yazildi",
     "updated_by": "orkestra",
     "updated_at": "2026-10-13T15:02:20.843961"
+  },
+  "cli_adapter": {
+    "value": "TAMAM: caps/windows/observe/find/click DOGRULANDI (kcalc radio toggle kanitli)",
+    "updated_by": "orkestra",
+    "updated_at": "2026-10-13T15:13:56.241399"
   }
 }

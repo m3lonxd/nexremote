@@ -19,12 +19,14 @@ class NexRemote:
 
     @staticmethod
     def _default_backends() -> list[Backend]:
+        """Var olan tüm backends'leri yükle. Bir backend eksik/bozuksa
+        diğerlerini engellemesin — kısmi ortamlarda da çalışmalı."""
+        import importlib
         out: list[Backend] = []
-        from .backends.gui import GuiBackend
-        from .backends.tui import TuiBackend
-        for cls in (GuiBackend, TuiBackend):
+        for mod_name, cls_name in (("gui", "GuiBackend"), ("tui", "TuiBackend")):
             try:
-                out.append(cls())
+                mod = importlib.import_module(f".backends.{mod_name}", __package__)
+                out.append(getattr(mod, cls_name)())
             except Exception:
                 pass
         return out
