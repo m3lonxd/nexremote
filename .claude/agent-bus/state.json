@@ -13,5 +13,30 @@
     "value": "TAMAM: caps/windows/observe/find/click DOGRULANDI (kcalc radio toggle kanitli)",
     "updated_by": "orkestra",
     "updated_at": "2026-10-13T15:13:56.241399"
+  },
+  "backend_status": {
+    "value": "ready",
+    "updated_by": "coder",
+    "updated_at": "2026-10-13T15:19:14.055114"
+  },
+  "tui_backend": {
+    "value": "TAMAM: tmux modu, PTY fallback, guvenlik dogrulandi",
+    "updated_by": "orkestra",
+    "updated_at": "2026-10-13T15:34:23.248525"
+  },
+  "mcp_adapter": {
+    "value": "TAMAM: 13 arac, bagimsiz dogrulandi",
+    "updated_by": "orkestra",
+    "updated_at": "2026-10-13T15:34:23.271957"
+  },
+  "http_adapter": {
+    "value": "TAMAM: stdlib, gui+tui",
+    "updated_by": "orkestra",
+    "updated_at": "2026-10-13T15:34:23.294489"
+  },
+  "agent_loop": {
+    "value": "TAMAM: metin protokolu, tool-calling'siz modelle dogrulandi",
+    "updated_by": "orkestra",
+    "updated_at": "2026-10-13T15:34:23.318170"
   }
 }

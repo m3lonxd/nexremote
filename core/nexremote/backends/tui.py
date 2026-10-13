@@ -239,6 +239,11 @@ class TuiBackend(Backend):
 
         # Belirteçli satır: başlangıç işareti + komut + çıkış kodu.
         # $? kabuk tarafından genişletilir; __NEXR_<kod>__ olarak ekrana basılır.
+        # ÖNEMLİ: yeni komut ekrana gelmeden ÖNCE geçmişteki (scrollback) eski
+        # sentinel/exit belirteçleriyle yanlış eşleşmemek için taban çizgisi al.
+        pre = self._capture(name)
+        pre_starts = pre.count(_START_TOKEN)
+
         payload = f"echo {_START_TOKEN}; {command}; echo __NEXR_$?__"
         try:
             # -l (literal): özel karakterler tuş adı olarak yorumlanmasın.
@@ -249,16 +254,31 @@ class TuiBackend(Backend):
                                  exit_code=-1, session=session)
 
         deadline = time.monotonic() + max(timeout, 0.1)
+        # 1) YENİ start belirtecini bekle (eski sentinel'lere aldanma).
+        start_deadline = min(time.monotonic() + 3.0, deadline)
+        while time.monotonic() < start_deadline:
+            if self._capture(name).count(_START_TOKEN) > pre_starts:
+                break
+            if not self._session_exists(name):
+                return CommandResult(output="oturum kapandı (çıkış?)",
+                                     exit_code=-1, session=session)
+            time.sleep(0.05)
+
+        # 2) Yeni start'tan SONRAKİ exit belirtecini bekle.
         timed_out = True
         while True:
             screen = self._capture(name)
-            lines = screen.splitlines()
-            exit_code = self._parse_exit(lines)
-            if exit_code is not None:
-                timed_out = False
-                out = self._extract_output(lines)
-                return CommandResult(output=out, exit_code=exit_code,
-                                     session=session, timed_out=False)
+            if screen.count(_START_TOKEN) > pre_starts:
+                after = self._after_last_start(screen)
+                exit_code = self._parse_exit(after.splitlines())
+                if exit_code is not None:
+                    out = self._extract_output(after.splitlines())
+                    return CommandResult(output=out, exit_code=exit_code,
+                                         session=session, timed_out=False)
+            if not self._session_exists(name):
+                # Kabuk çıktı: sentinel hiç basılmadı -> erken dur.
+                return CommandResult(output=screen, exit_code=-1,
+                                     session=session)
             if time.monotonic() >= deadline:
                 break
             time.sleep(0.12)
@@ -266,6 +286,16 @@ class TuiBackend(Backend):
         # Zaman aşımı — eldeki ekranı döndür.
         return CommandResult(output=self._capture(name), exit_code=-1,
                              session=session, timed_out=timed_out)
+
+    @staticmethod
+    def _after_last_start(screen: str) -> str:
+        """Son ``__NEXR_START__`` satırından SONRAKİ kısmı döndür."""
+        lines = screen.splitlines()
+        last = -1
+        for i, ln in enumerate(lines):
+            if ln.strip() == _START_TOKEN:
+                last = i
+        return "\n".join(lines[last + 1:]) if last != -1 else screen
 
     @staticmethod
     def _parse_exit(lines: list[str]) -> Optional[int]:

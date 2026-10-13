@@ -19,7 +19,8 @@ _CORE = Path(__file__).resolve().parents[2] / "core"
 if str(_CORE) not in sys.path:
     sys.path.insert(0, str(_CORE))
 
-from mcp.server.mcpserver import MCPServer, ToolError  # noqa: E402
+from mcp.server.mcpserver import MCPServer  # noqa: E402
+from mcp.server.mcpserver.exceptions import ToolError  # noqa: E402
 
 _nr: Any = None
 
