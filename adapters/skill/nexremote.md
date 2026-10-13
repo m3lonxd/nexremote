@@ -35,6 +35,17 @@ nexremote key "ctrl+s"             # tuş kombinasyonu
 nexremote type "metin"             # aktif pencereye yaz
 ```
 
+## Ajan imleci (görünür işaretçi)
+```bash
+nexremote cursor X Y               # ajanın KENDİ imlecini (X,Y)'ye götür
+nexremote cursor X Y --click       # götür ve tıkla (görsel geri bildirim)
+nexremote point REF                # öğeyi bul, imleci üzerine götür, tıkla
+```
+Bu, **kullanıcının faresine dokunmaz** — ekranda görünen ayrı bir yeşil
+işaretçidir (küçük pencere, tıklamayı geçirir, kullanıcıyı engellemez).
+Kullanıcı "ekranda ne yapıyorsun" görmek istediğinde ya da bir eylemi görsel
+olarak işaretlemek gerektiğinde kullan.
+
 ## Terminal (TUI) eylemleri
 ```bash
 nexremote run "ls -la"             # komut çalıştır, çıktıyı al

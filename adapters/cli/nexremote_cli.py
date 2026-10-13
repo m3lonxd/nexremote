@@ -69,6 +69,10 @@ def cmd_caps(nr, a) -> None:
         print(f"  {mark} {name}: {c['detail']}")
         if c.get("needs"):
             print(f"      eksik: {', '.join(c['needs'])}")
+    p = caps.get("pointer")
+    if p:
+        mark = "✓" if p["available"] else "✗"
+        print(f"  {mark} cursor: {p['detail']}")
     print(f"  eylemler: {', '.join(caps['actions'])}")
 
 

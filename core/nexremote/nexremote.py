@@ -52,12 +52,21 @@ class NexRemote:
                 n: {"available": c.available, "detail": c.detail, "needs": c.needs}
                 for n, c in caps.items()
             },
+            "pointer": self._pointer_cap(),
             "actions": [
                 "windows", "tree", "find", "click", "set_text",
                 "key", "type_text", "screenshot", "focus",
+                "cursor", "cursor_move", "cursor_hide",
                 "run", "read_screen", "send_keys", "sessions",
             ],
         }
+
+    def _pointer_cap(self) -> dict[str, Any]:
+        try:
+            ok, msg = self.pointer_available()
+            return {"available": ok, "detail": msg}
+        except Exception as e:
+            return {"available": False, "detail": str(e)}
 
     # ---------------------------------------------------------------- GUI
     def windows(self) -> list[Window]:
