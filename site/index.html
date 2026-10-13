@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NexRemote — give your agent hands</title>
+<meta name="description" content="NexRemote lets an AI agent see and control a desktop and a terminal session from anywhere. Works over MCP, a plain shell command, HTTP, or a text-only model.">
+<meta property="og:title" content="NexRemote — give your agent hands">
+<meta property="og:description" content="GUI + terminal control for any AI harness, any model. One shell command is all it needs.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#0b0c0e">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>▚</text></svg>">
+</head>
+<body>
+
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="nav">
+  <a class="brand" href="#top" aria-label="NexRemote home">
+    <span class="brand-mark" aria-hidden="true">▚</span>
+    <span class="brand-name">nexremote</span>
+  </a>
+  <nav class="nav-links" aria-label="Sections">
+    <a href="#how">How</a>
+    <a href="#adapters">Adapters</a>
+    <a href="#install">Install</a>
+    <a href="download/nexremote.zip" class="nav-cta" download>Download</a>
+  </nav>
+</header>
+
+<main id="main">
+
+  <!-- ===================== HERO ===================== -->
+  <section class="hero" id="top">
+    <div class="hero-copy">
+      <p class="eyebrow"><span class="dot" aria-hidden="true"></span> AI agents · desktop + terminal</p>
+      <h1>Give your agent <em>hands</em>.</h1>
+      <p class="lede">
+        NexRemote lets an AI agent see a real desktop and drive a real terminal —
+        buttons by name, not by pixel. It plugs into any harness and any model:
+        if the thing can run one shell command, it can use NexRemote.
+      </p>
+      <div class="cta-row">
+        <a class="btn btn-primary" href="download/nexremote.zip" download>Download .zip</a>
+        <a class="btn btn-ghost" href="#how">See how it works</a>
+      </div>
+      <p class="hero-note">MIT · zero-dependency core · Linux first (Wayland & X11)</p>
+    </div>
+
+    <!-- live session panel: the hero IS the product -->
+    <div class="hero-panel" aria-label="Example NexRemote session">
+      <div class="panel-bar">
+        <span class="panel-title">agent session</span>
+        <span class="panel-chip">live</span>
+      </div>
+      <pre class="term" id="hero-term" aria-live="polite"></pre>
+    </div>
+  </section>
+
+  <!-- ===================== THE ONE COMMAND ===================== -->
+  <section class="band" id="onecommand">
+    <div class="band-left">
+      <h2>The whole interface is a shell command.</h2>
+      <p>
+        No SDK to import, no tool-calling schema to implement, no MCP client
+        required. NexRemote is a CLI first. Everything else is a wrapper over it.
+      </p>
+    </div>
+    <div class="band-right">
+      <div class="codeblock" data-copy>
+        <pre><code>nexremote observe
+<span class="c-dim"># → windows, accessible tree, terminal sessions</span>
+nexremote find "Save"
+<span class="c-dim"># → atspi:9:0/0/12  [button] Save  &lt;click&gt;</span>
+nexremote click atspi:9:0/0/12
+<span class="c-dim"># → clicked</span></code></pre>
+        <button class="copy-btn" type="button" aria-label="Copy">copy</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== HOW ===================== -->
+  <section class="how" id="how">
+    <h2 class="section-title">Two backends, one contract</h2>
+    <p class="section-sub">
+      The core knows how to act. Adapters know how to be called. Neither one
+      knows the other exists.
+    </p>
+
+    <div class="how-grid">
+      <article class="how-item">
+        <span class="how-idx">01</span>
+        <h3>See — GUI</h3>
+        <p>
+          Reads the accessibility tree every GTK/Qt app already publishes. Each
+          button, menu and field arrives as a name, a role and the actions it
+          accepts. Click by name; pixels never enter the picture.
+        </p>
+        <code class="how-code">gui.py · AT-SPI</code>
+      </article>
+      <article class="how-item">
+        <span class="how-idx">02</span>
+        <h3>See — terminal</h3>
+        <p>
+          Drives a tmux session and reads its screen back as text. Start a
+          script, a REPL, or a whole TUI and watch what it prints — in a later,
+          separate call. Sessions persist between invocations.
+        </p>
+        <code class="how-code">tui.py · tmux / PTY</code>
+      </article>
+      <article class="how-item">
+        <span class="how-idx">03</span>
+        <h3>Speak — adapters</h3>
+        <p>
+          MCP server, CLI, HTTP API, and a plain-text protocol for models
+          without tool-calling. Point whichever one your harness understands.
+        </p>
+        <code class="how-code">adapters/ · mcp · http · cli</code>
+      </article>
+    </div>
+  </section>
+
+  <!-- ===================== ARCHITECTURE DIAGRAM (agent) ===================== -->
+  <section class="arch" id="arch">
+    <h2 class="section-title">How a request travels</h2>
+    <p class="section-sub">From an agent's intent to a real click — and back.</p>
+    <div id="arch-diagram" class="arch-diagram" role="img"
+         aria-label="Diagram: agent sends an intent to an adapter, which calls the NexRemote core, which drives the GUI or terminal backends, and returns a result.">
+      <!-- filled by assets/arch.js -->
+      <noscript>
+        <p class="arch-fallback">Agent → Adapter (MCP / CLI / HTTP) → Core → Backend (AT-SPI / tmux) → result.</p>
+      </noscript>
+    </div>
+  </section>
+
+  <!-- ===================== ADAPTERS ===================== -->
+  <section class="adapters" id="adapters">
+    <h2 class="section-title">Pick the way you call it</h2>
+    <p class="section-sub">Same five verbs everywhere. Only the transport changes.</p>
+
+    <div class="tabs" role="tablist" aria-label="Adapters">
+      <button role="tab" aria-selected="true" aria-controls="p-cli" id="t-cli" class="tab is-active">CLI</button>
+      <button role="tab" aria-selected="false" aria-controls="p-mcp" id="t-mcp" class="tab">MCP</button>
+      <button role="tab" aria-selected="false" aria-controls="p-http" id="t-http" class="tab">HTTP</button>
+      <button role="tab" aria-selected="false" aria-controls="p-text" id="t-text" class="tab">Text-only model</button>
+    </div>
+
+    <div class="tab-panels">
+      <div class="tab-panel is-active" id="p-cli" role="tabpanel" aria-labelledby="t-cli">
+        <p>Any harness that can run a shell command — including a proxied or
+           custom CLI. Nothing to register.</p>
+        <div class="codeblock" data-copy><pre><code>nexremote run "ls -la" --json
+nexremote screen --session build
+nexremote keys "C-c" --session build</code></pre></div>
+      </div>
+      <div class="tab-panel" id="p-mcp" role="tabpanel" aria-labelledby="t-mcp">
+        <p>Thirteen tools over stdio. Drop this into the client's MCP config.</p>
+        <div class="codeblock" data-copy><pre><code>{
+  "mcpServers": {
+    "nexremote": { "command": "nexremote-mcp" }
+  }
+}</code></pre></div>
+      </div>
+      <div class="tab-panel" id="p-http" role="tabpanel" aria-labelledby="t-http">
+        <p>Standard library only. Bind it to a token before you expose it.</p>
+        <div class="codeblock" data-copy><pre><code>nexremote-http --port 8788 --token $SECRET
+
+curl -s -X POST localhost:8788/run \
+  -d '{"command":"uptime"}'</code></pre></div>
+      </div>
+      <div class="tab-panel" id="p-text" role="tabpanel" aria-labelledby="t-text">
+        <p>No tool-calling? The model writes <code>nexremote …</code> lines; the
+           loop runs them and feeds the output back. Works with any text model.</p>
+        <div class="codeblock" data-copy><pre><code>nexremote-agent \
+  --model-cmd "ollama run qwen2.5" \
+  --goal "open the calculator, compute 7×8"</code></pre></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== INSTALL ===================== -->
+  <section class="install" id="install">
+    <h2 class="section-title">Get it running</h2>
+    <p class="section-sub">Clone, run the installer, check what you have.</p>
+
+    <div class="install-grid">
+      <div class="install-main">
+        <div class="codeblock codeblock-lg" data-copy>
+          <pre><code>curl -LO https://nexremote.vercel.app/download/nexremote.zip
+unzip nexremote.zip && cd nexremote
+./install.sh
+nexremote caps</code></pre>
+          <button class="copy-btn" type="button" aria-label="Copy">copy</button>
+        </div>
+        <div class="cta-row">
+          <a class="btn btn-primary" href="download/nexremote.zip" download>Download .zip</a>
+          <a class="btn btn-ghost" href="download/nexremote.tar.gz" download>Download .tar.gz</a>
+        </div>
+      </div>
+
+      <aside class="deps">
+        <h3>What it wants</h3>
+        <ul class="deps-list">
+          <li><span class="dep-ok" aria-hidden="true">✓</span> <code>tmux</code> <em>terminal backend</em></li>
+          <li><span class="dep-ok" aria-hidden="true">✓</span> <code>wtype</code> <em>Wayland input</em></li>
+          <li><span class="dep-ok" aria-hidden="true">✓</span> <code>python3-gi</code> <em>AT-SPI</em></li>
+          <li><span class="dep-opt" aria-hidden="true">○</span> <code>mcp</code> <em>only for the MCP adapter</em></li>
+        </ul>
+        <p class="deps-note">Missing pieces degrade gracefully — the terminal side
+           still works with no GUI at all.</p>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ===================== HONEST LIMITS ===================== -->
+  <section class="limits" id="limits">
+    <h2 class="section-title">What it won't do</h2>
+    <div class="limits-list">
+      <div>
+        <h3>Electron apps hide their buttons</h3>
+        <p>Discord, VS Code and friends don't publish their inner widgets unless
+           launched with <code>--force-renderer-accessibility</code>.</p>
+      </div>
+      <div>
+        <h3>Screenshots are pixels, not understanding</h3>
+        <p><code>screenshot</code> returns a PNG. Reading it is the job of a
+           vision model — NexRemote itself reasons over structure.</p>
+      </div>
+      <div>
+        <h3>No GUI, no clicks</h3>
+        <p>On a headless box the GUI backend reports itself unavailable. Terminal
+           verbs keep working.</p>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="foot">
+  <div class="foot-row">
+    <span class="brand-mark" aria-hidden="true">▚</span>
+    <span>nexremote</span>
+    <span class="foot-sep">·</span>
+    <span>MIT</span>
+    <span class="foot-sep">·</span>
+    <a href="#install">npm install · shell · MCP</a>
+  </div>
+  <p class="foot-note">Built so a shell prompt is enough.</p>
+</footer>
+
+<script src="assets/hero.js" defer></script>
+<script src="assets/arch.js" defer></script>
+<script src="assets/ui.js" defer></script>
+</body>
+</html>

@@ -4,3 +4,6 @@ __pycache__/
 .venv/
 /tmp/
 .claude/agent-bus/
+# Vercel (site bağlantı artefaktları)
+site/.vercel/
+site/.env.local
