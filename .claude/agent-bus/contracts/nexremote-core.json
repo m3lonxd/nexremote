@@ -1,0 +1,35 @@
+{
+  "name": "nexremote-core",
+  "updated_by": "orkestra",
+  "updated_at": "2026-10-13T14:41:12.627944",
+  "data": {
+    "facade": "nexremote.NexRemote",
+    "backends": [
+      "gui",
+      "tui"
+    ],
+    "gui_methods": {
+      "windows()": "list[Window]",
+      "tree(window_ref)": "Element (render() ile LLM metni)",
+      "find(query, window_ref)": "list[Element]",
+      "click(ref)": "bool",
+      "set_text(ref, text)": "bool",
+      "key(combo)": "bool (ornek ctrl+c)",
+      "type_text(text)": "bool",
+      "screenshot(path)": "Screenshot",
+      "focus(ref)": "bool"
+    },
+    "tui_methods": {
+      "run(command, session, timeout)": "CommandResult",
+      "read_screen(session)": "str",
+      "send_keys(keys, session)": "bool",
+      "list_sessions()": "list[str]"
+    },
+    "element_ref_format": "backend'e ozgu opak string, ornek atspi:0:1/3",
+    "contract_files": [
+      "core/nexremote/models.py",
+      "core/nexremote/base.py",
+      "core/nexremote/nexremote.py"
+    ]
+  }
+}

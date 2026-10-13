@@ -1,0 +1,12 @@
+{
+  "gui_backend": {
+    "value": "TAMAM: capability+windows+tree+find+click DOGRULANDI (state degisimi kanitli)",
+    "updated_by": "orkestra",
+    "updated_at": "2026-10-13T15:02:20.818772"
+  },
+  "core_contract": {
+    "value": "TAMAM: models.py+base.py+nexremote.py+input.py yazildi",
+    "updated_by": "orkestra",
+    "updated_at": "2026-10-13T15:02:20.843961"
+  }
+}

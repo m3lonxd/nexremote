@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nexremote-core"
+version = "0.1.0"
+description = "AI ajanlarına uzaktan görme + kontrol yeteneği: GUI (AT-SPI/piksel) ve TUI (tmux/PTY)"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Evren Orkestra" }]
+keywords = ["ai-agent", "remote-desktop", "at-spi", "tmux", "mcp", "automation", "gui", "tui"]
+dependencies = []
+
+[project.optional-dependencies]
+gui = ["PyGObject>=3.42"]   # AT-SPI için; çoğu distroda sistem paketi olarak gelir
+mcp = ["mcp>=1.0"]
+all = ["PyGObject>=3.42", "mcp>=1.0"]
+
+[project.scripts]
+nexremote = "nexremote.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["nexremote*"]
