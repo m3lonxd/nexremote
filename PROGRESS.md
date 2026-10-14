@@ -47,6 +47,12 @@ ortamda çalışan AI ajanı köprüsü.
    yazdı, wrapper çalıştırdı, `DONE` alındı.
 5. **MCP:** 13 araç, JSON-RPC handshake + `tools/call` bağımsız doğrulandı.
 6. **HTTP:** `curl` ile health/caps/windows/run çalıştı.
+7. **Görünür ajan imleci (crosshair):** `core/nexremote/xcursor.py` imleç stili
+   "yön oku"ndan **crosshair (hedef)** stilinine çevrildi — dört yöne kalın
+   çizgi + merkez halka + merkez nokta (`_line` metodu eklendi). İzole
+   `Xvfb :98` sandbox'ında piksel sayımıyla doğrulandı: merkez nokta + 4 kol
+   renkli (244 renkli piksel), boşluk/köşeler siyah. Kullanıcının gerçek
+   ekranına (`:0`/`:1`) dokunulmadı.
 
 ## Kısıtlar (dürüst)
 - Electron uygulamaları (Discord/VSCode/Slack) iç butonlarını AT-SPI'ye
