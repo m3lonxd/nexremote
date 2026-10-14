@@ -106,22 +106,38 @@ class XAgentCursor:
         except Exception:
             return self.scr.white_pixel
 
+    def _line(self, x0, y0, x1, y1, color, width=2):
+        """İki nokta arası kalın çizgi (Bresenham benzeri, kalınlık için kare)."""
+        gc = self._win.create_gc(foreground=self._alloc(color))
+        n = max(abs(x1 - x0), abs(y1 - y0), 1)
+        for i in range(n + 1):
+            t = i / n
+            x = int(x0 + (x1 - x0) * t)
+            y = int(y0 + (y1 - y0) * t)
+            self._win.fill_rectangle(gc, x - width // 2, y - width // 2, width, width)
+        gc.free()
+
     def _clear(self):
         self._win.fill_rectangle(self._gc, 0, 0, BOX, BOX)
         self.d.sync()
 
     def _draw(self) -> None:
+        """Crosshair (hedef) stili: dört yöne çizgi + merkez çember + nokta."""
         if self._win is None:
             return
         cx = cy = BOX // 2
         self._clear()
-        # dış çember + orta nokta + yön oku
-        self._ring(cx, cy, 12, COLOR, 2)
-        self._fill_circle(cx, cy, 4, COLOR)
-        # yön oku (sağa)
-        gc = self._win.create_gc(foreground=self._alloc(COLOR), line_width=2)
-        self._win.fill_rectangle(gc, cx + 4, cy - 1, 14, 2)
-        gc.free()
+        gap = 7          # merkez çember ile çizgiler arası boşluk
+        arm = 18         # çizgi uzunluğu
+        # dört yön çizgisi (üst, alt, sol, sağ)
+        self._line(cx, cy - gap, cx, cy - gap - arm, COLOR, 2)   # üst
+        self._line(cx, cy + gap, cx, cy + gap + arm, COLOR, 2)   # alt
+        self._line(cx - gap, cy, cx - gap - arm, cy, COLOR, 2)   # sol
+        self._line(cx + gap, cy, cx + gap + arm, cy, COLOR, 2)   # sağ
+        # merkez çember
+        self._ring(cx, cy, 6, COLOR, 2)
+        # merkez nokta
+        self._fill_circle(cx, cy, 2, COLOR)
         self.d.sync()
 
     # ---------------------------------------------------------------- hareket
