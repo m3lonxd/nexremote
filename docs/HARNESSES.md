@@ -5,7 +5,7 @@ Hiçbiri diğerine bağımlı değildir — biri çalışmıyorsa diğeri devred
 
 | Harness / İstemci | Adaptör | Kurulum | Not |
 |---|---|---|---|
-| **Claude Desktop** | MCP | `claude_desktop_config.json`'a `mcpServers.nexremote` ekle | 13 araç |
+| **Claude Desktop** | MCP | `claude_desktop_config.json`'a `mcpServers.nexremote` ekle | 21 araç |
 | **Claude Code** | Skill + CLI | bu repoyu `~/.claude/skills/`e bağla, `nexremote` PATH'te | `/nexremote` skill'i |
 | **Cursor** | MCP | `.cursor/mcp.json` | stdio |
 | **Continue / Roo** | MCP | MCP yapılandırması | stdio |
@@ -79,7 +79,7 @@ durur. Böylece **tool-calling desteği olmayan modeller bile ajan olur.**
 | Belirti | Çözüm |
 |---|---|
 | `nexremote caps` → GUI kapalı | `sudo apt install python3-gi gir1.2-atspi-2.0` |
-| `type`/`key` çalışmıyor | `sudo apt install wtype` |
+| `type`/`key`/`click X Y` çalışmıyor | `nexremote setup` → KDE izninde Share; `nexremote caps` portal durumunu gösterir |
 | Electron iç butonları görünmüyor | uygulamayı `--force-renderer-accessibility` ile başlat |
 | MCP'de araç yok | `pip install mcp`; wrapper `nexremote-mcp` kullan |
 | `nexremote: command not found` | `export PATH="$HOME/bin:$PATH"` |
