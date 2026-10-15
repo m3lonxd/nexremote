@@ -464,7 +464,11 @@ def _clipboard_get() -> Optional[bytes]:
 def _clipboard_set(data: bytes) -> bool:
     import subprocess
     try:
-        return subprocess.run(["wl-copy"], input=data, timeout=3).returncode == 0
+        # wl-copy panoyu sunmak için arka planda kalır; çıktılarını kapatmazsak
+        # çağıranın borusunu açık tutar ve çıktıyı yakalayan harness'lar asılır.
+        return subprocess.run(["wl-copy"], input=data, timeout=3,
+                              stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                              close_fds=True).returncode == 0
     except (OSError, subprocess.TimeoutExpired):
         return False
 
@@ -509,7 +513,11 @@ def available() -> tuple[bool, str]:
         return False, "D-Bus oturum veri yolu yok"
     try:
         import dbus
-        bus = dbus.SessionBus()
+        try:
+            from ._dbus import session_bus
+        except ImportError:          # betik olarak çalıştırıldığında
+            from nexremote._dbus import session_bus
+        bus = session_bus()
         obj = bus.get_object("org.freedesktop.portal.Desktop", "/org/freedesktop/portal/desktop")
         v = dbus.Interface(obj, "org.freedesktop.DBus.Properties").Get(
             "org.freedesktop.portal.RemoteDesktop", "version")

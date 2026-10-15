@@ -86,10 +86,17 @@ def main() -> int:
             if not ws:
                 skip("A3: açık pencere yok")
             else:
-                trees = [nr.tree(w.ref) for w in ws]
-                has_actions = any("[" in t and "<" in t for t in trees)
-                assert has_actions or trees, "ağaç boş"
-                ok(f"{len(ws)} pencere, ağaç normalize edildi")
+                # KWin her pencereyi listeler; ağaç yayınlamayanlar açık hata verir
+                trees, silent = [], 0
+                for w in ws:
+                    try:
+                        trees.append(nr.tree(w.ref))
+                    except RuntimeError as e:
+                        assert "erişilebilirlik" in str(e), e
+                        silent += 1
+                assert trees, "hiçbir pencerenin ağacı okunamadı"
+                ok(f"{len(ws)} pencere: {len(trees)} ağaç okundu, "
+                   f"{silent} ağaçsız pencere açıkça raporlandı")
         except Exception as e:
             bad("A3", f"{type(e).__name__}: {e}")
     else:

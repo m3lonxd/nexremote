@@ -6,20 +6,28 @@ kabuk komutu çalıştırabildiği sürece NexRemote'u kullanabilir. MCP gerekme
 tool-calling gerekmez, özel SDK gerekmez. Sadece `nexremote ...` komutları.
 
 Kullanım:
+  nexremote setup                      ilk kurulum: erişilebilirlik + tek seferlik izin
   nexremote caps                       ne yapabildiğimizi anlatır
-  nexremote observe                    tam durum anlık görüntüsü (modele besle)
-  nexremote windows                    pencereleri listeler
+  nexremote observe                    pencereler + terminaller (modele besle)
+
+  nexremote windows                    ekrandaki tüm pencereler (win:{...} ref)
+  nexremote window REF activate|close|minimize
   nexremote tree [--window REF]        erişilebilirlik ağacı (LLM dostu metin)
-  nexremote find "Kaydet" [--window R] öğe arar
-  nexremote click REF                  öğeye tıklar
-  nexremote set-text REF "metin"       alana yazar
+  nexremote find "Kaydet" [--window R] öğe arar → atspi ref
+  nexremote click REF                  öğeye isimle tıklar (imleç oynamaz)
+  nexremote click X Y [--right|--middle] [--double]   koordinata gerçek tık
+  nexremote move X Y | scroll N [--at X Y] | drag X1 Y1 X2 Y2
   nexremote key "ctrl+s"               tuş kombinasyonu
-  nexremote type "metin"               aktif pencereye yazar
-  nexremote screenshot [PATH]          ekran görüntüsü
-  nexremote run "ls -la" [--session S] [--timeout T]
-  nexremote screen [--session S]       terminal oturumunun ekranını okur
-  nexremote keys "C-c" [--session S]   terminale tuş gönderir
-  nexremote sessions                   terminal oturumlarını listeler
+  nexremote type "metin"               odaktaki alana yazar (Türkçe dahil)
+  nexremote set-text REF "metin"       alanın içeriğini değiştirir
+  nexremote screenshot [PATH]          ekran görüntüsü (koordinatlar = tık koordinatı)
+
+  nexremote terms                      masaüstündeki açık terminaller
+  nexremote term-read REF [--history N]
+  nexremote term-send REF "metin" [--enter] [--key C-c ...]
+
+  nexremote run "ls -la" [--session S] [--timeout T]   kendi tmux oturumumuz
+  nexremote screen | keys "C-c" | sessions | cleanup
   nexremote skill                      LLM'e verilecek yetenek talimatı
 
 Global: --json  (makine-okunur çıktı)
@@ -64,16 +72,14 @@ def cmd_caps(nr, a) -> None:
         _out(caps, True)
         return
     print("NexRemote yetenekleri:")
-    for name, c in caps["backends"].items():
-        mark = "✓" if c["available"] else "✗"
-        print(f"  {mark} {name}: {c['detail']}")
+    rows = [("pencereler", caps["windows"]), ("fare+klavye", caps["input"]),
+            ("terminaller", caps["terminals"])]
+    rows += [(n, c) for n, c in caps["backends"].items()]
+    rows.append(("ajan imleci", caps["pointer"]))
+    for name, c in rows:
+        print(f"  {'✓' if c['available'] else '✗'} {name}: {c['detail']}")
         if c.get("needs"):
             print(f"      eksik: {', '.join(c['needs'])}")
-    p = caps.get("pointer")
-    if p:
-        mark = "✓" if p["available"] else "✗"
-        print(f"  {mark} cursor: {p['detail']}")
-    print(f"  eylemler: {', '.join(caps['actions'])}")
 
 
 def cmd_observe(nr, a) -> None:
@@ -84,6 +90,10 @@ def cmd_observe(nr, a) -> None:
             snap["windows"].append(w.to_dict())
     except Exception as e:
         snap["windows_error"] = str(e)
+    try:
+        snap["terminal"]["desktop"] = nr.terminals()
+    except Exception as e:
+        snap["terminal"]["desktop_error"] = str(e)
     try:
         snap["terminal"]["sessions"] = nr.sessions()
     except Exception:
@@ -96,15 +106,22 @@ def cmd_observe(nr, a) -> None:
     if a.json:
         _out(snap, True)
         return
-    print("=== NexRemote Gözlem Anlık Görüntüsü ===")
-    for name, c in snap["capabilities"]["backends"].items():
-        print(f"[{name}] {'aktif' if c['available'] else 'kapalı'} — {c['detail']}")
-    print(f"\nAçık pencereler ({len(snap['windows'])}):")
+    caps = snap["capabilities"]
+    print("=== NexRemote gözlem ===")
+    print(f"fare+klavye: {caps['input']['detail']}")
+    print(f"\nPencereler ({len(snap['windows'])}) — * etkin:")
     for w in snap["windows"]:
-        f = " *" if w.get("focused") else ""
-        print(f"  {w.get('app','?')} | {w.get('title','')} | ref={w['ref']}{f}")
-    if snap.get("terminal", {}).get("sessions"):
-        print(f"\nTerminal oturumları: {', '.join(snap['terminal']['sessions'])}")
+        b = w.get("bounds")
+        geo = f"{b[2]}x{b[3]}+{b[0]}+{b[1]}" if b else ""
+        print(f"  {'*' if w.get('focused') else ' '} {w.get('app','?')[:22]:<22} {geo:<20} "
+              f"{w.get('title','')[:60]}\n      ref={w['ref']}")
+    terms = snap["terminal"].get("desktop") or []
+    if terms:
+        print(f"\nAçık terminaller ({len(terms)}):")
+        for tm in terms:
+            print(f"  {tm['ref']:<20} {tm['program']:<14} {tm['cwd']:<22} {tm['title'][:40]}")
+    if snap["terminal"].get("sessions"):
+        print(f"\nNexRemote tmux oturumları: {', '.join(snap['terminal']['sessions'])}")
     if snap.get("tree"):
         print("\n--- Pencere ağacı ---")
         print(snap["tree"][:4000])
@@ -116,8 +133,17 @@ def cmd_windows(nr, a) -> None:
         _out([w.to_dict() for w in ws], True)
         return
     for w in ws:
-        f = " *" if w.focused else ""
-        print(f"{w.ref}\t{w.app}\t{w.title}{f}")
+        b = w.bounds
+        geo = f"{b[2]}x{b[3]}+{b[0]}+{b[1]}" if b else ""
+        print(f"{'*' if w.focused else ' '} {w.ref}\t{w.app}\t{geo}\t{w.title}")
+
+
+def cmd_window(nr, a) -> None:
+    ok = nr.window_action(a.ref, a.action)
+    _out({"ok": ok, "ref": a.ref, "action": a.action}, a.json,
+         f"{a.action}: {'tamam' if ok else 'pencere bulunamadı'}")
+    if not ok:
+        raise SystemExit(1)
 
 
 def cmd_tree(nr, a) -> None:
@@ -156,8 +182,43 @@ def cmd_find(nr, a) -> None:
 
 
 def cmd_click(nr, a) -> None:
-    ok = nr.click(a.ref)
-    _out({"ok": ok, "ref": a.ref}, a.json, "tıklandı" if ok else "tıklanamadı")
+    btn = "right" if a.right else "middle" if a.middle else "left"
+    if len(a.target) == 2 and all(x.lstrip("-").isdigit() for x in a.target):
+        x, y = int(a.target[0]), int(a.target[1])
+        nr.click_at(x, y, button=btn, count=2 if a.double else 1,
+                    restore_pointer=not a.keep_pointer)
+        _out({"ok": True, "x": x, "y": y, "button": btn}, a.json, f"tıklandı ({x},{y})")
+        return
+    if len(a.target) != 1:
+        raise ValueError("kullanım: click REF  |  click X Y")
+    ref = a.target[0]
+    if btn != "left" or a.double:
+        b = nr.bounds(ref)
+        if not b:
+            raise RuntimeError("öğenin ekran konumu yok; sağ/çift tık için koordinat gerekir")
+        nr.click_at(b[0] + b[2] // 2, b[1] + b[3] // 2, button=btn,
+                    count=2 if a.double else 1, restore_pointer=not a.keep_pointer)
+        ok = True
+    else:
+        ok = nr.click(ref)
+    _out({"ok": ok, "ref": ref}, a.json, "tıklandı" if ok else "tıklanamadı")
+    if not ok:
+        raise SystemExit(1)
+
+
+def cmd_move(nr, a) -> None:
+    nr.move(a.x, a.y)
+    _out({"ok": True, "x": a.x, "y": a.y}, a.json, f"imleç ({a.x},{a.y})")
+
+
+def cmd_scroll(nr, a) -> None:
+    nr.scroll(a.steps, a.horizontal, at=tuple(a.at) if a.at else None)
+    _out({"ok": True, "steps": a.steps}, a.json, f"kaydırıldı ({a.steps})")
+
+
+def cmd_drag(nr, a) -> None:
+    nr.drag(a.x1, a.y1, a.x2, a.y2)
+    _out({"ok": True}, a.json, f"sürüklendi ({a.x1},{a.y1}) → ({a.x2},{a.y2})")
 
 
 def cmd_set_text(nr, a) -> None:
@@ -168,11 +229,75 @@ def cmd_set_text(nr, a) -> None:
 def cmd_key(nr, a) -> None:
     ok = nr.key(a.combo)
     _out({"ok": ok, "combo": a.combo}, a.json, "gönderildi" if ok else "gönderilemedi")
+    if not ok:
+        raise SystemExit(1)
 
 
 def cmd_type(nr, a) -> None:
     ok = nr.type_text(a.text)
     _out({"ok": ok}, a.json, "yazıldı" if ok else "yazılamadı")
+    if not ok:
+        raise SystemExit(1)
+
+
+def cmd_terms(nr, a) -> None:
+    ts = nr.terminals()
+    if a.json:
+        _out(ts, True)
+        return
+    if not ts:
+        print("(açık terminal bulunamadı — Konsole veya tmux gerekir)")
+    for tm in ts:
+        print(f"{tm['ref']:<20} {tm['program']:<14} {tm['cwd']:<24} {tm['title']}")
+
+
+def cmd_term_read(nr, a) -> None:
+    from nexremote import terminals
+    txt = nr.terminal_read(a.ref, a.history)
+    note = ""
+    if a.history and not terminals.history_supported(a.ref):
+        note = "Konsole yalnızca görünen ekranı verir; geçmiş okunamadı"
+    if a.json:
+        _out({"ref": a.ref, "screen": txt, **({"note": note} if note else {})}, True)
+        return
+    print(txt)
+    if note:
+        print(f"\n[not: {note}]", file=sys.stderr)
+
+
+def cmd_term_send(nr, a) -> None:
+    nr.terminal_send(a.ref, a.text or "", enter=a.enter, keys=a.key)
+    _out({"ok": True, "ref": a.ref}, a.json, "gönderildi")
+
+
+def cmd_setup(nr, a) -> None:
+    """Erişilebilirliği aç + giriş servisini başlat (ilk seferde KDE izin sorar)."""
+    import subprocess
+    from nexremote import portal_input
+    steps = []
+    r = subprocess.run(["busctl", "--user", "set-property", "org.a11y.Bus", "/org/a11y/bus",
+                        "org.a11y.Status", "IsEnabled", "b", "true"], capture_output=True)
+    steps.append(("erişilebilirlik ağacı açıldı (yeni açılan uygulamalar için)",
+                  r.returncode == 0, r.stderr.decode().strip()))
+    ok, msg = portal_input.available()
+    if ok:
+        if not portal_input.running():
+            print("Ekranda KDE 'Uzaktan kontrol' izni açılacak: 'Allow restoring on future "
+                  "sessions' kutusunu işaretleyip Share'e basın (bir kez).", flush=True)
+        try:
+            portal_input.ensure()
+            steps.append(("fare+klavye servisi çalışıyor", True, msg))
+        except Exception as e:
+            steps.append(("fare+klavye servisi", False, str(e)))
+    else:
+        steps.append(("fare+klavye", False, msg))
+    if a.json:
+        _out([{"step": s, "ok": o, "detail": d} for s, o, d in steps], True)
+    else:
+        for s, o, d in steps:
+            print(f"  {'✓' if o else '✗'} {s}" + (f" — {d}" if d and not o else ""))
+    if not all(o for _, o, _ in steps):
+        raise SystemExit(1)
 
 
 def cmd_screenshot(nr, a) -> None:
@@ -307,11 +432,15 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--json", action="store_true", help="makine-okunur çıktı")
     sub = p.add_subparsers(dest="cmd", required=True)
 
+    sub.add_parser("setup", help="ilk kurulum (erişilebilirlik + izin)").set_defaults(fn=cmd_setup)
     sub.add_parser("caps", help="yetenekleri göster").set_defaults(fn=cmd_caps)
     o = sub.add_parser("observe", help="tam durum anlık görüntüsü")
     o.add_argument("--window", default=None)
     o.set_defaults(fn=cmd_observe)
     sub.add_parser("windows", help="pencereleri listele").set_defaults(fn=cmd_windows)
+    wa = sub.add_parser("window", help="pencere eylemi")
+    wa.add_argument("ref"); wa.add_argument("action", choices=["activate", "close", "minimize"])
+    wa.set_defaults(fn=cmd_window)
     t = sub.add_parser("tree", help="erişilebilirlik ağacı")
     t.add_argument("--window", default=None)
     t.set_defaults(fn=cmd_tree)
@@ -319,9 +448,26 @@ def build_parser() -> argparse.ArgumentParser:
     f.add_argument("query")
     f.add_argument("--window", default=None)
     f.set_defaults(fn=cmd_find)
-    c = sub.add_parser("click", help="öğeye tıkla")
-    c.add_argument("ref")
+    c = sub.add_parser("click", help="öğeye (REF) veya koordinata (X Y) tıkla")
+    c.add_argument("target", nargs="+")
+    c.add_argument("--right", action="store_true")
+    c.add_argument("--middle", action="store_true")
+    c.add_argument("--double", action="store_true")
+    c.add_argument("--keep-pointer", action="store_true",
+                   help="kullanıcının imlecini eski yerine geri koyma")
     c.set_defaults(fn=cmd_click)
+    mv = sub.add_parser("move", help="imleci taşı")
+    mv.add_argument("x", type=int); mv.add_argument("y", type=int)
+    mv.set_defaults(fn=cmd_move)
+    scr = sub.add_parser("scroll", help="tekerlek (+aşağı, -yukarı)")
+    scr.add_argument("steps", type=int)
+    scr.add_argument("--horizontal", type=int, default=0)
+    scr.add_argument("--at", type=int, nargs=2, metavar=("X", "Y"))
+    scr.set_defaults(fn=cmd_scroll)
+    dr = sub.add_parser("drag", help="sürükle-bırak")
+    for n in ("x1", "y1", "x2", "y2"):
+        dr.add_argument(n, type=int)
+    dr.set_defaults(fn=cmd_drag)
     st = sub.add_parser("set-text", help="alana yaz")
     st.add_argument("ref"); st.add_argument("text")
     st.set_defaults(fn=cmd_set_text)
@@ -345,6 +491,15 @@ def build_parser() -> argparse.ArgumentParser:
     ks = sub.add_parser("keys", help="terminale tuş gönder")
     ks.add_argument("keys"); ks.add_argument("--session", default="default")
     ks.set_defaults(fn=cmd_keys)
+    sub.add_parser("terms", help="masaüstündeki açık terminaller").set_defaults(fn=cmd_terms)
+    tr = sub.add_parser("term-read", help="terminal ekranını oku")
+    tr.add_argument("ref"); tr.add_argument("--history", type=int, default=0)
+    tr.set_defaults(fn=cmd_term_read)
+    ts = sub.add_parser("term-send", help="terminale yaz")
+    ts.add_argument("ref"); ts.add_argument("text", nargs="?", default="")
+    ts.add_argument("--enter", action="store_true", help="sonuna Enter ekle")
+    ts.add_argument("--key", action="append", help="özel tuş: Enter, C-c, Up, Esc... (tekrarlanabilir)")
+    ts.set_defaults(fn=cmd_term_send)
     sub.add_parser("sessions", help="oturumları listele").set_defaults(fn=cmd_sessions)
     sub.add_parser("cleanup", help="kendi oturumlarını kapat").set_defaults(fn=cmd_cleanup)
     cur = sub.add_parser("cursor", help="görünür fare imlecini taşı/tıkla")
@@ -363,6 +518,10 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv=None) -> int:
+    argv = list(sys.argv[1:] if argv is None else argv)
+    if "--json" in argv:          # ajanlar bayrağı genelde sona yazar
+        argv.remove("--json")
+        argv.insert(0, "--json")
     args = build_parser().parse_args(argv)
     try:
         nr = _get_nr()

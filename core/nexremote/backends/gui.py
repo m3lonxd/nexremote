@@ -77,13 +77,9 @@ class GuiBackend(Backend):
         needs: list[str] = []
         if self._Atspi is None:
             needs.append("python3-gi + gir1.2-atspi-2.0")
-        tools = inp.available_tools()
-        if not any(tools.values()):
-            needs.append("wtype veya ydotool (yazma için)")
         ok = self._Atspi is not None
-        detail = ("AT-SPI erişilebilirlik ağacı aktif"
-                  if ok else "AT-SPI yok — GUI görme devre dışı")
-        detail += f"; giriş araçları: {[k for k, v in tools.items() if v] or 'yok'}"
+        detail = ("AT-SPI: isimle bul/tıkla (erişilebilirlik yayınlayan uygulamalar)"
+                  if ok else "AT-SPI yok — öğe ağacı devre dışı")
         return Capability(name=self.name, available=ok, detail=detail, needs=needs)
 
     # ------------------------------------------------------------ ref yardım

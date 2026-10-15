@@ -52,14 +52,39 @@ class NexRemote:
                 n: {"available": c.available, "detail": c.detail, "needs": c.needs}
                 for n, c in caps.items()
             },
+            "input": self._input_cap(),
+            "windows": self._windows_cap(),
+            "terminals": self._terminals_cap(),
             "pointer": self._pointer_cap(),
             "actions": [
-                "windows", "tree", "find", "click", "set_text",
-                "key", "type_text", "screenshot", "focus",
-                "cursor", "cursor_move", "cursor_hide",
-                "run", "read_screen", "send_keys", "sessions",
+                "windows", "window_action", "tree", "find", "click", "click_at",
+                "move", "scroll", "drag", "key", "type_text", "set_text",
+                "screenshot", "terminals", "terminal_read", "terminal_send",
+                "run", "read_screen", "send_keys", "sessions", "cursor",
             ],
         }
+
+    @staticmethod
+    def _input_cap() -> dict[str, Any]:
+        from . import portal_input
+        ok, msg = portal_input.available()
+        return {"available": ok, "detail": msg}
+
+    @staticmethod
+    def _windows_cap() -> dict[str, Any]:
+        from . import kwin
+        if kwin.available():
+            return {"available": True, "detail": "KWin: ekrandaki tüm pencereler"}
+        return {"available": False, "detail": "KWin yok — yalnızca AT-SPI pencereleri"}
+
+    @staticmethod
+    def _terminals_cap() -> dict[str, Any]:
+        from . import terminals
+        try:
+            n = len(terminals.list_terminals())
+        except Exception as e:
+            return {"available": False, "detail": str(e)}
+        return {"available": True, "detail": f"{n} açık terminal (Konsole D-Bus + tmux)"}
 
     def _pointer_cap(self) -> dict[str, Any]:
         try:
@@ -70,27 +95,175 @@ class NexRemote:
 
     # ---------------------------------------------------------------- GUI
     def windows(self) -> list[Window]:
+        """Ekrandaki pencereler. KWin her pencereyi bilir; AT-SPI yalnızca
+        erişilebilirlik yayınlayanları — KWin yoksa ona düşülür."""
+        from . import kwin
+        if kwin.available():
+            try:
+                return [Window(ref=f"win:{w['id']}", title=w["title"], app=w["app"],
+                               pid=w["pid"], focused=w["active"],
+                               bounds=(w["x"], w["y"], w["w"], w["h"]))
+                        for w in kwin.windows()]
+            except Exception:
+                pass
         return self._gui().windows()
+
+    def window_action(self, ref: str, action: str) -> bool:
+        """activate | close | minimize — ref: windows() çıktısındaki win:{...}"""
+        from . import kwin
+        if not ref.startswith("win:"):
+            raise ValueError("pencere eylemi KWin ref'i ister (win:{...}); `windows` ile alın")
+        return kwin.act(ref[4:], action)
 
     def tree(self, window_ref: Optional[str] = None) -> str:
         """Pencere ağacını LLM dostu metin olarak döndür."""
-        w = self._gui().tree(window_ref) if window_ref else self._gui().tree("")
-        return w.render()
+        ref = self._atspi_ref(window_ref) if window_ref else ""
+        return self._gui().tree(ref).render()
+
+    def _atspi_ref(self, ref: str) -> str:
+        """win:{id} (KWin) → aynı pencerenin atspi: ref'i (pid + başlık eşleşmesi)."""
+        if not ref.startswith("win:"):
+            return ref
+        target = next((w for w in self.windows() if w.ref == ref), None)
+        if target is None:
+            raise ValueError(f"pencere bulunamadı: {ref}")
+        cands = [w for w in self._gui().windows() if w.pid == target.pid]
+        exact = [w for w in cands if w.title == target.title]
+        if exact or cands:
+            return (exact or cands)[0].ref
+        raise RuntimeError(
+            f"'{target.title}' erişilebilirlik ağacı yayınlamıyor — "
+            "`nexremote setup` ile erişilebilirliği açıp uygulamayı yeniden başlatın "
+            "ya da ekran görüntüsü + koordinat tıklaması kullanın")
 
     def find(self, query: str, window_ref: Optional[str] = None) -> list[Element]:
-        return self._gui().find(query, window_ref)
+        return self._gui().find(query, self._atspi_ref(window_ref) if window_ref else None)
 
     def click(self, ref: str) -> bool:
         return self._gui().click(ref)
+
+    def bounds(self, ref: str) -> Optional[tuple[int, int, int, int]]:
+        """Öğenin ekran dikdörtgeni (x, y, w, h) — AT-SPI ref."""
+        gui = self._gui()
+        node = gui._resolve(ref)
+        return gui._extents(node) if node is not None else None
 
     def set_text(self, ref: str, text: str) -> bool:
         return self._gui().set_text(ref, text)
 
     def key(self, combo: str) -> bool:
+        from . import portal_input
+        if portal_input.available()[0]:
+            portal_input.call("KEY " + combo)
+            return True
         return self._gui().key(combo)
 
     def type_text(self, text: str) -> bool:
+        from . import portal_input
+        if portal_input.available()[0]:
+            portal_input.type_text(text, paste_combo=self._paste_combo())
+            return True
         return self._gui().type_text(text)
+
+    @staticmethod
+    def _paste_combo() -> str:
+        """Terminaller ctrl+v'yi yapıştırma olarak değil ^V olarak alır."""
+        from . import kwin
+        terminals = ("konsole", "kitty", "alacritty", "foot", "wezterm", "terminal",
+                     "xterm", "ghostty", "yakuake", "tilix", "terminator")
+        try:
+            w = kwin.active() if kwin.available() else None
+        except Exception:
+            w = None
+        app = (w or {}).get("app", "").lower()
+        return "ctrl+shift+v" if any(t in app for t in terminals) else "ctrl+v"
+
+    # ------------------------------------------------ fare (gerçek, portal)
+    def click_at(self, x: int, y: int, button: str = "left", count: int = 1,
+                 restore_pointer: bool = True, show_cursor: bool = True) -> bool:
+        """Ekran koordinatına gerçek tıklama. Wayland'de tek imleç vardır;
+        kullanıcının imleci tıklamadan sonra eski yerine geri konur."""
+        from . import portal_input
+        back = self._user_pointer() if restore_pointer else None
+        if show_cursor:
+            self._agent_cursor(x, y)
+        portal_input.call(f"CLICK {int(x)} {int(y)} {button} {int(count)}")
+        if back is not None:
+            portal_input.call(f"MOVE {back[0]} {back[1]}")
+        return True
+
+    def move(self, x: int, y: int) -> bool:
+        from . import portal_input
+        portal_input.call(f"MOVE {int(x)} {int(y)}")
+        return True
+
+    def scroll(self, dy: int, dx: int = 0, at: Optional[tuple[int, int]] = None,
+               restore_pointer: bool = True) -> bool:
+        from . import portal_input
+        back = self._user_pointer() if (at and restore_pointer) else None
+        if at:
+            portal_input.call(f"MOVE {int(at[0])} {int(at[1])}")
+        portal_input.call(f"SCROLL {int(dy)} {int(dx)}")
+        if back is not None:
+            portal_input.call(f"MOVE {back[0]} {back[1]}")
+        return True
+
+    def drag(self, x1: int, y1: int, x2: int, y2: int, button: str = "left",
+             steps: int = 12) -> bool:
+        import time
+        from . import portal_input
+        back = self._user_pointer()
+        portal_input.call(f"MOVE {int(x1)} {int(y1)}")
+        portal_input.call(f"DOWN {button}")
+        try:
+            for i in range(1, steps + 1):
+                portal_input.call(f"MOVE {x1 + (x2 - x1) * i / steps:.1f} "
+                                  f"{y1 + (y2 - y1) * i / steps:.1f}")
+                time.sleep(0.01)
+        finally:
+            portal_input.call(f"UP {button}")
+        if back is not None:
+            portal_input.call(f"MOVE {back[0]} {back[1]}")
+        return True
+
+    @staticmethod
+    def _user_pointer() -> Optional[tuple[int, int]]:
+        from . import kwin
+        try:
+            return kwin.cursor_pos() if kwin.available() else None
+        except Exception:
+            return None
+
+    def _agent_cursor(self, x: int, y: int) -> None:
+        """Görsel geri bildirim: ajan imleci hedefe gider (varsa; hata yutulur
+        çünkü tıklamanın kendisi imlece bağlı değildir)."""
+        if os.environ.get("NEXREMOTE_CURSOR", "1") == "0" or not self.pointer_available()[0]:
+            return
+        try:
+            import time
+            from . import xcursor as xc
+            if not xc.daemon_running():
+                xc.start_daemon(os.environ.get("DISPLAY", ":1"))
+            xc.send(f"MOVE {int(x)} {int(y)} 0.25")
+            time.sleep(0.25)
+            xc.send("CLICK")
+        except Exception:
+            pass
+
+    # -------------------------------------------- masaüstündeki terminaller
+    def terminals(self) -> list[dict]:
+        from . import terminals
+        return [t.to_dict() for t in terminals.list_terminals()]
+
+    def terminal_read(self, ref: str, history: int = 0) -> str:
+        from . import terminals
+        return terminals.read(ref, history)
+
+    def terminal_send(self, ref: str, text: str = "", enter: bool = False,
+                      keys: Optional[list[str]] = None) -> bool:
+        from . import terminals
+        terminals.send(ref, text, enter=enter, keys=keys)
+        return True
 
     def screenshot(self, path: Optional[str] = None) -> Screenshot:
         return self._gui().screenshot(path or "/tmp/nexremote-shot.png")
