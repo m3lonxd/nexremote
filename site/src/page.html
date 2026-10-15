@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="{{lang}}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{title}}</title>
+<meta name="description" content="{{description}}">
+<link rel="canonical" href="https://nexremote.vercel.app{{path}}">
+<link rel="alternate" hreflang="en" href="https://nexremote.vercel.app/">
+<link rel="alternate" hreflang="tr" href="https://nexremote.vercel.app/tr/">
+<meta property="og:title" content="{{title}}">
+<meta property="og:description" content="{{description}}">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#f2f0ea" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#121311" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="/assets/mark.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Schibsted+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/site.css?v={{version}}">
+<script>
+  // Tema, boyamadan önce uygulanır (yanıp sönme olmasın).
+  try { var t = localStorage.getItem("nr-theme"); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
+</script>
+</head>
+<body>
+<a class="skip" href="#main">{{skip}}</a>
+
+<header class="top">
+  <div class="wrap top-row">
+    <a class="brand" href="{{home}}" aria-label="NexRemote">
+      <svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="5.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 1.5v5M12 17.5v5M1.5 12h5M17.5 12h5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/></svg>
+      <span>NexRemote</span>
+    </a>
+    <nav class="nav" aria-label="{{nav_label}}">
+      <a href="#replay">{{nav_replay}}</a>
+      <a href="#reach">{{nav_reach}}</a>
+      <a href="#connect">{{nav_connect}}</a>
+      <a href="#install">{{nav_install}}</a>
+    </nav>
+    <div class="top-tools">
+      <a class="lang" href="{{other_lang_href}}" hreflang="{{other_lang}}" data-lang="{{other_lang}}" lang="{{other_lang}}">{{other_lang_label}}</a>
+      <button class="theme" type="button" aria-label="{{theme_label}}" title="{{theme_label}}">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18V3Z" fill="currentColor"/><circle cx="12" cy="12" r="8.25" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+
+<section class="hero wrap">
+  <h1>{{h1}}</h1>
+  <div class="hero-grid">
+    <p class="lede">{{lede}}</p>
+    <div class="hero-actions">
+      <a class="btn" href="/download/nexremote.zip" download>{{cta_download}} <span class="btn-meta">v{{version}} · zip · {{zip_size}}</span></a>
+      <div class="copyline">
+        <code id="cmd-setup">./install.sh &amp;&amp; nexremote setup</code>
+        <button class="copy" type="button" data-copy="#cmd-setup" data-done="{{copied}}">{{copy}}</button>
+      </div>
+      <p class="meta">{{hero_meta}}</p>
+    </div>
+  </div>
+</section>
+
+<section id="replay" class="replay" aria-labelledby="replay-h">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2 id="replay-h">{{replay_h}}</h2>
+      <p>{{replay_note}}</p>
+    </div>
+
+    <div class="stage" data-replay>
+      <div class="desk" aria-hidden="true">
+        <div class="win w-term" data-win="term">
+          <div class="bar"><span class="t">nexwatch : claude-bin — Konsole</span><span class="ctl"><i></i><i></i><i></i></span></div>
+          <div class="body term">
+            <p class="dim">● Running test suite…</p>
+            <p>  tests/test_api.py ........<b class="bad">F</b>.<b class="bad">F</b></p>
+            <p class="hl-target"><b class="bad">✗ 2 failed</b> · test_login, test_refresh</p>
+            <p class="hl-target">Should I fix them? (y/n, or tell me)</p>
+            <p class="prompt"><span>›</span> <span class="typed" data-typed></span><span class="caret"></span></p>
+            <p class="dim reply" data-reply>● Reading tests/test_api.py…</p>
+          </div>
+          <span class="tag">konsole:7891:2</span>
+        </div>
+
+        <div class="win w-set" data-win="set">
+          <div class="bar"><span class="t">Appearance — System Settings</span><span class="ctl"><i></i><i></i><i></i></span></div>
+          <div class="body set">
+            <div class="row"><span>Colors</span><span class="swatches"><i></i><i></i><i></i></span></div>
+            <div class="row" data-dark-row><span>Dark</span><span class="switch" data-switch><i></i></span></div>
+            <div class="row"><span>Accent</span><span class="pill-c"></span></div>
+          </div>
+          <span class="tag">win:{8c1e…}</span>
+          <span class="tag tag-el">atspi:4:0/2/7</span>
+        </div>
+
+        <div class="win w-web" data-win="web">
+          <div class="bar"><span class="t">Player — Zen Browser</span><span class="ctl"><i></i><i></i><i></i></span></div>
+          <div class="body web">
+            <div class="video"><span class="play" data-play><svg viewBox="0 0 24 24"><path class="ico-play" d="M8 5v14l11-7z"/><path class="ico-pause" d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg></span><span class="progress"><i data-progress></i></span></div>
+            <div class="lines"><i></i><i></i><i></i></div>
+          </div>
+          <span class="tag">win:{a41f…}</span>
+          <span class="shutter" data-shutter></span>
+        </div>
+
+        <svg class="agent" data-agent viewBox="0 0 40 40"><circle cx="20" cy="20" r="9" fill="none" stroke-width="3"/><path d="M20 2v10M20 28v10M2 20h10M28 20h10" stroke-width="3" stroke-linecap="round"/><circle cx="20" cy="20" r="2.6"/><circle class="ring" cx="20" cy="20" r="9" fill="none" stroke-width="2"/></svg>
+        <div class="taskbar"><i></i><i></i><i></i><i></i></div>
+      </div>
+
+      <div class="console">
+        <ol class="chapters" role="tablist" aria-label="{{replay_chapters}}">
+          <li><button type="button" role="tab" data-ch="0">{{ch0}}</button></li>
+          <li><button type="button" role="tab" data-ch="1">{{ch1}}</button></li>
+          <li><button type="button" role="tab" data-ch="2">{{ch2}}</button></li>
+          <li><button type="button" role="tab" data-ch="3">{{ch3}}</button></li>
+          <li><button type="button" role="tab" data-ch="4">{{ch4}}</button></li>
+        </ol>
+        <div class="log" data-log aria-live="polite"></div>
+        <div class="console-foot">
+          <p class="caption" data-caption></p>
+          <button class="playbtn" type="button" data-toggle data-play-label="{{play}}" data-pause-label="{{pause}}" data-again-label="{{again}}">{{play}}</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="reach" class="reach wrap" aria-labelledby="reach-h">
+  <div class="sec-head">
+    <h2 id="reach-h">{{reach_h}}</h2>
+    <p>{{reach_note}}</p>
+  </div>
+  <div class="table-scroll">
+    <table class="sheet">
+      <thead><tr><th scope="col">{{th_surface}}</th><th scope="col">{{th_cmd}}</th><th scope="col">{{th_how}}</th><th scope="col">{{th_note}}</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">{{r_win}}</th><td><code>windows</code> <code>window REF activate</code></td><td>KWin scripting</td><td>{{r_win_n}}</td></tr>
+        <tr><th scope="row">{{r_mouse}}</th><td><code>click X Y</code> <code>scroll</code> <code>drag</code></td><td>RemoteDesktop portal</td><td>{{r_mouse_n}}</td></tr>
+        <tr><th scope="row">{{r_keys}}</th><td><code>type</code> <code>key ctrl+s</code></td><td>{{r_keys_how}}</td><td>{{r_keys_n}}</td></tr>
+        <tr><th scope="row">{{r_names}}</th><td><code>find</code> <code>click REF</code></td><td>AT-SPI</td><td>{{r_names_n}}</td></tr>
+        <tr><th scope="row">{{r_terms}}</th><td><code>terms</code> <code>term-read</code> <code>term-send</code></td><td>Konsole D-Bus, tmux</td><td>{{r_terms_n}}</td></tr>
+        <tr><th scope="row">{{r_shell}}</th><td><code>run</code> <code>screen</code> <code>keys</code></td><td>tmux / PTY</td><td>{{r_shell_n}}</td></tr>
+        <tr><th scope="row">{{r_shot}}</th><td><code>screenshot --window --max-width</code></td><td>spectacle / grim</td><td>{{r_shot_n}}</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="watch" aria-labelledby="watch-h">
+  <div class="wrap watch-grid">
+    <div>
+      <h2 id="watch-h">{{watch_h}}</h2>
+      <p>{{watch_p1}}</p>
+      <p>{{watch_p2}}</p>
+    </div>
+    <figure class="sample">
+<pre><code><span class="c">$</span> nexremote terms
+konsole:7891:1       claude-bin     ~      ~ : claude-bin
+konsole:7891:2       claude-bin     ~      ~ : claude-bin
+konsole:7891:3       claude-bin     ~      ~ : claude-bin
+konsole:29769:1      ssh            ~      (root) 45.136.x.x
+
+<span class="c">$</span> nexremote term-send konsole:63308:1 'echo NEXR_$((6*7))' --enter
+<span class="c">$</span> nexremote term-read konsole:63308:1
+bash-5.2$ echo NEXR_$((6*7))
+NEXR_42
+bash-5.2$</code></pre>
+      <figcaption>{{watch_cap}}</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="pixels wrap" aria-labelledby="pixels-h">
+  <div class="pixels-grid">
+    <div>
+      <h2 id="pixels-h">{{pixels_h}}</h2>
+      <p>{{pixels_p}}</p>
+      <pre class="formula"><code>screen = origin + image ÷ scale
+(3000, 0) + (412, 230) ÷ 0.8333 = (3494, 276)</code></pre>
+    </div>
+    <figure class="diagram">
+      <svg viewBox="0 0 640 300" role="img" aria-labelledby="diag-t">
+        <title id="diag-t">{{diag_title}}</title>
+        <g class="d-screens">
+          <rect x="10" y="40" width="108" height="192" rx="3"/>
+          <rect x="118" y="38" width="192" height="108" rx="3"/>
+          <rect x="310" y="38" width="192" height="108" rx="3"/>
+        </g>
+        <text class="d-lbl" x="10" y="28">HDMI-A-3</text>
+        <text class="d-lbl" x="118" y="28">DP-3</text>
+        <text class="d-lbl" x="310" y="28">DP-1 · x=3000</text>
+        <rect class="d-crop" x="310" y="38" width="96" height="108"/>
+        <circle class="d-pt" cx="359.4" cy="65.6" r="4"/>
+        <path class="d-link" d="M359.4 65.6 C 440 80, 520 110, 561.8 184.5"/>
+        <rect class="d-img" x="500" y="150" width="120" height="135" rx="3"/>
+        <text class="d-lbl" x="500" y="138">800×900 · scale 0.8333</text>
+        <circle class="d-pt" cx="561.8" cy="184.5" r="4"/>
+        <text class="d-lbl" x="320" y="168">win:{3fd7…} 960×1080</text>
+      </svg>
+      <figcaption>{{diag_cap}}</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section id="connect" class="connect wrap" aria-labelledby="connect-h">
+  <div class="sec-head">
+    <h2 id="connect-h">{{connect_h}}</h2>
+    <p>{{connect_note}}</p>
+  </div>
+  <div class="tabs" data-tabs>
+    <div class="tablist" role="tablist" aria-label="{{connect_h}}">
+      <button type="button" role="tab" id="tab-shell" aria-controls="p-shell" aria-selected="true">{{t_shell}}</button>
+      <button type="button" role="tab" id="tab-mcp" aria-controls="p-mcp" aria-selected="false" tabindex="-1">MCP</button>
+      <button type="button" role="tab" id="tab-http" aria-controls="p-http" aria-selected="false" tabindex="-1">HTTP</button>
+      <button type="button" role="tab" id="tab-text" aria-controls="p-text" aria-selected="false" tabindex="-1">{{t_text}}</button>
+    </div>
+    <div class="panel" role="tabpanel" id="p-shell" aria-labelledby="tab-shell">
+      <p>{{p_shell}}</p>
+<pre><code>nexremote skill        <span class="c">{{p_shell_c}}</span>
+nexremote observe --json</code></pre>
+    </div>
+    <div class="panel" role="tabpanel" id="p-mcp" aria-labelledby="tab-mcp" hidden>
+      <p>{{p_mcp}}</p>
+<pre><code>claude mcp add nexremote -- ~/bin/nexremote-mcp</code></pre>
+    </div>
+    <div class="panel" role="tabpanel" id="p-http" aria-labelledby="tab-http" hidden>
+      <p>{{p_http}}</p>
+<pre><code>nexremote-http --port 8788 --token "$SECRET"
+curl -s -H "Authorization: Bearer $SECRET" -X POST localhost:8788/terminals</code></pre>
+    </div>
+    <div class="panel" role="tabpanel" id="p-text" aria-labelledby="tab-text" hidden>
+      <p>{{p_text}}</p>
+<pre><code>nexremote-agent --model-cmd "ollama run qwen2.5" \
+  --goal "{{p_text_goal}}"</code></pre>
+    </div>
+  </div>
+</section>
+
+<section class="trust" aria-labelledby="trust-h">
+  <div class="wrap trust-grid">
+    <h2 id="trust-h">{{trust_h}}</h2>
+    <dl class="facts">
+      <div><dt>{{f1_t}}</dt><dd>{{f1_d}}</dd></div>
+      <div><dt>{{f2_t}}</dt><dd>{{f2_d}}</dd></div>
+      <div><dt>{{f3_t}}</dt><dd>{{f3_d}}</dd></div>
+      <div><dt>{{f4_t}}</dt><dd>{{f4_d}}</dd></div>
+      <div><dt>{{f5_t}}</dt><dd>{{f5_d}}</dd></div>
+    </dl>
+    <div class="limits">
+      <h3>{{limits_h}}</h3>
+      <ul>
+        <li>{{l1}}</li>
+        <li>{{l2}}</li>
+        <li>{{l3}}</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section id="install" class="install wrap" aria-labelledby="install-h">
+  <h2 id="install-h">{{install_h}}</h2>
+  <ol class="steps">
+    <li>
+      <h3>{{s1_t}}</h3>
+      <div class="copyline"><code id="cmd-1">unzip nexremote.zip &amp;&amp; cd nexremote</code><button class="copy" type="button" data-copy="#cmd-1" data-done="{{copied}}">{{copy}}</button></div>
+      <p><a href="/download/nexremote.zip" download>nexremote.zip</a> ({{zip_size}}) · <a href="/download/nexremote.tar.gz" download>nexremote.tar.gz</a> ({{tgz_size}})</p>
+    </li>
+    <li>
+      <h3>{{s2_t}}</h3>
+      <div class="copyline"><code id="cmd-2">./install.sh</code><button class="copy" type="button" data-copy="#cmd-2" data-done="{{copied}}">{{copy}}</button></div>
+      <p>{{s2_d}}</p>
+    </li>
+    <li>
+      <h3>{{s3_t}}</h3>
+      <div class="copyline"><code id="cmd-3">nexremote setup &amp;&amp; nexremote caps</code><button class="copy" type="button" data-copy="#cmd-3" data-done="{{copied}}">{{copy}}</button></div>
+      <p>{{s3_d}}</p>
+    </li>
+  </ol>
+  <p class="reqs">{{reqs}}</p>
+</section>
+
+</main>
+
+<footer class="foot">
+  <div class="wrap foot-row">
+    <span>NexRemote v{{version}} · MIT</span>
+    <a href="/download/nexremote.zip" download>{{cta_download}}</a>
+    <a href="{{other_lang_href}}" hreflang="{{other_lang}}" data-lang="{{other_lang}}" class="lang-foot">{{other_lang_name}}</a>
+  </div>
+</footer>
+
+<script id="replay-i18n" type="application/json">{{replay_json}}</script>
+<script src="/assets/site.js?v={{version}}" defer></script>
+</body>
+</html>
