@@ -137,6 +137,13 @@ class Screenshot:
     display: Optional[str] = None
     taken_at: float = field(default_factory=time.time)
     backend: str = ""
+    # Görüntü pikseli → ekran koordinatı: ekran = origin + görüntü / scale
+    scale: float = 1.0
+    origin: tuple[int, int] = (0, 0)
+
+    def to_screen(self, x: float, y: float) -> tuple[int, int]:
+        return (round(self.origin[0] + x / self.scale),
+                round(self.origin[1] + y / self.scale))
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)

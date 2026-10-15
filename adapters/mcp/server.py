@@ -76,13 +76,16 @@ def _tool_errors(fn):
 mcp = MCPServer(
     name="nexremote",
     instructions=(
-        "NexRemote desktop and terminal control. "
-        "Discover what is on screen with nexremote_windows / nexremote_tree / "
-        "nexremote_find, then act with nexremote_click / nexremote_set_text / "
-        "nexremote_key / nexremote_type. Terminal sessions are driven with "
-        "nexremote_run / nexremote_read_screen / nexremote_send_keys / "
-        "nexremote_sessions. Element references are opaque strings returned "
-        "by tree/find/windows; pass them back unchanged."
+        "NexRemote: see and control this Linux desktop and its terminals. "
+        "Start with nexremote_observe (windows + open terminals). "
+        "Prefer structure over pixels: nexremote_find / nexremote_tree give "
+        "element refs; nexremote_click(ref) presses them without moving the "
+        "user's mouse. When an app exposes no tree, call nexremote_screenshot, "
+        "then nexremote_click_at(x, y, from_screenshot=True) with pixel "
+        "coordinates read from that image. Terminals already open on the "
+        "desktop (other CLI agents, ssh, builds) are read with "
+        "nexremote_terminal_read and driven with nexremote_terminal_send. "
+        "Refs are opaque strings; pass them back unchanged."
     ),
 )
 
@@ -101,13 +104,39 @@ def nexremote_capabilities() -> dict:
 
 @mcp.tool()
 @_tool_errors
-def nexremote_windows() -> list[dict]:
-    """List top-level desktop windows (dialogs and frames) with opaque refs.
+def nexremote_observe() -> dict:
+    """One-shot snapshot: every window on screen and every open terminal.
 
-    Each entry has ref, title, app, pid, focused and bounds. Use the ref with
-    nexremote_tree or nexremote_find to inspect a window's contents.
+    windows: ref, title, app, pid, focused, bounds (x, y, w, h in screen
+    pixels). terminals: ref, program (foreground process), cwd, title.
+    Call this first, and again after acting to verify the result.
+    """
+    nr = _get_nexremote()
+    return {"windows": [w.to_dict() for w in nr.windows()],
+            "terminals": nr.terminals()}
+
+
+@mcp.tool()
+@_tool_errors
+def nexremote_windows() -> list[dict]:
+    """List every window on screen (KWin) with refs like win:{...}.
+
+    Each entry has ref, title, app, pid, focused and bounds. Pass the ref to
+    nexremote_window_action, nexremote_tree, nexremote_find or
+    nexremote_screenshot(window_ref=...).
     """
     return [w.to_dict() for w in _get_nexremote().windows()]
+
+
+@mcp.tool()
+@_tool_errors
+def nexremote_window_action(ref: str, action: str) -> bool:
+    """Act on a window: action is 'activate' (raise + focus), 'minimize' or 'close'.
+
+    Activate a window before typing into it. Returns False if the window no
+    longer exists.
+    """
+    return bool(_get_nexremote().window_action(ref, action))
 
 
 @mcp.tool()
@@ -137,13 +166,54 @@ def nexremote_find(query: str, window_ref: str = "") -> list[dict]:
 @mcp.tool()
 @_tool_errors
 def nexremote_click(ref: str) -> bool:
-    """Click (activate) the UI element referenced by ref.
+    """Press the UI element referenced by ref (from nexremote_find / nexremote_tree).
 
-    Uses the element's native action when available, otherwise a physical
-    mouse click at its center. Returns True on success, False if the element
-    could not be resolved or activated.
+    Uses the element's accessible action, so the user's mouse does not move.
+    Returns False if the element could not be resolved or activated.
     """
     return bool(_get_nexremote().click(ref))
+
+
+@mcp.tool()
+@_tool_errors
+def nexremote_click_at(x: float, y: float, button: str = "left", double: bool = False,
+                       from_screenshot: bool = True) -> dict:
+    """Real mouse click at a point. button: left | right | middle.
+
+    With from_screenshot=True (default) x, y are pixel coordinates in the
+    image returned by the last nexremote_screenshot call (cropping and scaling
+    are converted for you). With False they are absolute screen pixels.
+    The user's pointer is put back where it was right after the click.
+    """
+    nr = _get_nexremote()
+    sx, sy = nr.screen_point(x, y, from_screenshot)
+    nr.click_at(sx, sy, button=button, count=2 if double else 1)
+    return {"clicked": [sx, sy], "button": button, "double": double}
+
+
+@mcp.tool()
+@_tool_errors
+def nexremote_scroll(steps: int, x: float = -1, y: float = -1,
+                     from_screenshot: bool = True) -> bool:
+    """Scroll the mouse wheel: positive steps scroll down, negative up.
+
+    If x, y are given (>= 0) the wheel is used over that point (screenshot
+    coordinates by default); otherwise wherever the pointer is.
+    """
+    nr = _get_nexremote()
+    at = nr.screen_point(x, y, from_screenshot) if x >= 0 and y >= 0 else None
+    return bool(nr.scroll(steps, at=at))
+
+
+@mcp.tool()
+@_tool_errors
+def nexremote_drag(x1: float, y1: float, x2: float, y2: float,
+                   from_screenshot: bool = True) -> bool:
+    """Press at (x1, y1), move to (x2, y2), release — drag and drop, sliders, selections."""
+    nr = _get_nexremote()
+    a = nr.screen_point(x1, y1, from_screenshot)
+    b = nr.screen_point(x2, y2, from_screenshot)
+    return bool(nr.drag(a[0], a[1], b[0], b[1]))
 
 
 @mcp.tool()
@@ -151,8 +221,8 @@ def nexremote_click(ref: str) -> bool:
 def nexremote_set_text(ref: str, text: str) -> bool:
     """Replace the text of an editable element (entry, text field, combo box).
 
-    Uses the element's accessible set-text interface when available, otherwise
-    focuses the element and types the text. Returns True on success.
+    Uses the accessible set-text interface when available, otherwise focuses
+    the element and types. Returns True on success.
     """
     return bool(_get_nexremote().set_text(ref, text))
 
@@ -160,10 +230,9 @@ def nexremote_set_text(ref: str, text: str) -> bool:
 @mcp.tool()
 @_tool_errors
 def nexremote_key(combo: str) -> bool:
-    """Send a key combination to the currently focused element/window.
+    """Press a key combination in the focused window.
 
-    Examples: 'ctrl+c', 'alt+F4', 'Return', 'ctrl+shift+t'. Modifier names are
-    case-insensitive. Returns True if the key event was delivered.
+    Examples: 'ctrl+c', 'alt+F4', 'Return', 'ctrl+shift+t', 'Escape', 'F5'.
     """
     return bool(_get_nexremote().key(combo))
 
@@ -171,27 +240,69 @@ def nexremote_key(combo: str) -> bool:
 @mcp.tool()
 @_tool_errors
 def nexremote_type(text: str) -> bool:
-    """Type literal text into the currently focused element/window.
+    """Type text into the focused window, exactly as given (any language, newlines included).
 
-    Does not interpret special keys; for shortcuts use nexremote_key instead.
-    Returns True if the text was delivered.
+    Characters missing from the keyboard layout are pasted through the
+    clipboard, and the user's clipboard is restored afterwards.
     """
     return bool(_get_nexremote().type_text(text))
 
 
 @mcp.tool()
 @_tool_errors
-def nexremote_screenshot(path: str = "") -> dict:
-    """Capture a screenshot of the current desktop to a PNG file.
+def nexremote_screenshot(window_ref: str = "", max_width: int = 1568) -> list:
+    """See the screen: returns the image itself plus how to click on it.
 
-    path is the output file; empty string uses /tmp/nexremote-shot.png. Returns
-    a dict with path, width, height, display and the tool used. Note: this
-    harness is text-only; the file is metadata for the user, not for the model.
+    window_ref (from nexremote_windows) crops to one window, which keeps
+    detail readable. The image is downscaled to max_width; click on what you
+    see with nexremote_click_at(x, y) using this image's pixel coordinates.
     """
-    return _get_nexremote().screenshot(path or None).to_dict()
+    from mcp.server.mcpserver import Image
+    shot = _get_nexremote().screenshot(None, window_ref=window_ref or None,
+                                       max_width=max_width)
+    note = (f"{shot.width}x{shot.height} image; screen = origin {list(shot.origin)} + "
+            f"image / {shot.scale:.4f}. Use nexremote_click_at(x, y) with image pixels.")
+    return [Image(path=shot.path), note]
 
 
-# ------------------------------------------------------------------ TUI tools
+# --------------------------------------------------------- desktop terminals
+@mcp.tool()
+@_tool_errors
+def nexremote_terminals() -> list[dict]:
+    """List terminals already open on the desktop (Konsole tabs, tmux panes).
+
+    Each has ref, program (what is running in the foreground, e.g. claude,
+    vim, ssh, bash), cwd and title. Use the ref with nexremote_terminal_read
+    and nexremote_terminal_send.
+    """
+    return _get_nexremote().terminals()
+
+
+@mcp.tool()
+@_tool_errors
+def nexremote_terminal_read(ref: str, history: int = 0) -> str:
+    """Read what a desktop terminal currently shows, as plain text.
+
+    history > 0 also returns that many scrollback lines above the screen
+    (tmux only; Konsole exposes the visible screen).
+    """
+    return _get_nexremote().terminal_read(ref, history)
+
+
+@mcp.tool()
+@_tool_errors
+def nexremote_terminal_send(ref: str, text: str = "", enter: bool = False,
+                            keys: list[str] | None = None) -> bool:
+    """Type into a desktop terminal as if from its keyboard.
+
+    text is sent literally; enter=True presses Enter afterwards. keys are
+    special keys sent after the text: 'Enter', 'C-c', 'C-d', 'Esc', 'Up',
+    'Down', 'Tab'. The window does not need focus.
+    """
+    return bool(_get_nexremote().terminal_send(ref, text, enter=enter, keys=keys))
+
+
+# ------------------------------------------- NexRemote-owned tmux sessions
 @mcp.tool()
 @_tool_errors
 def nexremote_run(command: str, session: str = "default", timeout: float = 30.0) -> dict:

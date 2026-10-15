@@ -5,11 +5,23 @@ bu sınıfı sarar. Hiçbir adaptör backend detayını bilmez.
 """
 from __future__ import annotations
 
+import json
 import os
 from typing import Any, Optional
 
 from .base import Backend
 from .models import Capability, CommandResult, Element, Screenshot, Window
+
+
+def _runtime_dir() -> str:
+    d = os.environ.get("XDG_RUNTIME_DIR") or f"/tmp/nexremote-{os.getuid()}"
+    os.makedirs(d, exist_ok=True)
+    return d
+
+
+def _save_shot_meta(shot: Screenshot) -> None:
+    with open(os.path.join(_runtime_dir(), "nexremote-shot.json"), "w") as f:
+        json.dump(shot.to_dict(), f)
 
 
 class NexRemote:
@@ -179,11 +191,16 @@ class NexRemote:
         return "ctrl+shift+v" if any(t in app for t in terminals) else "ctrl+v"
 
     # ------------------------------------------------ fare (gerçek, portal)
-    def click_at(self, x: int, y: int, button: str = "left", count: int = 1,
-                 restore_pointer: bool = True, show_cursor: bool = True) -> bool:
+    def click_at(self, x: float, y: float, button: str = "left", count: int = 1,
+                 restore_pointer: bool = True, show_cursor: bool = True,
+                 from_shot: bool = False) -> bool:
         """Ekran koordinatına gerçek tıklama. Wayland'de tek imleç vardır;
-        kullanıcının imleci tıklamadan sonra eski yerine geri konur."""
+        kullanıcının imleci tıklamadan sonra eski yerine geri konur.
+
+        from_shot=True: (x, y) son ekran görüntüsü üzerindeki pikseldir.
+        """
         from . import portal_input
+        x, y = self.screen_point(x, y, from_shot)
         back = self._user_pointer() if restore_pointer else None
         if show_cursor:
             self._agent_cursor(x, y)
@@ -191,6 +208,14 @@ class NexRemote:
         if back is not None:
             portal_input.call(f"MOVE {back[0]} {back[1]}")
         return True
+
+    def screen_point(self, x: float, y: float, from_shot: bool) -> tuple[int, int]:
+        if not from_shot:
+            return int(x), int(y)
+        shot = self.last_screenshot()
+        if shot is None:
+            raise RuntimeError("kayıtlı ekran görüntüsü yok — önce screenshot alın")
+        return shot.to_screen(x, y)
 
     def move(self, x: int, y: int) -> bool:
         from . import portal_input
@@ -265,8 +290,50 @@ class NexRemote:
         terminals.send(ref, text, enter=enter, keys=keys)
         return True
 
-    def screenshot(self, path: Optional[str] = None) -> Screenshot:
-        return self._gui().screenshot(path or "/tmp/nexremote-shot.png")
+    def screenshot(self, path: Optional[str] = None, window_ref: Optional[str] = None,
+                   max_width: int = 0) -> Screenshot:
+        """Ekran görüntüsü; istenirse tek pencereye kırpılır ve küçültülür.
+
+        Ölçek ve orijin kaydedilir: `click_at(..., from_shot=True)` görüntü
+        üzerindeki koordinatı ekran koordinatına kendisi çevirir.
+        """
+        path = os.path.abspath(path or os.path.join(_runtime_dir(), "nexremote-shot.png"))
+        shot = self._gui().screenshot(path)
+        if not shot.backend:
+            raise RuntimeError("ekran görüntüsü alınamadı (spectacle/grim yok veya reddedildi)")
+        crop = None
+        if window_ref:
+            w = next((w for w in self.windows() if w.ref == window_ref), None)
+            if w is None or not w.bounds:
+                raise ValueError(f"pencere bulunamadı: {window_ref}")
+            x, y, ww, hh = w.bounds
+            crop = (max(0, x), max(0, y), min(shot.width, x + ww), min(shot.height, y + hh))
+        if crop or (max_width and shot.width > max_width):
+            try:
+                from PIL import Image
+            except ImportError as e:
+                raise RuntimeError("kırpma/küçültme için python3-pil gerekli") from e
+            img = Image.open(path)
+            if crop:
+                img = img.crop(crop)
+                shot.origin = (crop[0], crop[1])
+            if max_width and img.width > max_width:
+                shot.scale = max_width / img.width
+                img = img.resize((max_width, round(img.height * shot.scale)), Image.LANCZOS)
+            img.save(path)
+            shot.width, shot.height = img.size
+        _save_shot_meta(shot)
+        return shot
+
+    @staticmethod
+    def last_screenshot() -> Optional[Screenshot]:
+        try:
+            with open(os.path.join(_runtime_dir(), "nexremote-shot.json")) as f:
+                d = json.load(f)
+            d["origin"] = tuple(d["origin"])
+            return Screenshot(**d)
+        except (OSError, ValueError, TypeError, KeyError):
+            return None
 
     def focus(self, ref: str) -> bool:
         return self._gui().focus(ref)

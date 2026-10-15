@@ -18,14 +18,20 @@ API (hepsi POST, JSON gövde; GET /health ve GET /caps de var):
   POST /set_text{ref, text}
   POST /key     {combo}
   POST /type    {text}
-  POST /screenshot {path}
+  POST /screenshot {path, window_ref, max_width}  -> meta (+ GET /screenshot.png)
+  POST /window_action {ref, action}         activate | close | minimize
+  POST /click_at {x, y, button, double, from_screenshot}
+  POST /scroll  {steps, x, y}   POST /drag {x1, y1, x2, y2}
+  POST /terminals               POST /terminal_read {ref, history}
+  POST /terminal_send {ref, text, enter, keys}
   POST /run     {command, session, timeout}
   POST /screen  {session}
   POST /send_keys {keys, session}
   POST /sessions
 
-Güvenlik: varsayılan olarak yalnızca localhost'a bağlanır. --token verilirse
-Authorization: Bearer <token> zorunlu olur (uzak kullanım için ŞART).
+Güvenlik: varsayılan olarak yalnızca localhost'a bağlanır. Başka bir arayüze
+token'sız bağlanmayı REDDEDER (masaüstü kontrolü ağa açılmış olurdu).
+--token verilince Authorization: Bearer <token> zorunludur.
 """
 from __future__ import annotations
 
@@ -60,15 +66,15 @@ def _dispatch(method: str, body: dict):
     if method == "caps":
         return nr.capabilities()
     if method == "observe":
-        snap = {"capabilities": nr.capabilities(), "windows": [], "terminal": {}}
+        snap = {"capabilities": nr.capabilities(), "windows": [], "terminals": []}
         try:
             snap["windows"] = [w.to_dict() for w in nr.windows()]
         except Exception as e:
             snap["windows_error"] = str(e)
         try:
-            snap["terminal"]["sessions"] = nr.sessions()
-        except Exception:
-            pass
+            snap["terminals"] = nr.terminals()
+        except Exception as e:
+            snap["terminals_error"] = str(e)
         if body.get("window_ref"):
             snap["tree"] = nr.tree(body["window_ref"])
         return snap
@@ -89,7 +95,34 @@ def _dispatch(method: str, body: dict):
     if method == "type":
         return {"ok": nr.type_text(body.get("text", ""))}
     if method == "screenshot":
-        return nr.screenshot(body.get("path") or "/tmp/nexremote-http.png").to_dict()
+        return nr.screenshot(body.get("path"), window_ref=body.get("window_ref"),
+                             max_width=int(body.get("max_width", 0))).to_dict()
+    if method == "window_action":
+        return {"ok": nr.window_action(body["ref"], body["action"])}
+    if method == "click_at":
+        x, y = nr.screen_point(float(body["x"]), float(body["y"]),
+                               bool(body.get("from_screenshot", False)))
+        nr.click_at(x, y, button=body.get("button", "left"),
+                    count=2 if body.get("double") else 1)
+        return {"ok": True, "clicked": [x, y]}
+    if method == "scroll":
+        at = None
+        if "x" in body and "y" in body:
+            at = nr.screen_point(float(body["x"]), float(body["y"]),
+                                 bool(body.get("from_screenshot", False)))
+        return {"ok": nr.scroll(int(body.get("steps", 1)), at=at)}
+    if method == "drag":
+        fs = bool(body.get("from_screenshot", False))
+        a = nr.screen_point(float(body["x1"]), float(body["y1"]), fs)
+        b = nr.screen_point(float(body["x2"]), float(body["y2"]), fs)
+        return {"ok": nr.drag(a[0], a[1], b[0], b[1])}
+    if method == "terminals":
+        return nr.terminals()
+    if method == "terminal_read":
+        return {"screen": nr.terminal_read(body["ref"], int(body.get("history", 0)))}
+    if method == "terminal_send":
+        return {"ok": nr.terminal_send(body["ref"], body.get("text", ""),
+                                       enter=bool(body.get("enter")), keys=body.get("keys"))}
     if method == "run":
         return nr.run(body.get("command", ""), body.get("session", "default"),
                       float(body.get("timeout", 30.0))).to_dict()
@@ -99,7 +132,7 @@ def _dispatch(method: str, body: dict):
         return {"ok": nr.send_keys(body.get("keys", ""), body.get("session", "default"))}
     if method == "sessions":
         return nr.sessions()
-    raise KeyError(f"bilinmeyen yöntem: {method}")
+    raise LookupError(f"bilinmeyen yöntem: {method}")
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -142,6 +175,18 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send(200, _dispatch("caps", {}))
             except Exception as e:
                 return self._send(500, {"error": str(e)})
+        if path == "/screenshot.png":
+            shot = get_nr().last_screenshot()
+            if shot is None or not os.path.exists(shot.path):
+                return self._send(404, {"error": "önce POST /screenshot"})
+            with open(shot.path, "rb") as f:
+                data = f.read()
+            self.send_response(200)
+            self.send_header("Content-Type", "image/png")
+            self.send_header("Content-Length", str(len(data)))
+            self.end_headers()
+            self.wfile.write(data)
+            return None
         return self._send(404, {"error": "bulunamadı"})
 
     def do_POST(self):
@@ -151,7 +196,11 @@ class Handler(BaseHTTPRequestHandler):
         try:
             return self._send(200, _dispatch(method, self._body()))
         except KeyError as e:
+            return self._send(400, {"error": f"eksik alan: {e.args[0]}"})
+        except LookupError as e:
             return self._send(404, {"error": str(e)})
+        except ValueError as e:
+            return self._send(400, {"error": str(e)})
         except NotImplementedError:
             return self._send(501, {"error": "bu makinede mevcut değil"})
         except Exception as e:
@@ -166,9 +215,10 @@ def main(argv=None) -> int:
     p.add_argument("--token", default=os.environ.get("NEXREMOTE_TOKEN"))
     a = p.parse_args(argv)
     TOKEN = a.token
-    if a.host not in ("127.0.0.1", "localhost") and not TOKEN:
-        print("UYARI: uzak arayüze token'sız bağlanıyorsunuz. --token kullanın.",
-              file=sys.stderr)
+    if a.host not in ("127.0.0.1", "localhost", "::1") and not TOKEN:
+        print("HATA: localhost dışına token'sız açmak masaüstünü ağa açar. "
+              "--token GİZLİ (veya NEXREMOTE_TOKEN) verin.", file=sys.stderr)
+        return 2
     srv = ThreadingHTTPServer((a.host, a.port), Handler)
     print(f"NexRemote HTTP: http://{a.host}:{a.port}  (token: {'var' if TOKEN else 'yok'})")
     try:

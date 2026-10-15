@@ -83,6 +83,14 @@ def main() -> int:
         nxj("click", "700", "400", "--right")
         ev = wait_for(lambda: [e for e in events()[n0:] if e["type"] == "button"])
         check("click --right", bool(ev) and ev[0]["button"] == 3)
+        shot = nxj("screenshot", "--max-width", "640")
+        check("screenshot küçültüldü ve ölçek kaydedildi",
+              shot["width"] == 640 and abs(shot["scale"] - 0.5) < 1e-6, f"{shot['width']} {shot['scale']}")
+        n0 = len(events())
+        nxj("click", "320", "150", "--from-shot")
+        ev = wait_for(lambda: [e for e in events()[n0:] if e["type"] == "button"])
+        check("click --from-shot görüntü pikselini ekrana çevirdi",
+              bool(ev) and (ev[0]["x"], ev[0]["y"]) == (640, 300), str((ev or [])[:1]))
         n0 = len(events())
         nxj("scroll", "2", "--at", "640", "400")
         check("scroll --at", bool(wait_for(lambda: [e for e in events()[n0:] if e["type"] == "scroll"])))

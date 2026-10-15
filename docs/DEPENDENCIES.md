@@ -1,68 +1,38 @@
-# NexRemote Bağımlılık Matrisi (DEPENDENCIES.md)
+# Bağımlılıklar
 
-Tarih: 2026-10-13 | Sistem: Debian GNU/Linux 13 (trixie) / KDE Wayland (`WAYLAND_DISPLAY=wayland-0`)
+Hedef ortam: Linux + KDE Plasma 6 (Wayland). Ölçüldüğü sistem: Debian 13,
+KWin 6.3.6, xdg-desktop-portal-kde 6.3.5 (2026-10-16).
 
-Format: **bileşen | sistemde var mı | kurulum komutu**
-
----
-
-## GUI — AT-SPI erişilebilirlik ağacı (pencere/öğe görme + kontrol)
-
-| Bileşen | Sistemde var mı | Kurulum komutu |
-|---|---|---|
-| python3-gi (`gi` modülü) | **VAR** (3.50.0-4+b1) | Debian: `sudo apt install python3-gi` / Arch: `sudo pacman -S python-gobject` |
-| gir1.2-atspi-2.0 (`Atspi` 2.0) | **VAR** (2.56.2-1+deb13u2) — `import gi; gi.require_version('Atspi','2.0'); from gi.repository import Atspi` → `ok` | Debian: `sudo apt install gir1.2-atspi-2.0` / Arch: `sudo pacman -S at-spi2-core` |
-| Erişilebilirlik oturumu (AT-SPI bus) | **VAR** (GUI backend `capability()` → "AT-SPI erişilebilirlik ağacı aktif") | Ortam değişkeni gerekmez; masaüstü otomatik başlatır. Hizmet vermiyorsa: `systemctl --user restart at-spi-dbus-bus` veya `export NO_AT_BRIDGE=0` |
-
-## Giriş enjeksiyonu (tuş yazma, tıklama)
-
-| Bileşen | Sistemde var mı | Kurulum komutu |
-|---|---|---|
-| wtype (Wayland) | **VAR** (0.4-3 kurulu) | Debian: `sudo apt install wtype` / Arch: `sudo pacman -S wtype` |
-| ydotool (Wayland, /dev/uinput) | **YOK** — Debian trixie resmi deposunda paket YOK (`apt-cache policy ydotool` boş) | Debian: upstream derleme (`git clone https://github.com/ReimuNotMoe/ydotool && cmake && make && sudo make install`) veya PPA/flatpak; Arch: `sudo pacman -S ydotool` (AUR) |
-| dotool | **YOK** — Debian deposunda YOK | Arch/AUR: `yay -S dotool` ; Debian: kaynaktan `go install github.com/cjbassi/dotool` (go gerekir) |
-| xdotool (X11/XWayland fallback) | YOK (depo mevcut, kurulu değil) | Debian: `sudo apt install xdotool` / Arch: `sudo pacman -S xdotool` |
-| `/dev/uinput` (ydotool için) | VAR (cihaz mevcut, `crw------- root root`) | `sudo usermod -aG input $USER` (yeni oturum gerekir) + `sudo chmod 660 /dev/uinput` veya udev kuralı |
-| `input` grubu üyeliği | **YOK** (omarchy `input` grubunda değil; gerekmez — wtype kullanılıyor) | `sudo usermod -aG input omarchy` (yalnızca ydotool/dotool seçilecekse gerekli) |
-
-Not: Wayland'de **wtype** doğru araçtır (klavye/mouse, AT-SPI'dan bağımsız). ydotool alternatifi `/dev/uinput` ister; sistemde şu an ikisine de gerek yok, wtype yeterli.
-
-## TUI — terminal oturumları (tmux)
-
-| Bileşen | Sistemde var mı | Kurulum komutu |
-|---|---|---|
-| tmux | **VAR** (`tmux 3.5a`) | Debian: `sudo apt install tmux` / Arch: `sudo pacman -S tmux` |
-| pty desteği (Python `pty`) | **VAR** (standart kütüphane; TUI `capability()` → "mod=tmux; tmux=var; pty=var; kalıcı oturum=evet") | yok (stdlib) |
-
-## MCP — Model Context Protocol sunucu adaptörü
-
-| Bileşen | Sistemde var mı | Kurulum komutu |
-|---|---|---|
-| `mcp` Python paketi | **VAR** (`2.2.0`) | `pip install mcp` |
-| `MCPServer` API (`mcp.server.mcpserver`) | **VAR** (mcp 2.x'te FastMCP → MCPServer yeniden adlandırıldı; `mcp.server.fastmcp` artık yok, import edilirse hata mesajı yönlendirir) | `pip install 'mcp>=2'` (v1 isteniyorsa `pip install 'mcp<2'` + FastMCP) |
-| Python ≥ 3.10 (mcp 2.x) | **VAR** (3.13.x) | `sudo apt install python3` |
-
-## Ekran görüntüsü (screenshot — yalnızca kullanıcı için; model görsel ayırt edemez)
-
-| Bileşen | Sistemde var mı | Kurulum komutu |
-|---|---|---|
-| spectacle (KDE) | **VAR** | Debian: `sudo apt install spectacle` / Arch: `sudo pacman -S spectacle` |
-| grim (wlroots) | **VAR** | `sudo apt install grim` / `sudo pacman -S grim` |
-| gnome-screenshot | YOK | `sudo apt install gnome-screenshot` |
-| scrot (X11) | YOK | `sudo apt install scrot` |
-
----
-
-## Özet tablo (tek bakışta)
-
-| Alan | Bileşen | Durum | Kurulum |
+| Yetenek | Ne kullanılır | Paket (Debian / Arch) | Yoksa |
 |---|---|---|---|
-| GUI | python3-gi | VAR | `sudo apt install python3-gi` |
-| GUI | gir1.2-atspi-2.0 | VAR | `sudo apt install gir1.2-atspi-2.0` |
-| Giriş | wtype | VAR | `sudo apt install wtype` |
-| Giriş | ydotool | YOK | Debian'ta depo paketi yok — kaynaktan derle / Arch: `sudo pacman -S ydotool` |
-| Giriş | dotool | YOK | Arch/AUR: `yay -S dotool` |
-| Giriş | /dev/uinput + input grubu | cihaz VAR, üyelik YOK | `sudo usermod -aG input $USER` (yalnızca ydotool/dotool için) |
-| TUI | tmux | VAR | `sudo apt install tmux` |
-| MCP | mcp (2.2.0) | VAR | `pip install mcp` |
-| Ekran | spectacle / grim | VAR | `sudo apt install spectacle grim` |
+| Tüm pencereler, öne getir/kapat, imleç konumu | KWin scripting (D-Bus) | KDE ile gelir | Yalnızca AT-SPI pencereleri |
+| Fare + klavye | xdg-desktop-portal RemoteDesktop v2 + ScreenCast | `xdg-desktop-portal-kde`, `pipewire` | `key`/`type`/`click X Y` çalışmaz |
+| Latin-1 dışı metin (ğ ş ı, emoji) | pano üzerinden yapıştırma | `wl-clipboard` | Bu karakterler yazılamaz |
+| D-Bus erişimi | dbus-python + PyGObject | `python3-dbus python3-gi` / `python-dbus python-gobject` | Yukarıdakilerin hiçbiri |
+| Öğe ağacı, isimle tıklama | AT-SPI | `gir1.2-atspi-2.0` / `at-spi2-core` | `tree`/`find`/`click REF` çalışmaz |
+| Açık terminaller | Konsole D-Bus, tmux | `konsole`, `tmux` | Yalnızca ilgili tür listelenmez |
+| Kendi terminal oturumları | tmux (yoksa PTY) | `tmux` | PTY'ye düşer |
+| Ekran görüntüsü | spectacle / grim | `spectacle` veya `grim` | `screenshot` çalışmaz |
+| Kırpma / küçültme | Pillow | `python3-pil` / `python-pillow` | Yalnızca tam boy görüntü |
+| Görünür ajan imleci | python-xlib + XWayland | `python3-xlib` | İmleç gösterilmez (tıklama yine çalışır) |
+| MCP adaptörü | `mcp` ≥ 2 | `pip install mcp` | CLI/HTTP yine çalışır |
+
+## Neden wtype / ydotool değil
+
+- **wtype**, `zwp_virtual_keyboard_v1` ister. KWin bunu sunmaz:
+  `Compositor does not support the virtual keyboard protocol`.
+- **ydotool / dotool**, `/dev/uinput`'a yazar; varsayılan izin `root:root 0600`.
+  Root veya udev kuralı gerektirir.
+- **RemoteDesktop portalı** root istemez. Kullanıcı bir kez onaylar
+  ("Allow restoring on future sessions" işaretli). Verilen `restore_token`
+  `~/.config/nexremote/portal.json` dosyasına yazılır ve sonraki oturumlar
+  diyalog açmadan başlar. İzni geri almak için bu dosyayı silmek yeterli.
+
+## Erişilebilirlik ağacı
+
+KDE varsayılan olarak `org.a11y.Status.IsEnabled=false` ile gelir. Bu durumda
+Qt uygulamaları (Konsole, Dolphin...) ağaç yayınlamaz. `nexremote setup` bu
+ayarı açar; o andan sonra başlatılan uygulamalar ağaç yayınlar. Firefox
+tabanlı tarayıcılar ve Electron uygulamaları ağaç yerine ekran görüntüsü ve
+koordinat tıklamasıyla kullanılır. Electron için diğer yol, uygulamayı
+`--force-renderer-accessibility` ile başlatmaktır.

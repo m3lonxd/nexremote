@@ -47,24 +47,28 @@ echo "✓ wrapper'lar kuruldu: nexremote, nexremote-agent, nexremote-http, nexre
 echo
 
 # --- bağımlılık kontrolü ---
-chk() { if command -v "$1" >/dev/null 2>&1; then echo "  ✓ $1"; else echo "  ✗ $1  ($2)"; fi; }
-echo "Bağımlılıklar:"
-chk tmux         "terminal backend için (zorunlu değil, PTY fallback var)"
-chk wtype        "Wayland metin/tuş girişi için (Debian: sudo apt install wtype)"
-chk spectacle    "KDE ekran görüntüsü (veya grim)"
-chk grim         "Wayland ekran görüntüsü"
-python3 - <<'PY' 2>/dev/null || echo "  ✗ AT-SPI (Debian: sudo apt install python3-gi gir1.2-atspi-2.0)"
-import gi; gi.require_version('Atspi','2.0')
-from gi.repository import Atspi
-print("  ✓ AT-SPI (GUI görme)")
-PY
-python3 - <<'PY' 2>/dev/null || echo "  ✗ mcp paketi (opsiyonel: pip install mcp)"
-import mcp; print("  ✓ mcp (MCP adaptörü)")
-PY
+chk() { if command -v "$1" >/dev/null 2>&1; then echo "  ✓ $1"; else echo "  ✗ $1 — $2"; fi; }
+pychk() { if python3 -c "$1" >/dev/null 2>&1; then echo "  ✓ $2"; else echo "  ✗ $2 — $3"; fi; }
+echo "Bağımlılıklar (ayrıntı: docs/DEPENDENCIES.md):"
+pychk "import dbus; import gi; gi.require_version('Gio','2.0')" "D-Bus (python3-dbus, python3-gi)" "sudo apt install python3-dbus python3-gi"
+pychk "import gi; gi.require_version('Atspi','2.0'); from gi.repository import Atspi" "AT-SPI öğe ağacı" "sudo apt install gir1.2-atspi-2.0"
+busctl --user get-property org.freedesktop.portal.Desktop /org/freedesktop/portal/desktop \
+    org.freedesktop.portal.RemoteDesktop version >/dev/null 2>&1 \
+    && echo "  ✓ RemoteDesktop portalı (fare+klavye)" \
+    || echo "  ✗ RemoteDesktop portalı — sudo apt install xdg-desktop-portal-kde pipewire"
+chk wl-copy   "Türkçe/emoji yazma için: sudo apt install wl-clipboard"
+chk tmux      "terminal oturumları için: sudo apt install tmux (yoksa PTY)"
+command -v spectacle >/dev/null 2>&1 || command -v grim >/dev/null 2>&1 \
+    && echo "  ✓ ekran görüntüsü (spectacle/grim)" \
+    || echo "  ✗ ekran görüntüsü — sudo apt install spectacle"
+pychk "import PIL" "Pillow (kırp/küçült)" "sudo apt install python3-pil"
+pychk "import Xlib" "python-xlib (görünür ajan imleci)" "sudo apt install python3-xlib"
+pychk "import mcp" "mcp (MCP adaptörü, opsiyonel)" "pip install mcp"
 
 echo
 if ! echo ":$PATH:" | grep -q ":$BIN:"; then
   echo "⚠  $BIN PATH'te değil. Kabuk profiline ekle:"
   echo "     export PATH=\"$BIN:\$PATH\""
 fi
-echo "Bitti. Test: nexremote caps"
+echo "Sonraki adım:  nexremote setup   (KDE bir kez 'Uzaktan kontrol' izni sorar)"
+echo "MCP (Claude Code): claude mcp add nexremote -- $BIN/nexremote-mcp"

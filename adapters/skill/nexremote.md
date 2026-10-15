@@ -1,89 +1,72 @@
 ---
 name: nexremote
 description: >
-  Masaüstünü ve terminal oturumlarını görüp kontrol et — GUI uygulamalarını
-  (buton/menü/alan) erişilebilirlik ağacı üzerinden oku ve isimle tıkla, ekran
-  görüntüsü al, terminal komutu çalıştır ve TUI ekranını oku. Bir AI ajanı bir
-  GUI'yi veya uzak terminali sürmesi gerektiğinde, "ekranda ne var" veya
-  "şu butona bas" dendiğinde, ya da bir CLI/TUI ajanının çıktısını gözlemlemek
-  gerektiğinde kullan. Kabuk komutu çalıştırabilen her ortamda çalışır.
+  See and control this Linux desktop and the terminals open on it: list every
+  window, read a window's UI tree and press buttons by name, take a screenshot
+  and click/scroll/drag on it, type text, press shortcuts, and read or type
+  into terminals that are already running (other CLI agents, ssh, builds).
+  Use when asked to operate a GUI app, check what is on screen, or watch and
+  drive another terminal session. Works from any harness that can run a shell
+  command.
 ---
 
-# NexRemote — masaüstü + terminal kontrolü
+# NexRemote — desktop + terminal control
 
-Kabuk komutu çalıştırarak bu makinenin **grafik masaüstünü** ve **terminal
-oturumlarını** görebilir ve kontrol edebilirsin. MCP, tool-calling veya özel
-SDK GEREKMEZ — sadece `nexremote` komutları.
+Every command is `nexremote ...`. Add `--json` anywhere for machine output.
 
-Makine-okunur çıktı için her komuta `--json` ekle.
-
-## Gözlem (önce bunu yap)
+## 1. Look first
 ```bash
-nexremote caps                     # ne yapabildiğini öğren
-nexremote observe                  # tam durum: pencereler + oturumlar + ağaç
-nexremote windows                  # açık pencereler (ref, uygulama, başlık)
-nexremote tree --window REF        # pencerenin erişilebilirlik ağacı (metin)
-nexremote find "Kaydet"            # öğe adıyla ara → ref döner
-nexremote screenshot /tmp/s.png    # piksel görüntüsü (görsel model gerekir)
+nexremote observe          # every window (ref win:{...}) + every open terminal
+nexremote caps             # what works on this machine (input, windows, terminals)
+```
+If `caps` says mouse/keyboard needs approval, run `nexremote setup` once and
+tell the user to press **Share** (with "Allow restoring" ticked) on the KDE
+dialog. After that it never asks again.
+
+## 2. Act on GUI apps — structure first, pixels second
+```bash
+nexremote find "Save" --window win:{...}   # → atspi:... refs of matching controls
+nexremote click atspi:3:0/0/12             # press it; the user's mouse does not move
+nexremote tree --window win:{...}          # whole UI tree when you need context
+nexremote set-text atspi:... "text"        # replace a field's content
+```
+When `find`/`tree` says the app publishes no tree (browsers, Electron, games):
+```bash
+nexremote screenshot --window win:{...} --max-width 1568   # then look at the image
+nexremote click 412 230 --from-shot        # pixel coords from THAT image
+nexremote click 412 230 --from-shot --right | --double
+nexremote scroll 5 --at 600 400            # + down / - up (screen coords)
+nexremote drag 100 200 400 200             # screen coords
+```
+The user's pointer is moved back where it was right after each click.
+
+## 3. Keyboard
+```bash
+nexremote window win:{...} activate        # focus the target window first
+nexremote type "Merhaba dünya"             # any language, newlines ok
+nexremote key ctrl+s | Return | alt+F4 | ctrl+shift+t
 ```
 
-## GUI eylemleri
+## 4. Terminals already open on the desktop
 ```bash
-nexremote click REF                # öğeye tıkla (ref: tree/find çıktısından)
-nexremote set-text REF "metin"     # metin alanına yaz
-nexremote key "ctrl+s"             # tuş kombinasyonu
-nexremote type "metin"             # aktif pencereye yaz
+nexremote terms                            # konsole:PID:N / tmux:S:W.P + program + cwd
+nexremote term-read konsole:7891:2         # what that terminal shows right now
+nexremote term-send konsole:7891:2 "git status" --enter
+nexremote term-send konsole:7891:2 --key C-c          # Enter, C-c, C-d, Esc, Up, Tab...
+```
+`program` tells you what runs in the foreground (claude, vim, ssh, bash).
+Read again after sending: output takes time; poll `term-read` until it settles.
+
+## 5. Your own scratch terminal
+```bash
+nexremote run "pytest -q" --session build  # runs, waits, returns output + exit code
+nexremote screen --session build           # read it later (sessions persist)
+nexremote keys C-c --session build
+nexremote cleanup                          # close only the sessions you created
 ```
 
-## Ajan imleci (görünür işaretçi)
-```bash
-nexremote cursor X Y               # ajanın KENDİ imlecini (X,Y)'ye götür
-nexremote cursor X Y --click       # götür ve tıkla (görsel geri bildirim)
-nexremote point REF                # öğeyi bul, imleci üzerine götür, tıkla
-```
-Bu, **kullanıcının faresine dokunmaz** — ekranda görünen ayrı bir yeşil
-işaretçidir (küçük pencere, tıklamayı geçirir, kullanıcıyı engellemez).
-Kullanıcı "ekranda ne yapıyorsun" görmek istediğinde ya da bir eylemi görsel
-olarak işaretlemek gerektiğinde kullan.
-
-## Terminal (TUI) eylemleri
-```bash
-nexremote run "ls -la"             # komut çalıştır, çıktıyı al
-nexremote screen                   # aktif oturumun ekranını oku
-nexremote screen --session ad      # belirli oturumu oku
-nexremote keys "C-c" --session ad  # terminale tuş gönder
-nexremote sessions                 # oturumları listele
-nexremote cleanup                  # kendi oturumlarını kapat
-```
-
-**TUI oturumları KALICIDIR.** `run`/`keys` ile bir oturum kur; sonraki ayrı
-komutlarında yaşar. `nexremote run "vim x"` sonra ayrı çağrıda
-`nexremote screen` ile vim'in ekranını okuyabilirsin — TUI ajanlarını (htop,
-vim, ncurses, başka bir CLI ajanı) böyle yönetirsin. Bitince `nexremote cleanup`.
-
-## Tipik döngü
-1. `nexremote caps` → yetenekleri öğren
-2. `nexremote observe` → mevcut durumu gör
-3. `nexremote find X` → hedefin ref'ini al
-4. `nexremote click REF` (veya `set-text`/`run`) → eylemi yap
-5. `nexremote observe` / `nexremote screen` → sonucu doğrula
-
-## Kurulum doğrulaması
-```bash
-nexremote caps
-nexremote windows
-nexremote run "echo nexremote-ok"
-```
-
-## Notlar
-- **Electron** uygulamaları (Discord, VS Code, Slack) iç butonlarını AT-SPI'ye
-  sunmak için `--force-renderer-accessibility` bayrağı ister. Örn:
-  `code --force-renderer-accessibility` veya
-  `ELECTRON_ENABLE_ACCESSIBILITY=1 discord`
-- Öğe adıyla bulunamazsa önce `tree` ile ağaca bak; koordinata tıklamak yerine
-  `find` kullanmak çok daha güvenilirdir.
-- Başsız sunucuda (GUI yok) yalnızca `run`/`screen`/`keys` çalışır.
-- `key`/`type` Wayland'de `wtype` (veya `ydotool`) gerektirir; yoksa zarifçe
-  başarısız olur.
-- `--force-renderer-accessibility` uyarısı yalnız Electron içindir; native
-  KDE/GNOME/Qt/GTK uygulamaları zaten tam ağaç verir.
+## Rules
+- Verify every action: `observe`, `term-read` or a new screenshot. Do not assume.
+- Activate the window before `type`/`key`; keystrokes go to the focused window.
+- Closing windows, sending to someone's terminal, or typing into a shell is
+  real and visible to the user. Say what you are about to do when it matters.

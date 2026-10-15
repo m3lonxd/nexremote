@@ -184,7 +184,7 @@ def cmd_find(nr, a) -> None:
 def cmd_click(nr, a) -> None:
     btn = "right" if a.right else "middle" if a.middle else "left"
     if len(a.target) == 2 and all(x.lstrip("-").isdigit() for x in a.target):
-        x, y = int(a.target[0]), int(a.target[1])
+        x, y = nr.screen_point(int(a.target[0]), int(a.target[1]), a.from_shot)
         nr.click_at(x, y, button=btn, count=2 if a.double else 1,
                     restore_pointer=not a.keep_pointer)
         _out({"ok": True, "x": x, "y": y, "button": btn}, a.json, f"tıklandı ({x},{y})")
@@ -301,10 +301,12 @@ def cmd_setup(nr, a) -> None:
 
 
 def cmd_screenshot(nr, a) -> None:
-    path = a.path or "/tmp/nexremote-shot.png"
-    s = nr.screenshot(path)
-    _out(s.to_dict(), a.json,
-         f"ekran görüntüsü: {s.path} ({s.width}x{s.height}) via {s.backend}")
+    s = nr.screenshot(a.path, window_ref=a.window, max_width=a.max_width)
+    note = ""
+    if s.scale != 1.0 or s.origin != (0, 0):
+        note = (f"\ngörüntü ölçeği {s.scale:.4f}, orijin {s.origin}: görüntüdeki noktaya "
+                f"tıklamak için `nexremote click X Y --from-shot`")
+    _out(s.to_dict(), a.json, f"ekran görüntüsü: {s.path} ({s.width}x{s.height}){note}")
 
 
 def cmd_run(nr, a) -> None:
@@ -371,59 +373,13 @@ def cmd_point(nr, a) -> None:
 
 
 def cmd_skill(nr, a) -> None:
-    """LLM'e verilecek yetenek talimatı — tool-calling olmayan modeller için."""
-    print(_SKILL_TEXT)
-
-
-_SKILL_TEXT = """\
-# NexRemote — masaüstü ve terminal kontrolü
-
-Kabuk komutu çalıştırarak bu makinenin grafik masaüstünü ve terminal
-oturumlarını görebilir ve kontrol edebilirsin. Tüm komutlar `nexremote`
-ile başlar; makine-okunur çıktı için `--json` ekle.
-
-## Gözlem
-  nexremote caps                     # ne yapabildiğini öğren (önce bunu çalıştır)
-  nexremote observe                  # tam durum: pencereler + ağaç + oturumlar
-  nexremote windows                  # açık pencereler (ref, uygulama, başlık)
-  nexremote tree --window REF        # pencerenin erişilebilirlik ağacı (metin)
-  nexremote find "Kaydet"            # öğe adıyla ara → ref döner
-  nexremote screenshot /tmp/s.png    # piksel görüntüsü (görsel model gerekir)
-
-## GUI eylemleri
-  nexremote click REF                # öğeye tıkla (ref: tree/find çıktısından)
-  nexremote set-text REF "metin"     # metin alanına yaz
-  nexremote key "ctrl+s"             # tuş kombinasyonu
-  nexremote type "metin"             # aktif pencereye yaz
-
-## Terminal (TUI) eylemleri
-  nexremote run "ls -la"             # komut çalıştır, çıktıyı al
-  nexremote screen                   # aktif terminal oturumunun ekranını oku
-  nexremote screen --session ad      # belirli oturumu oku
-  nexremote keys "C-c" --session ad  # terminale tuş gönder
-  nexremote sessions                 # oturumları listele
-  nexremote cleanup                  # kendi açtığın oturumları kapat
-
-## TUI oturumları KALICIDIR
-`run`/`keys` ile kurduğun bir terminal oturumu sonraki komutlarında yaşar.
-Yani `nexremote run "vim dosya"` sonra AYRI bir çağrıda `nexremote screen`
-ile vim'in ekranını okuyabilirsin — TUI ajanlarını (htop, vim, ncurses,
-başka bir CLI ajanı) böyle yönetirsin. Bitince `nexremote cleanup` çalıştır;
-bu YALNIZCA kendi oturumlarını kapatır, kullanıcınınkine dokunmaz.
-
-## Tipik döngü
-1. `nexremote caps`      → ne yapabildiğini öğren
-2. `nexremote observe`   → mevcut durumu gör
-3. `nexremote find X`    → hedef öğenin ref'ini al
-4. `nexremote click REF` → eylemi yap
-5. `nexremote observe`   → sonucu doğrula
-
-## Notlar
-- Electron uygulamaları (Discord, VSCode) iç butonlarını göstermek için
-  `--force-renderer-accessibility` bayrağı ister.
-- Öğe yoksa koordinata tıklama yerine önce adıyla aramayı dene.
-- GUI yoksa (başsız sunucu) yalnızca terminal komutları (run/screen/keys) çalışır.
-"""
+    """LLM'e verilecek yetenek talimatı (adapters/skill/nexremote.md)."""
+    path = os.path.join(_HERE, "..", "skill", "nexremote.md")
+    with open(path, encoding="utf-8") as f:
+        text = f.read()
+    if text.startswith("---"):            # YAML ön bilgisini atla
+        text = text.split("---", 2)[2].lstrip()
+    print(text)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -455,6 +411,8 @@ def build_parser() -> argparse.ArgumentParser:
     c.add_argument("--double", action="store_true")
     c.add_argument("--keep-pointer", action="store_true",
                    help="kullanıcının imlecini eski yerine geri koyma")
+    c.add_argument("--from-shot", action="store_true",
+                   help="X Y son ekran görüntüsündeki piksel (ölçek/kırpma otomatik çevrilir)")
     c.set_defaults(fn=cmd_click)
     mv = sub.add_parser("move", help="imleci taşı")
     mv.add_argument("x", type=int); mv.add_argument("y", type=int)
@@ -479,6 +437,8 @@ def build_parser() -> argparse.ArgumentParser:
     ty.set_defaults(fn=cmd_type)
     sc = sub.add_parser("screenshot", help="ekran görüntüsü")
     sc.add_argument("path", nargs="?", default=None)
+    sc.add_argument("--window", default=None, help="yalnızca bu pencere (win:{...})")
+    sc.add_argument("--max-width", type=int, default=0, help="genişliği en fazla N piksele küçült")
     sc.set_defaults(fn=cmd_screenshot)
     r = sub.add_parser("run", help="komut çalıştır")
     r.add_argument("command")
