@@ -9,7 +9,7 @@ description = "AI ajanlarına uzaktan görme + kontrol yeteneği: GUI (AT-SPI/pi
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
-authors = [{ name = "Evren Orkestra" }]
+authors = [{ name = "NexRemote contributors" }]
 keywords = ["ai-agent", "remote-desktop", "at-spi", "tmux", "mcp", "automation", "gui", "tui"]
 dependencies = []
 

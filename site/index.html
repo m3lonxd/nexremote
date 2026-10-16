@@ -124,11 +124,11 @@
           <g class="hd-win" data-hw="term">
             <rect class="hd-frame" x="40" y="36" width="600" height="390" rx="10"/>
             <path class="hd-bar" d="M50 36h580a10 10 0 0 1 10 10v22H40V46a10 10 0 0 1 10-10z"/>
-            <text class="hd-title" x="340" y="57" text-anchor="middle">nexwatch : claude-bin — Konsole</text>
+            <text class="hd-title" x="340" y="57" text-anchor="middle">api : claude — Konsole</text>
             <circle class="hd-ctl" cx="596" cy="52" r="5"/><circle class="hd-ctl" cx="614" cy="52" r="5"/><circle class="hd-ctl" cx="578" cy="52" r="5"/>
             <rect class="hd-term" x="40" y="68" width="600" height="358"/>
-            <rect class="hd-tab on" x="40" y="68" width="150" height="26"/><text class="hd-tabt on" x="56" y="86">claude-bin</text>
-            <rect class="hd-tab" x="190" y="68" width="150" height="26"/><text class="hd-tabt" x="206" y="86">claude-bin</text>
+            <rect class="hd-tab on" x="40" y="68" width="150" height="26"/><text class="hd-tabt on" x="56" y="86">claude</text>
+            <rect class="hd-tab" x="190" y="68" width="150" height="26"/><text class="hd-tabt" x="206" y="86">claude</text>
             <rect class="hd-tab" x="340" y="68" width="110" height="26"/><text class="hd-tabt" x="356" y="86">ssh</text>
             <rect class="hd-hl" x="48" y="200" width="584" height="52" rx="4"/>
             <text class="hd-mono hd-dim" x="60" y="128">● Running test suite…</text>
@@ -188,9 +188,9 @@
           <g class="hd-win" data-hw="web">
             <rect class="hd-frame" x="450" y="400" width="710" height="272" rx="10"/>
             <path class="hd-bar" d="M460 400h690a10 10 0 0 1 10 10v22H450v-22a10 10 0 0 1 10-10z"/>
-            <text class="hd-title" x="805" y="421" text-anchor="middle">Player — Zen Browser</text>
+            <text class="hd-title" x="805" y="421" text-anchor="middle">Player — Mozilla Firefox</text>
             <rect class="hd-url" x="466" y="440" width="678" height="22" rx="11"/>
-            <text class="hd-urlt" x="482" y="455">localhost:8080/watch</text>
+            <text class="hd-urlt" x="482" y="455">localhost:5173/player</text>
             <rect class="hd-video" x="466" y="470" width="678" height="160" rx="6"/>
             <circle class="hd-playbtn" cx="805" cy="544" r="28"/>
             <path class="hd-ico-play" d="M796 530v28l23-14z"/>
@@ -295,9 +295,9 @@
             <p>KWin lists every window with its title, app, position and focus. The agent can bring one forward, minimize or close it, including apps that publish nothing else.</p>
             <p class="rung-meta"><span>Channel</span> KWin scripting <span>Model receives</span> text</p>
 <pre class="rung-code"><code><span class="c">$</span> nexremote windows
-* win:{c31f…}  org.kde.konsole  1100x780+0+0      nexwatch : claude-bin — Konsole
+* win:{c31f…}  org.kde.konsole  1100x780+0+0      api : claude — Konsole
   win:{8c1e…}  systemsettings   760x540+1180+60   Appearance — System Settings
-  win:{a41f…}  zen              880x560+1060+520  Player — Zen Browser</code></pre>
+  win:{a41f…}  firefox          880x560+1060+520  Player — Mozilla Firefox</code></pre>
           </div>
         </li>
         <li class="rung" data-rung data-cmd='nexremote find "Dark" --window win:{8c1e…}' data-gets="text">
@@ -352,7 +352,7 @@ Should I fix them? (y/n, or tell me)</code></pre>
             <g class="ss-solid" data-sc="1,0,.25,dim">
               <rect class="hd-frame" x="20" y="24" width="420" height="270" rx="8"/>
               <path class="hd-bar" d="M28 24h404a8 8 0 0 1 8 8v16H20V32a8 8 0 0 1 8-8z"/>
-              <text class="hd-title ss-t" x="230" y="40" text-anchor="middle">nexwatch : claude-bin — Konsole</text>
+              <text class="hd-title ss-t" x="230" y="40" text-anchor="middle">api : claude — Konsole</text>
               <rect class="hd-term" x="20" y="48" width="420" height="246"/>
             </g>
             <g class="ss-termtext" data-sc="2,0,.3,dimtext">
@@ -386,7 +386,7 @@ Should I fix them? (y/n, or tell me)</code></pre>
             <g class="ss-solid" data-sc="1,0,.25,dim">
               <rect class="hd-frame" x="250" y="292" width="530" height="196" rx="8"/>
               <path class="hd-bar" d="M258 292h514a8 8 0 0 1 8 8v16H250v-16a8 8 0 0 1 8-8z"/>
-              <text class="hd-title ss-t" x="515" y="308" text-anchor="middle">Player — Zen Browser</text>
+              <text class="hd-title ss-t" x="515" y="308" text-anchor="middle">Player — Mozilla Firefox</text>
               <rect class="hd-url" x="262" y="322" width="506" height="16" rx="8"/>
               <rect class="hd-video" x="262" y="346" width="506" height="104" rx="5"/>
               <circle class="hd-playbtn" cx="515" cy="398" r="20"/>
@@ -484,7 +484,7 @@ Should I fix them? (y/n, or tell me)</code></pre>
     <div class="stage" data-replay data-reveal>
       <div class="desk" aria-hidden="true">
         <div class="win w-term" data-win="term">
-          <div class="bar"><span class="t">nexwatch : claude-bin — Konsole</span><span class="ctl"><i></i><i></i><i></i></span></div>
+          <div class="bar"><span class="t">api : claude — Konsole</span><span class="ctl"><i></i><i></i><i></i></span></div>
           <div class="body term">
             <p class="dim">● Running test suite…</p>
             <p>  tests/test_api.py ........<b class="bad">F</b>.<b class="bad">F</b></p>
@@ -508,7 +508,7 @@ Should I fix them? (y/n, or tell me)</code></pre>
         </div>
 
         <div class="win w-web" data-win="web">
-          <div class="bar"><span class="t">Player — Zen Browser</span><span class="ctl"><i></i><i></i><i></i></span></div>
+          <div class="bar"><span class="t">Player — Mozilla Firefox</span><span class="ctl"><i></i><i></i><i></i></span></div>
           <div class="body web">
             <div class="video"><span class="play" data-play><svg viewBox="0 0 24 24"><path class="ico-play" d="M8 5v14l11-7z"/><path class="ico-pause" d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg></span><span class="progress"><i data-progress></i></span></div>
             <div class="lines"><i></i><i></i><i></i></div>
@@ -529,9 +529,9 @@ Should I fix them? (y/n, or tell me)</code></pre>
           <li><button type="button" role="tab" data-ch="3" aria-selected="false">Press by name</button></li>
           <li><button type="button" role="tab" data-ch="4" aria-selected="false">Click what it sees</button></li>
         </ol>
-        <div class="log" data-log aria-live="polite"><div class="cmd">nexremote windows</div><div class="out">* win:{c31f…}  org.kde.konsole  1100x780+0+0      nexwatch : claude-bin — Konsole
+        <div class="log" data-log aria-live="polite"><div class="cmd">nexremote windows</div><div class="out">* win:{c31f…}  org.kde.konsole  1100x780+0+0      api : claude — Konsole
   win:{8c1e…}  systemsettings   760x540+1180+60   Appearance — System Settings
-  win:{a41f…}  zen              880x560+1060+520  Player — Zen Browser</div><div class="cmd">nexremote terms</div><div class="out">konsole:7891:2       claude-bin     ~/nexwatch               nexwatch : claude-bin</div></div>
+  win:{a41f…}  firefox          880x560+1060+520  Player — Mozilla Firefox</div><div class="cmd">nexremote terms</div><div class="out">konsole:7891:2       claude         ~/projects/api           api : claude</div></div>
         <div class="console-foot">
           <p class="caption" data-caption>The agent asks what is on screen: every window with its ref, every terminal with the program in it.</p>
           <button class="playbtn" type="button" data-toggle data-play-label="Play" data-pause-label="Pause" data-again-label="Play again">Play</button>
@@ -616,17 +616,17 @@ Should I fix them? (y/n, or tell me)</code></pre>
     <figure class="sample" data-reveal>
       <div class="sample-bar" aria-hidden="true"><i></i><i></i><i></i><span>bash — nexremote</span></div>
 <pre><code data-typeon><span class="c">$</span> nexremote terms
-konsole:7891:1       claude-bin     ~      ~ : claude-bin
-konsole:7891:2       claude-bin     ~      ~ : claude-bin
-konsole:7891:3       claude-bin     ~      ~ : claude-bin
-konsole:29769:1      ssh            ~      (root) 45.136.x.x
+konsole:7891:1       claude         ~/projects/api      api : claude
+konsole:7891:2       claude         ~/projects/web      web : claude
+konsole:7891:3       vim            ~/projects/docs     docs : vim
+konsole:29769:1      ssh            ~                   deploy@staging
 
 <span class="c">$</span> nexremote term-send konsole:63308:1 'echo NEXR_$((6*7))' --enter
 <span class="c">$</span> nexremote term-read konsole:63308:1
 bash-5.2$ echo NEXR_$((6*7))
 NEXR_42
 bash-5.2$</code></pre>
-      <figcaption>First command: the author&#x27;s desktop, IP masked. The rest: from the test sandbox.</figcaption>
+      <figcaption>Output in the exact CLI format; terminal names are examples. The last two commands ran in the test sandbox.</figcaption>
     </figure>
   </div>
 </section>
@@ -650,9 +650,9 @@ bash-5.2$</code></pre>
           <rect x="118" y="38" width="192" height="108" rx="3"/>
           <rect x="310" y="38" width="192" height="108" rx="3"/>
         </g>
-        <text class="d-lbl" x="10" y="28">HDMI-A-3</text>
-        <text class="d-lbl" x="118" y="28">DP-3</text>
-        <text class="d-lbl" x="310" y="28">DP-1 · x=3000</text>
+        <text class="d-lbl" x="10" y="28">HDMI-1</text>
+        <text class="d-lbl" x="118" y="28">DP-1</text>
+        <text class="d-lbl" x="310" y="28">DP-2 · x=3000</text>
         <rect class="d-crop-fill" x="310" y="38" width="96" height="108"/>
         <rect class="d-crop" x="310" y="38" width="96" height="108" pathLength="1"/>
         <rect class="d-img" x="500" y="150" width="120" height="135" rx="3" pathLength="1"/>
@@ -665,7 +665,7 @@ bash-5.2$</code></pre>
         <text class="d-lbl d-lbl-a" x="570" y="200">(412, 230)</text>
         <text class="d-lbl d-lbl-b" x="368" y="62">(3494, 276)</text>
       </svg>
-      <figcaption>The author&#x27;s three monitors, to scale. One point, two coordinate systems.</figcaption>
+      <figcaption>A three-monitor layout, to scale. One point, two coordinate systems.</figcaption>
     </figure>
   </div>
 </section>

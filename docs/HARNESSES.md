@@ -24,7 +24,7 @@ Hiçbiri diğerine bağımlı değildir — biri çalışmıyorsa diğeri devred
 {
   "mcpServers": {
     "nexremote": {
-      "command": "/home/omarchy/bin/nexremote-mcp"
+      "command": "/home/KULLANICI/bin/nexremote-mcp"
     }
   }
 }
@@ -32,14 +32,15 @@ Hiçbiri diğerine bağımlı değildir — biri çalışmıyorsa diğeri devred
 
 **Cursor** (`.cursor/mcp.json` proje kökünde):
 ```json
-{ "mcpServers": { "nexremote": { "command": "/home/omarchy/bin/nexremote-mcp" } } }
+{ "mcpServers": { "nexremote": { "command": "/home/KULLANICI/bin/nexremote-mcp" } } }
 ```
+Yolu kendi sisteminden al: `command -v nexremote-mcp` (MCP istemcileri `~`'yi açmaz).
 
 ## Skill kurulumu (Claude Code / Claude Desktop skills)
 
 ```bash
 mkdir -p ~/.claude/skills/nexremote
-cp /home/omarchy/nexremote/adapters/skill/nexremote.md ~/.claude/skills/nexremote/SKILL.md
+cp nexremote/adapters/skill/nexremote.md ~/.claude/skills/nexremote/SKILL.md
 ```
 Ardından `nexremote` komutu PATH'te olsun (`install.sh` bunu kurar).
 Skill, `nexremote` komutlarını ne zaman ve nasıl kullanacağını ajana anlatır.

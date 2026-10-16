@@ -254,9 +254,9 @@
       for (;;) {
         step(0);
         await run("nexremote windows");
-        out("* win:{c31f…}  org.kde.konsole  1100x780+0+0      nexwatch : claude-bin — Konsole\n" +
+        out("* win:{c31f…}  org.kde.konsole  1100x780+0+0      api : claude — Konsole\n" +
             "  win:{8c1e…}  systemsettings   760x540+1180+60   Appearance — System Settings\n" +
-            "  win:{a41f…}  zen              880x560+1060+520  Player — Zen Browser");
+            "  win:{a41f…}  firefox          880x560+1060+520  Player — Mozilla Firefox");
         set("s-tags", true);
         await wait(2300);
 
@@ -612,11 +612,11 @@
       [
         { cmd: "nexremote windows" },
         { fx: function () { tag("term"); tag("set"); tag("web"); } },
-        { out: "* win:{c31f…}  org.kde.konsole  1100x780+0+0      nexwatch : claude-bin — Konsole\n" +
+        { out: "* win:{c31f…}  org.kde.konsole  1100x780+0+0      api : claude — Konsole\n" +
                "  win:{8c1e…}  systemsettings   760x540+1180+60   Appearance — System Settings\n" +
-               "  win:{a41f…}  zen              880x560+1060+520  Player — Zen Browser" },
+               "  win:{a41f…}  firefox          880x560+1060+520  Player — Mozilla Firefox" },
         { cmd: "nexremote terms" },
-        { out: "konsole:7891:2       claude-bin     ~/nexwatch               nexwatch : claude-bin" }
+        { out: "konsole:7891:2       claude         ~/projects/api           api : claude" }
       ],
       [
         { fx: function () { untagAll(); lit("term", true); } },

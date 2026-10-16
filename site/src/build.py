@@ -205,13 +205,13 @@ S = {
         "watch_h": "Eight agents open? One of them can run the others.",
         "watch_p1": "Every Konsole tab and tmux pane is listed with the program in its foreground. An agent can read another agent's screen, answer its question, or stop it with <code>--key C-c</code>.",
         "watch_p2": "None of it needs window focus or your keyboard. You keep working while it does.",
-        "watch_cap": "First command: the author's desktop, IP masked. The rest: from the test sandbox.",
+        "watch_cap": "Output in the exact CLI format; terminal names are examples. The last two commands ran in the test sandbox.",
 
         "pixels_kicker": "Last resort",
         "pixels_h": "When an app has nothing to read, it looks.",
         "pixels_p": "Browsers, games and most Electron apps publish no controls. Take a screenshot cropped to one window and scaled for the model; it clicks on pixels in that image and NexRemote converts them back to the screen.",
         "diag_title": "A window on a three-monitor desktop is cropped, scaled to 800 by 900, and a point in the image maps back to screen coordinates.",
-        "diag_cap": "The author's three monitors, to scale. One point, two coordinate systems.",
+        "diag_cap": "A three-monitor layout, to scale. One point, two coordinate systems.",
 
         "cmp_kicker": "Compare",
         "cmp_h": "Where it stands",
@@ -406,13 +406,13 @@ S = {
         "watch_h": "Sekiz ajan açık mı? Biri diğerlerini yönetebilir.",
         "watch_p1": "Her Konsole sekmesi ve tmux bölmesi, ön plandaki programıyla listelenir. Bir ajan başka bir ajanın ekranını okuyabilir, sorusuna cevap verebilir ya da <code>--key C-c</code> ile durdurabilir.",
         "watch_p2": "Bunların hiçbiri pencere odağı ya da klavyeniz gerektirmez. O çalışırken siz de çalışmaya devam edersiniz.",
-        "watch_cap": "İlk komut: geliştiricinin masaüstü, IP maskelendi. Gerisi: test sandbox'ından.",
+        "watch_cap": "Çıktı CLI'ın birebir biçiminde; terminal adları örnektir. Son iki komut test sandbox'ında çalıştı.",
 
         "pixels_kicker": "Son çare",
         "pixels_h": "Okunacak bir şey yoksa bakar.",
         "pixels_p": "Tarayıcılar, oyunlar ve çoğu Electron uygulaması kontrollerini yayınlamaz. Tek pencereye kırpılmış ve modele göre küçültülmüş bir ekran görüntüsü alın; model o görüntüdeki piksele tıklar, NexRemote onu ekrana geri çevirir.",
         "diag_title": "Üç monitörlü masaüstündeki bir pencere kırpılır, 800'e 900 boyutuna küçültülür ve görüntüdeki bir nokta ekran koordinatına geri çevrilir.",
-        "diag_cap": "Geliştiricinin üç monitörü, ölçekli. Tek nokta, iki koordinat sistemi.",
+        "diag_cap": "Üç monitörlü bir düzen, ölçekli. Tek nokta, iki koordinat sistemi.",
 
         "cmp_kicker": "Karşılaştırma",
         "cmp_h": "Nerede duruyor",

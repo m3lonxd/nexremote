@@ -8,12 +8,12 @@ yerel model.
 ```console
 $ nexremote observe
 Pencereler (6) — * etkin:
-  * org.kde.konsole        1920x1080+1080+0     ~ : claude-bin — Konsole
-    zen                    1920x1080+1080+0     YouTube — Zen Browser
+  * org.kde.konsole        1920x1080+1080+0     api : claude — Konsole
+    firefox                1920x1080+1080+0     Player — Mozilla Firefox
     ...
 Açık terminaller (4):
-  konsole:7891:1       claude-bin     ~/nexwatch            ~ : claude-bin
-  konsole:29769:1      ssh            ~                     (root) 45.136.6.110
+  konsole:7891:1       claude         ~/projects/api        api : claude
+  konsole:29769:1      ssh            ~                     deploy@staging
 
 $ nexremote term-read konsole:29769:1          # başka bir terminalin ekranı
 $ nexremote term-send konsole:7891:1 "testleri çalıştır" --enter
