@@ -251,12 +251,10 @@ class NexRemote:
         if os.environ.get("NEXREMOTE_CURSOR", "1") == "0" or not self.pointer_available()[0]:
             return
         try:
-            import time
             from . import xcursor as xc
             if not xc.daemon_running():
                 xc.start_daemon(os.environ.get("DISPLAY", ":1"))
-            xc.send(f"MOVE {int(x)} {int(y)} 0.25")
-            time.sleep(0.25)
+            xc.send(f"MOVE {int(x)} {int(y)}")   # yanıt hareket bitince gelir
             xc.send("CLICK")
         except Exception:
             pass
@@ -345,10 +343,8 @@ class NexRemote:
             xc.start_daemon(os.environ.get("DISPLAY", ":1"))
         if not xc.daemon_running():
             raise RuntimeError("ajan imleci daemon'ı başlatılamadı")
-        xc.send(f"MOVE {int(x)} {int(y)} 0.5")
+        xc.send(f"MOVE {int(x)} {int(y)}")   # yanıt hareket bitince gelir
         if click:
-            import time
-            time.sleep(0.5)
             xc.send("CLICK")
         return True
 

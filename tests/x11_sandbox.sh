@@ -14,7 +14,7 @@ cleanup() {
     for env in /proc/[0-9]*/environ; do
         pid="${env#/proc/}"; pid="${pid%/environ}"
         [[ "$pid" == "$$" ]] && continue
-        if tr '\0' '\n' <"$env" 2>/dev/null | grep -qxF "DBUS_SESSION_BUS_ADDRESS=$DBUS_SESSION_BUS_ADDRESS"; then
+        if { tr '\0' '\n' <"$env"; } 2>/dev/null | grep -qxF "DBUS_SESSION_BUS_ADDRESS=$DBUS_SESSION_BUS_ADDRESS"; then
             kill "$pid" 2>/dev/null || true
         fi
     done
