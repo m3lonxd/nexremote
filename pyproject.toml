@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nexremote"
+version = "0.3.0"
+description = "AI ajanlarına masaüstü görme + kontrol: pencereler, gerçek fare/klavye, erişilebilirlik ağacı, terminaller"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.9"
+classifiers = [
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: Microsoft :: Windows",
+    "Programming Language :: Python :: 3",
+]
+dependencies = [
+    # Linux X11: XTEST giriş, EWMH pencereler, ajan imleci
+    "python-xlib>=0.33; sys_platform == 'linux'",
+    # Windows: UI Automation öğe ağacı
+    "comtypes>=1.4; sys_platform == 'win32'",
+]
+
+[project.optional-dependencies]
+# ekran görüntüsünü pencereye kırpma / küçültme
+image = ["pillow>=9"]
+# MCP sunucusu (nexremote-mcp)
+mcp = ["mcp>=1.2"]
+all = ["pillow>=9", "mcp>=1.2"]
+
+[project.scripts]
+nexremote = "nexremote_adapters.cli.nexremote_cli:main"
+nexremote-agent = "nexremote_adapters.cli.agent_loop:main"
+nexremote-http = "nexremote_adapters.http.server:main"
+nexremote-mcp = "nexremote_adapters.mcp.server:main"
+
+[tool.setuptools]
+package-dir = { "nexremote" = "core/nexremote", "nexremote_adapters" = "adapters" }
+packages = [
+    "nexremote", "nexremote.backends", "nexremote.platforms",
+    "nexremote_adapters", "nexremote_adapters.cli", "nexremote_adapters.http",
+    "nexremote_adapters.mcp", "nexremote_adapters.skill",
+]
+
+[tool.setuptools.package-data]
+"nexremote_adapters.skill" = ["*.md"]

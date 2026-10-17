@@ -186,7 +186,8 @@ class Desktop(ABC):
 # ---------------------------------------------------------------- yardımcı
 def runtime_dir() -> str:
     """Kullanıcıya özel geçici dizin (soketler, son ekran görüntüsü)."""
-    d = os.environ.get("XDG_RUNTIME_DIR")
+    # Windows'ta XDG_RUNTIME_DIR (MSYS/WSL'den sızan) POSIX yoludur, kullanılmaz
+    d = None if os.name == "nt" else os.environ.get("XDG_RUNTIME_DIR")
     if not d:
         import getpass
         import tempfile

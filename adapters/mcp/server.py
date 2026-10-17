@@ -334,5 +334,9 @@ def nexremote_sessions() -> list[str]:
     return [str(s) for s in _get_nexremote().sessions()]
 
 
-if __name__ == "__main__":
+def main() -> None:
     mcp.run(transport="stdio")
+
+
+if __name__ == "__main__":
+    main()

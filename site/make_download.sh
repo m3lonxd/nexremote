@@ -33,6 +33,8 @@ tar --exclude='./.git' \
 printf '%s\n' "$VER" > "$DEST/VERSION"
 
 # zip ve tar.gz üret
+# zip var olan arşive ekler; eski sürümden kalan dosyalar pakete karışmasın
+rm -f "$OUT/$NAME.zip" "$OUT/$NAME.tar.gz"
 ( cd "$STAGE" && zip -qr "$OUT/$NAME.zip" "$NAME" && tar -czf "$OUT/$NAME.tar.gz" "$NAME" )
 rm -rf "$STAGE"
 

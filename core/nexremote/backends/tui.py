@@ -1,10 +1,13 @@
 """TUI / terminal backend — AI ajanının uzaktan terminal yönetimi.
 
-İki strateji (otomatik seçilir):
+Üç strateji (otomatik seçilir):
 
   A) tmux varsa  — kalıcı oturumlar + `capture-pane` ile EKRAN OKUMA.
      TUI ajanları (htop, vim, claude-code, menülü CLI'lar) için kritik.
-  B) tmux yoksa  — saf PTY (`pty.openpty` + `subprocess`).
+  B) tmux yoksa  — saf PTY (`pty.openpty` + `subprocess`) — Linux, macOS, BSD.
+  C) Windows     — boru (pipe) ile kabuk: `run` tek seferlik, `send_keys` /
+     `read_screen` süreç içinde kalıcı bir cmd.exe oturumu. Tam ekran TUI
+     programları için masaüstündeki konsolu `terminals` ile kullanın.
 
 AI ajanı için bu backend'in özü: "komut çalıştır, ekranı metin olarak OKU,
 tuş gönder". Ekran okuma olmadan bir TUI ajanı yönetilemez.
@@ -15,13 +18,18 @@ oturumlarını yönetir. Kullanıcının kendi tmux oturumlarına ASLA dokunmaz.
 from __future__ import annotations
 
 import os
-import pty
 import re
-import select
 import shutil
 import subprocess
+import sys
+import threading
 import time
 from typing import Optional
+
+_WINDOWS = sys.platform == "win32"
+if not _WINDOWS:
+    import pty
+    import select
 
 from ..base import Backend
 from ..models import Capability, CommandResult
@@ -152,6 +160,73 @@ class _PtySession:
             pass
 
 
+def _console_encoding() -> str:
+    """Windows'ta kabuk çıktısının kod sayfası (cmd.exe OEM kod sayfası yazar)."""
+    if not _WINDOWS:
+        return "utf-8"
+    try:
+        import ctypes
+        cp = ctypes.windll.kernel32.GetOEMCP()
+        return f"cp{cp}" if cp != 65001 else "utf-8"
+    except (OSError, AttributeError):
+        return "utf-8"
+
+
+class _PipeSession:
+    """Windows: borularla bağlı kalıcı cmd.exe. Çıktı arka iş parçacığında birikir.
+
+    Gerçek konsol değildir (imleç/renk yok); satır tabanlı programlar için uygundur.
+    """
+
+    def __init__(self) -> None:
+        self.proc = subprocess.Popen(
+            [os.environ.get("COMSPEC", "cmd.exe"), "/Q", "/K"],
+            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+        )
+        self.encoding = _console_encoding()
+        self.buffer = ""
+        self._lock = threading.Lock()
+        self._reader = threading.Thread(target=self._pump, daemon=True)
+        self._reader.start()
+
+    def _pump(self) -> None:
+        assert self.proc.stdout is not None
+        while True:
+            chunk = self.proc.stdout.read1(65536)
+            if not chunk:
+                return
+            with self._lock:
+                self.buffer += chunk.decode(self.encoding, "replace")
+
+    def write(self, data: bytes) -> None:
+        if self.proc.poll() is not None or self.proc.stdin is None:
+            raise RuntimeError("oturumun kabuğu kapanmış")
+        # boruda satır düzenleme yok: Enter (\r) kabuğa satır sonu olarak gitmeli
+        text = data.decode("utf-8", "replace").replace("\r", "\r\n")
+        self.proc.stdin.write(text.encode(self.encoding, "replace"))
+        self.proc.stdin.flush()
+
+    def drain(self, wait: float = 0.0) -> None:
+        if wait > 0:
+            time.sleep(wait)
+
+    def take(self) -> str:
+        with self._lock:
+            out, self.buffer = self.buffer, ""
+        return out
+
+    def close(self) -> None:
+        try:
+            self.proc.terminate()
+            self.proc.wait(timeout=3)
+        except Exception:
+            try:
+                self.proc.kill()
+            except Exception:
+                pass
+
+
 class TuiBackend(Backend):
     """Terminal backend'i — tmux varsa onu, yoksa saf PTY kullanır."""
 
@@ -171,6 +246,10 @@ class TuiBackend(Backend):
     def capability(self) -> Capability:
         """tmux var mı? PTY her zaman var. Hangi mod aktif?"""
         has_tmux = self.tmux is not None
+        if _WINDOWS:
+            return Capability(name=self.name, available=True, detail=(
+                "mod=pipe (Windows); run=tek seferlik; send_keys/screen=süreç içi cmd.exe "
+                "oturumu; tam ekran TUI için masaüstü konsolu (terminals)"))
         needs: list[str] = [] if has_tmux else ["tmux (kalıcı oturumlar için)"]
         mode = "tmux" if has_tmux else "pty"
         detail = (
@@ -182,7 +261,7 @@ class TuiBackend(Backend):
 
     @property
     def active_mode(self) -> str:
-        return "tmux" if self.tmux else "pty"
+        return "tmux" if self.tmux else ("pipe" if _WINDOWS else "pty")
 
     # ------------------------------------------------------------ yardımcı
     def _session_name(self, session: str) -> str:
@@ -392,7 +471,24 @@ class TuiBackend(Backend):
             except subprocess.TimeoutExpired:
                 return CommandResult(output="tmux komutu zaman aşımına uğradı",
                                      exit_code=-1, session=session, timed_out=True)
+        if _WINDOWS:
+            return self._run_pipe(command, session, timeout)
         return self._run_pty(command, session, timeout)
+
+    def _run_pipe(self, command: str, session: str, timeout: float) -> CommandResult:
+        """Windows: komutu cmd.exe ile tek seferlik çalıştır."""
+        try:
+            r = subprocess.run(command, shell=True, capture_output=True,
+                               timeout=max(timeout, 0.1),
+                               creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+        except subprocess.TimeoutExpired as e:
+            out = (e.stdout or b"") + (e.stderr or b"")
+            return CommandResult(output=out.decode(_console_encoding(), "replace").rstrip(),
+                                 exit_code=-1, session=session, timed_out=True)
+        enc = _console_encoding()
+        out = r.stdout.decode(enc, "replace") + r.stderr.decode(enc, "replace")
+        return CommandResult(output=out.replace("\r\n", "\n").rstrip(),
+                             exit_code=r.returncode, session=session)
 
     # ------------------------------------------------------------ ekran oku
     def read_screen(self, session: str = "default") -> str:
@@ -436,7 +532,7 @@ class TuiBackend(Backend):
         key = _normalize_session(session)
         ps = self._pty_sessions.get(key)
         if ps is None:
-            ps = _PtySession()
+            ps = _PipeSession() if _WINDOWS else _PtySession()
             self._pty_sessions[key] = ps
         ps.write(_keys_to_bytes(keys))
         return True

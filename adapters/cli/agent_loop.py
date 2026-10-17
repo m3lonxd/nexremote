@@ -30,7 +30,6 @@ import os
 import re
 import subprocess
 import sys
-import time
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 CORE = os.path.abspath(os.path.join(_HERE, "..", "..", "core"))
@@ -83,17 +82,22 @@ def call_model(model_cmd: str, prompt: str, timeout: float = 120.0) -> str:
 
 def run_tool(line: str, timeout: float = 60.0) -> str:
     """nexremote satırını çalıştır, çıktıyı döndür."""
-    cmd = line.strip()
-    if not cmd.startswith("nexremote"):
-        return "[geçersiz araç satırı]"
-    # `nexremote` wrapper PATH'te olmayabilir — doğrudan CLI'yi çağır (kendi kendine yeterli)
-    if not cmd.startswith("nexremote-agent"):  # alt-araç != ajan döngüsü
-        cmd = "python3 " + os.path.join(CLI, "nexremote_cli.py") + cmd[len("nexremote"):]
-    env = dict(os.environ)
-    env["PYTHONPATH"] = f"{CORE}:{CLI}:" + env.get("PYTHONPATH", "")
+    import shlex
     try:
-        p = subprocess.run(cmd, shell=True, text=True, capture_output=True,
-                           timeout=timeout, env=env)
+        argv = shlex.split(line.strip())
+    except ValueError as e:
+        return f"[araç satırı ayrıştırılamadı: {e}]"
+    if not argv or argv[0] != "nexremote":
+        return "[geçersiz araç satırı]"
+    # `nexremote` PATH'te olmayabilir — CLI'yi bu Python ile doğrudan çağır.
+    # Kabuk kullanılmaz: model çıktısı kabukta yorumlanmaz, Windows'ta da aynı çalışır.
+    cmd = [sys.executable, os.path.join(CLI, "nexremote_cli.py"), *argv[1:]]
+    env = dict(os.environ)
+    env["PYTHONPATH"] = os.pathsep.join(p for p in (CORE, CLI, env.get("PYTHONPATH", "")) if p)
+    env.setdefault("PYTHONIOENCODING", "utf-8")
+    try:
+        p = subprocess.run(cmd, text=True, encoding="utf-8", errors="replace",
+                           capture_output=True, timeout=timeout, env=env)
         out = (p.stdout or "").strip()
         err = (p.stderr or "").strip()
         # DeprecationWarning gürültüsünü temizle

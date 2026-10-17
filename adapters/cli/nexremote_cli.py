@@ -71,9 +71,9 @@ def cmd_caps(nr, a) -> None:
     if a.json:
         _out(caps, True)
         return
-    print("NexRemote yetenekleri:")
+    print(f"NexRemote yetenekleri ({caps['platform']}):")
     rows = [("pencereler", caps["windows"]), ("fare+klavye", caps["input"]),
-            ("terminaller", caps["terminals"])]
+            ("ekran görüntüsü", caps["screenshot"]), ("terminaller", caps["terminals"])]
     rows += [(n, c) for n, c in caps["backends"].items()]
     rows.append(("ajan imleci", caps["pointer"]))
     for name, c in rows:
