@@ -4,19 +4,26 @@
     python3 site/src/build.py
 
 Sayfadaki her sayı ölçülmüş bir değerdir:
-  - sürüm               core/nexremote/__init__.py
+  - sürüm               pyproject.toml [project] version (paketin sürümü)
   - MCP aracı           adapters/mcp/server.py içindeki @mcp.tool() sayısı
   - CLI komutu          adapters/cli/nexremote_cli.py içindeki sub.add_parser( sayısı
   - giriş komutu        install.sh'ın ~/bin'e yazdığı sarmalayıcı sayısı
   - yüzey               README.md "Ne yapabilir" tablosunun satırları
+  - platform            aynı tablonun başlık sütunları (Linux, Windows, macOS);
+                        platform matrisindeki kanallar da bu tablodan okunur
   - harness             docs/HARNESSES.md ilk tablosunun satırları
   - test paketi         tests/run_all.sh içindeki run satırları (+ sandbox'takiler)
   - Python satırı       core/ ve adapters/ altındaki .py dosyalarının satır toplamı
   - indirme boyutları   site/download/ altındaki gerçek dosyalar
 Bir sayı okunamazsa derleme durur; sayfaya tahmin yazılmaz.
+
+Tek istisna WINE_RESULT: Windows katmanının Wine'daki son uçtan uca koşusu
+(tests/wine/run.sh tests/test_windows_wine.py). Wine kurulumu gerektirdiği
+için derlemede çalıştırılamaz; yeni bir koşudan sonra elle güncellenir.
 """
 from __future__ import annotations
 
+import functools
 import html
 import json
 import os
@@ -37,8 +44,14 @@ def read(rel: str) -> str:
         return f.read()
 
 
+@functools.lru_cache(maxsize=None)
 def version() -> str:
-    return re.search(r'__version__\s*=\s*"([^"]+)"', read("core/nexremote/__init__.py")).group(1)
+    """Paketin sürümü pyproject.toml'dan; __init__.py geride kalmışsa uyarır."""
+    ver = re.search(r'^version\s*=\s*"([^"]+)"', read("pyproject.toml"), re.M).group(1)
+    m = re.search(r'__version__\s*=\s*"([^"]+)"', read("core/nexremote/__init__.py"))
+    if m and m.group(1) != ver:
+        print(f"uyarı: pyproject.toml {ver}, core/nexremote/__init__.py {m.group(1)}", file=sys.stderr)
+    return ver
 
 
 def size(name: str) -> str:
@@ -61,6 +74,54 @@ def md_table_rows(text: str, after: str | None = None) -> list[list[str]]:
     return rows[2:]
 
 
+# Windows katmanının Wine 10 içindeki son uçtan uca sonucu (bkz. modül notu)
+WINE_RESULT = "22/22"
+
+# README "Ne yapabilir" tablosu: satır sırası ve platform başlıkları beklenen gibi
+# olmalı; değişirse derleme durur (sayfa README'den sessizce ayrışmasın).
+README_ROWS = ["Ekrandaki her pencere", "Gerçek fare", "Gerçek klavye", "Butona adıyla basma",
+               "Açık terminaller", "Kendi terminali", "Ekran görüntüsü"]
+README_PLATFORMS = ["Linux", "Windows", "macOS"]
+# README hücrelerindeki Türkçe sözcüklerin İngilizcesi (ürün adları olduğu gibi kalır)
+CELL_EN = [("konsol tamponu", "console buffer"), ("portalı", "portal"), ("pano", "clipboard")]
+
+
+def readme_matrix() -> tuple[list[str], list[tuple[str, list[str]]]]:
+    """README "Ne yapabilir" tablosu: (platformlar, [(satır adı, [hücreler])])."""
+    text = read("README.md")
+    text = text[text.index("## Ne yapabilir"):]
+    lines = []
+    for ln in text.splitlines():
+        if ln.startswith("|"):
+            lines.append(ln)
+        elif lines:
+            break
+    cells = lambda ln: [c.strip() for c in ln.strip().strip("|").split("|")]
+    head = cells(lines[0])[1:]
+    rows = []
+    for ln in lines[2:]:
+        c = cells(ln)
+        m = re.match(r"\*\*(.+?)\*\*", c[0])
+        rows.append((m.group(1) if m else c[0], c[1:]))
+    if head != README_PLATFORMS:
+        raise SystemExit(f"README platform başlıkları değişti: {head}")
+    if [r[0] for r in rows] != README_ROWS:
+        raise SystemExit(f"README 'Ne yapabilir' satırları değişti: {[r[0] for r in rows]}")
+    if any(len(r[1]) != len(head) for r in rows):
+        raise SystemExit("README 'Ne yapabilir' tablosunda eksik hücre var")
+    return head, rows
+
+
+def cell_text(cell: str, lang: str) -> str:
+    if lang == "tr":
+        return cell
+    for a, b in CELL_EN:
+        cell = cell.replace(a, b)
+    if re.search(r"[ıİşŞğĞüÜöÖçÇ]", cell):
+        raise SystemExit(f"README hücresinin İngilizcesi yok (CELL_EN'e ekleyin): {cell}")
+    return cell
+
+
 def harness_names() -> list[str]:
     return [re.sub(r"\*\*(.+?)\*\*", r"\1", r[0]) for r in md_table_rows(read("docs/HARNESSES.md"))]
 
@@ -80,6 +141,7 @@ def stats() -> dict[str, int]:
         "cli_cmds": len(re.findall(r"\bsub\.add_parser\(", read("adapters/cli/nexremote_cli.py"))),
         "entry_cmds": len(re.findall(r'^cat > "\$BIN/', read("install.sh"), re.M)),
         "surfaces": len(md_table_rows(read("README.md"), after="## Ne yapabilir")),
+        "platforms": len(readme_matrix()[0]),
         "harnesses": len(harness_names()),
         "suites": len(re.findall(r'^run "', run_all, re.M)),
         "sandbox_suites": len(re.findall(r'^run ".*tests/sandbox\.sh', run_all, re.M)),
@@ -126,20 +188,21 @@ HARNESS_GENERIC = {
 
 S = {
     "en": {
-        "title": "NexRemote — let your AI agent use the Linux desktop",
-        "description": "Shell commands that let an AI agent see and use a Linux desktop: every window, a real mouse and keyboard, controls by name, and the terminals already open on screen.",
+        "title": "NexRemote — let your AI agent use the desktop",
+        "description": "Shell commands that let an AI agent see and use the desktop on Linux, Windows and macOS: every window, a real mouse and keyboard, controls by name, and the terminals already open on screen.",
         "skip": "Skip to content",
         "nav_label": "Sections", "nav_how": "How it works", "nav_replay": "Replay",
         "nav_compare": "Compare", "nav_roadmap": "Roadmap", "nav_install": "Install",
+        "nav_platforms": "Platforms",
         "theme_label": "Switch light / dark",
-        "eyebrow": "Desktop control for AI agents · Linux · Wayland",
+        "eyebrow": "Desktop control for AI agents · Linux · Windows · macOS",
         "h1a": "Your agent can run commands.",
         "h1b": "Now it can use the screen.",
-        "lede": "NexRemote turns a Linux desktop into shell commands: every window, a real mouse and keyboard, buttons pressed by name, and the terminals you already have open, other agents included. No root, no SDK, and a vision model only when an app gives it nothing else to read.",
+        "lede": "NexRemote turns the desktop into shell commands, the same ones on Linux, Windows and macOS: every window, a real mouse and keyboard, buttons pressed by name, and the terminals you already have open, other agents included. No root, no SDK, and a vision model only when an app gives it nothing else to read.",
         "cta_download": "Download", "cta_see": "See it work",
         "copy": "Copy", "copied": "Copied",
-        "hero_meta": "MIT · KDE Plasma 6 on Wayland · Python 3.10+",
-        "hv_title": "Drawing of a Linux desktop with terminals, a settings window and a video player. The agent's green crosshair lists the windows, finds the Dark switch by name and presses it, reads a terminal, and clicks the player from a screenshot.",
+        "hero_meta": "MIT · Linux · Windows · macOS (preview) · Python 3.9+",
+        "hv_title": "Drawing of a desktop, here KDE Plasma on Linux, with terminals, a settings window and a video player. The agent's green crosshair lists the windows, finds the Dark switch by name and presses it, reads a terminal, and clicks the player from a screenshot.",
         "hv1": "Window manager", "hv2": "Accessibility tree", "hv3": "Terminal text", "hv4": "Pixels, last",
         "mq_label": "Setups documented for",
 
@@ -162,23 +225,23 @@ S = {
         "how_h": "Structure first. Pixels last.",
         "how_p": "Before it looks at a single pixel, NexRemote asks the desktop what it already knows. Each step down is used only when the one above has nothing to give.",
         "lad1_t": "Ask the window manager",
-        "lad1_d": "KWin lists every window with its title, app, position and focus. The agent can bring one forward, minimize or close it, including apps that publish nothing else.",
+        "lad1_d": "The window manager lists every window with its title, app, position and focus: KWin, Sway, Hyprland or EWMH on Linux, Win32 on Windows, CGWindowList on macOS. The agent can bring one forward, minimize or close it, including apps that publish nothing else.",
         "lad2_t": "Read the accessibility tree, act by name",
-        "lad2_d": "Buttons, switches and fields come with names and roles. The agent presses “Dark” by its name. The mouse does not move, and nothing depends on where the control is drawn.",
+        "lad2_d": "Buttons, switches and fields come with names and roles, through AT-SPI, UI Automation or the macOS accessibility API. The agent presses “Dark” by its name. The mouse does not move, and nothing depends on where the control is drawn.",
         "lad3_t": "Read terminal text directly",
-        "lad3_d": "Konsole tabs and tmux panes hand over their text, along with the program running in each. No screenshot, no OCR, no focus change.",
+        "lad3_d": "Konsole tabs and tmux panes hand over their text along with the program running in each; Windows consoles, Terminal.app and iTerm2 hand over theirs too. No screenshot, no OCR, no focus change.",
         "lad4_t": "Only then: screenshot and click pixels",
-        "lad4_d": "For browsers, games and most Electron apps. The shot is cropped to one window and scaled for the model; a pixel in that image is mapped back to the screen and clicked through the RemoteDesktop portal.",
+        "lad4_d": "For browsers, games and most Electron apps. The shot is cropped to one window and scaled for the model; a pixel in that image is mapped back to the screen and clicked through the system's own input: the RemoteDesktop portal or XTEST, SendInput, CGEvent.",
         "via": "Channel", "model_gets": "Model receives", "gets_text": "text", "gets_image": "one image",
         "lp_structured": "structured", "lp_pixels": "pixels",
         "st_notree": "no tree published", "st_lift": "plain text, no image",
         "arch_h": "One core between any agent and the desktop",
         "arch_p": "Adapters only know the core; the core only talks to channels the desktop already provides. If a backend is missing, the rest keep working and <code>nexremote caps</code> says what is off.",
-        "arch_alt": "Architecture: your agent connects through one of four adapters (shell CLI, MCP, HTTP, text loop) to the NexRemote core, which reaches the desktop through KWin scripting, AT-SPI, the RemoteDesktop portal, Konsole D-Bus and tmux, its own tmux or PTY sessions, and spectacle or grim.",
+        "arch_alt": "Architecture: your agent connects through one of four adapters (shell CLI, MCP, HTTP, text loop) to the NexRemote core, which reaches the desktop through the channels each platform already has: KWin, Win32 or CGWindowList for windows; AT-SPI, UI Automation or AX for controls; the RemoteDesktop portal, SendInput or CGEvent for input; Konsole, Windows consoles or Terminal.app for open terminals; tmux, a PTY or cmd.exe for its own shell; grim, GDI or screencapture for screenshots.",
         "arch_agent": "Your agent", "arch_agent_s": "any harness, any model",
         "arch_text": "Text loop", "arch_core": "Core", "arch_desk": "Your desktop",
-        "a_win": "windows", "a_ctl": "controls by name", "a_in": "mouse + keyboard",
-        "a_term": "open terminals", "a_sh": "its own shell", "a_shot": "screenshots",
+        "a_win": "Windows", "a_ctl": "Controls by name", "a_in": "Mouse + keyboard",
+        "a_term": "Open terminals", "a_sh": "Its own shell", "a_shot": "Screenshots",
 
         "replay_kicker": "Replay",
         "replay_h": "A session, replayed",
@@ -189,21 +252,55 @@ S = {
 
         "reach_kicker": "Reach",
         "reach_h": "What it reaches",
-        "reach_note": "Each surface uses the most direct channel the desktop offers, and says so in <code>nexremote caps</code> when one is missing.",
-        "th_cmd": "Commands", "th_how": "Through",
+        "reach_note": "The same commands on Linux, Windows and macOS. Each surface takes the most direct channel the system offers (the platform table below names it), and <code>nexremote caps</code> says when one is missing.",
+        "th_cmd": "Commands",
         "r_win": "Windows", "r_win_n": "Every window on screen, including apps that publish no accessibility tree.",
         "r_mouse": "Mouse", "r_mouse_n": "Your pointer is put back where it was right after each click.",
-        "r_keys": "Keyboard", "r_keys_how": "portal + clipboard",
-        "r_keys_n": "Any language. Characters your layout lacks are pasted, then your clipboard is restored.",
+        "r_keys": "Keyboard",
+        "r_keys_n": "Any language. Text goes in as Unicode; where the channel can't carry a character, it is pasted and your clipboard restored.",
         "r_names": "Controls by name", "r_names_n": "Presses buttons and toggles without moving the mouse at all.",
         "r_terms": "Open terminals", "r_terms_n": "Shows what runs in each one: claude, ssh, vim, a build.",
         "r_shell": "Its own shell", "r_shell_n": "Sessions survive between calls, so it can start something and check on it later.",
         "r_shot": "Screen", "r_shot_n": "Crop and scale are remembered, so <code>click X Y --from-shot</code> lands on the right pixel.",
         "r_caps": "Something missing?", "r_caps_n": "One command reports which channels work on this machine and which packages the rest need.",
+        "plat_kicker": "Platforms",
+        "plat_h": "Three desktops, one set of commands.",
+        "plat_p": "Refs, output and flags are the same everywhere. Underneath, each platform gets its own channel, named in the table. How far each one is tested is stated per environment, not rounded up.",
+        "preview": "Preview",
+        "os_tested": "Tested",
+        "os_linux_s": "KDE Plasma 6, GNOME, X11, Sway, Hyprland",
+        "os_win_s": "Built for Windows 10 and 11",
+        "os_mac_s": "Quartz events and the accessibility API",
+        "tb_real": "Real desktop",
+        "tb_xvfb": "Xvfb sandbox",
+        "tb_fake": "Fake IPC",
+        "tb_none": "Untested",
+        "tb_wine": "{{wine_result}} passed",
+        "tb_mock": "Mock Quartz",
+        "env_mac_n": "Unit tests",
+        "env_kde": "Run on a real desktop. Input tests run in a sandbox with its own D-Bus, a virtual KWin, portal and PipeWire.",
+        "env_x11": "End-to-end suite on a headless X server: XTEST input, EWMH windows, screenshots, the CLI.",
+        "env_wl": "swaymsg and hyprctl are replaced by fakes; not yet run on a real compositor.",
+        "env_gnome": "The portal path should work; the window list falls back to AT-SPI.",
+        "env_win": "Real Windows Python under Wine, against a real Notepad window and a cmd.exe console. Not yet run on Windows 10 or 11 hardware.",
+        "env_win2": "Click by name is untested: Wine's UI Automation has no control tree to walk.",
+        "env_mac": "The logic is unit-tested against a fake Quartz library. Not yet run on a real Mac.",
+        "env_mac2": "Allow Accessibility and Screen Recording once, in System Settings.",
+        "tb_legend": "Solid: a real desktop. Outline: a real display server, run headless or under Wine. Amber: logic checked against fakes. Dashed: not tested.",
+        "pm_caption": "The channel each capability uses on Linux, Windows and macOS",
+        "pm_cap": "Capability",
+        "pm_rows": "Every window on screen|Real mouse|Real keyboard|Press a button by name|Open terminals|Its own terminal|Screenshots",
+        "pm_cursor": "Visible agent cursor",
+        "pm_cursor_linux": "click-through overlay",
+        "pm_planned": "planned",
+        "pm_note_gnome": "GNOME: AT-SPI only",
+        "pm_note_wine": "not exercised under Wine",
+        "pm_dim": "{{surfaces}} surfaces × {{platforms}} platforms",
+        "pm_src": "Channels are read from the project README when this page is built.",
 
         "watch_kicker": "Terminals",
         "watch_h": "Eight agents open? One of them can run the others.",
-        "watch_p1": "Every Konsole tab and tmux pane is listed with the program in its foreground. An agent can read another agent's screen, answer its question, or stop it with <code>--key C-c</code>.",
+        "watch_p1": "Every Konsole tab and tmux pane is listed with the program in its foreground, and so are Windows consoles and Terminal.app and iTerm2 windows. An agent can read another agent's screen, answer its question, or stop it with <code>--key C-c</code>.",
         "watch_p2": "None of it needs window focus or your keyboard. You keep working while it does.",
         "watch_cap": "Output in the exact CLI format; terminal names are examples. The last two commands ran in the test sandbox.",
 
@@ -221,6 +318,7 @@ S = {
         "c_api": "Per-app APIs and SDKs",
         "yes": "Yes", "no": "No", "partly": "Partly",
         "cr1": "Presses controls by name, not by coordinates",
+        "c1u": "AT-SPI · UI Automation · AX",
         "c1s": "guesses coordinates from the image",
         "c1r": "some RPA tools use selectors; xdotool clicks coordinates",
         "c_inapp": "inside that one app",
@@ -234,11 +332,13 @@ S = {
         "c3r": "blind coordinates",
         "c3a": "needs an API",
         "cr4": "Reads and answers terminals already open",
+        "c4u": "Konsole · tmux · Windows consoles · Terminal.app",
         "c4s": "from pixels, when the window is visible",
         "c4r": "can type, cannot read",
         "c4a": "out of scope",
-        "cr5": "Runs on Wayland without root",
-        "c5s": "depends on setup; often an X11 VM",
+        "cr5": "Runs without root or admin rights, Wayland included",
+        "c5u": "Wayland portal; user rights on Windows and macOS",
+        "c5s": "depends on setup; often a VM",
         "c5r": "X11 only, or root for /dev/uinput",
         "c5a": "does not touch input",
         "cr6": "Plugs into any agent through a shell command",
@@ -257,7 +357,7 @@ S = {
         "n_harn": "harness setups documented",
         "n_tests": "test suites, {{sandbox_suites}} of them in a throwaway desktop",
         "n_loc": "lines of Python, core and adapters",
-        "n_root": "root privileges needed",
+        "n_root": "root or admin rights needed",
 
         "why_kicker": "Why now",
         "why_h": "The pieces are in place.",
@@ -267,25 +367,32 @@ S = {
         "why2_t": "MCP became a common tool protocol",
         "why2_d": "Editors and agent clients load tools over MCP. One NexRemote server gives all of them the same desktop tools, with screenshots returned as images.",
         "why3_t": "Linux desktops moved to Wayland",
-        "why3_d": "Wayland removed the X11 shortcuts that old automation relied on. The sanctioned way in is the xdg-desktop-portal RemoteDesktop interface, which asks the user once. NexRemote is built on it.",
+        "why3_d": "Wayland removed the X11 shortcuts that old automation relied on. The sanctioned way in is the xdg-desktop-portal RemoteDesktop interface, which asks the user once. On Linux, NexRemote is built on it.",
 
         "rm_kicker": "Roadmap",
         "rm_h": "What exists, what comes next",
         "rm_p": "The left column ships in the download today. The right column is planned, not built.",
         "rm_now": "In v{{version}} today", "rm_next": "Planned",
-        "sh1": "Every window through KWin scripting",
-        "sh2": "Mouse and keyboard through the RemoteDesktop portal, approved once",
+        "sh1": "KDE Plasma: every window through KWin scripting, mouse and keyboard through the RemoteDesktop portal, approved once",
+        "sh2": "X11 (XTEST, EWMH), Sway and Hyprland (their own IPC) behind the same commands",
         "sh3": "Reading and typing into open Konsole tabs and tmux panes",
         "sh4": "{{mcp_tools}} MCP tools, {{cli_cmds}} CLI commands, an HTTP API and a text loop for models without tool calling",
-        "sh5": "Input tests that run in an isolated sandbox desktop",
+        "sh5": "Input tests in an isolated sandbox desktop, X11 in Xvfb, Windows under Wine",
+        "sh6": "Windows: Win32 windows, Unicode input through SendInput, GDI screenshots, UI Automation, reading and typing into open consoles",
+        "sh7": "macOS preview: Quartz input, CGWindowList windows, the accessibility tree, Terminal.app, iTerm2 and tmux",
+        "sh8": "A pip package: <code>pip install .[all]</code> on Linux, Windows and macOS",
         "rm1_t": "Electron accessibility wrapper.",
         "rm1_d": "Start Electron apps with <code>--force-renderer-accessibility</code> automatically, so their buttons can be pressed by name instead of by pixel.",
-        "rm2_t": "GNOME and wlroots validation.",
-        "rm2_d": "Test the portal path on GNOME and on wlroots compositors such as Sway, and document what works.",
+        "rm2_t": "GNOME, and real Sway and Hyprland.",
+        "rm2_d": "Test the portal path and the window list on GNOME, and run Sway and Hyprland on a real compositor instead of fake IPC.",
         "rm3_t": "Remote deployment.",
-        "rm3_d": "Ship the HTTP adapter with a systemd unit for running on another machine.",
+        "rm3_d": "Ship the HTTP adapter with a service unit for running it on another machine.",
         "rm4_t": "Live window tree over MCP.",
         "rm4_d": "Serve the window list and accessibility tree as MCP resources, alongside the tools.",
+        "rm5_t": "Real Windows and Mac hardware.",
+        "rm5_d": "Run the suites on Windows 10 and 11 and on a Mac, then drop the preview label.",
+        "rm6_t": "Agent cursor on Windows and macOS.",
+        "rm6_d": "The visible crosshair that shows where the agent is acting exists only on Linux today.",
 
         "connect_kicker": "Connect",
         "connect_h": "Plug it into your agent",
@@ -300,24 +407,38 @@ S = {
 
         "trust_kicker": "Safety",
         "trust_h": "What it does to your machine",
-        "f1_t": "Asks once", "f1_d": "KDE shows a remote-control dialog the first time. Tick <em>Allow restoring</em> and it won't ask again. Delete <code>~/.config/nexremote/portal.json</code> to take it back.",
-        "f2_t": "Gives your pointer back", "f2_d": "Wayland has one pointer. A click borrows it and returns it to where it was.",
-        "f3_t": "No root", "f3_d": "No <code>/dev/uinput</code>, no daemon running as another user.",
+        "f1_t": "Asks once", "f1_d": "On Wayland the desktop shows a remote-control dialog the first time; tick <em>Allow restoring</em> and it won't ask again (delete <code>~/.config/nexremote/portal.json</code> to take it back). On macOS you allow Accessibility and Screen Recording once. Windows and X11 don't ask.",
+        "f2_t": "Gives your pointer back", "f2_d": "There is one pointer. A click borrows it and puts it back where it was.",
+        "f3_t": "No root, no admin", "f3_d": "No <code>/dev/uinput</code>, no driver, no service running as another user. On Windows it runs as you; windows running as administrator stay out of reach unless NexRemote is elevated too.",
         "f4_t": "Closed to the network", "f4_d": "The HTTP adapter will not listen beyond localhost without a token.",
-        "f5_t": "Tested where it can't hurt you", "f5_d": "Input tests run in a throwaway desktop with its own D-Bus, a virtual KWin, its own portal and PipeWire.",
+        "f5_t": "Tested where it can't hurt you", "f5_d": "Input tests run in a throwaway desktop with its own D-Bus, a virtual KWin, its own portal and PipeWire. X11 runs in Xvfb, Windows in its own Wine prefix on a headless display.",
         "limits_h": "Limits",
-        "l1": "Tested on KDE Plasma 6 (Wayland). GNOME should work through the same portal, but the window list falls back to accessibility. wlroots compositors are untested.",
-        "l2": "Konsole exposes the visible screen only. For scrollback, run the agent in tmux.",
-        "l3": "Browsers and Electron apps are driven by screenshot and coordinates.",
+        "l1": "Linux: KDE Plasma 6 on Wayland is tested on a real desktop, X11 on a real X server (Xvfb), Sway and Hyprland with fake IPC. On GNOME the window list falls back to AT-SPI only.",
+        "l2": "Windows: tested on Wine 10, not yet on real Windows 10 or 11. Wine's UI Automation can't walk the control tree, so click by name is untested there. Windows running as administrator are reachable only when NexRemote runs as administrator too (UIPI).",
+        "l3": "macOS: the code is written and its logic tested against a fake Quartz, but it has not yet been verified on a real Mac. It ships as a preview.",
+        "l4": "Konsole exposes the visible screen only. For scrollback, run the agent in tmux.",
+        "l5": "Browsers and Electron apps mostly publish no tree; they are driven by screenshot and coordinates.",
+        "l6": "The visible agent cursor is Linux-only for now.",
 
         "install_kicker": "Install",
         "install_h": "Install in three steps",
+        "install_os_label": "Operating system",
         "s1_t": "Download and unpack",
         "s2_t": "Install the commands",
         "s2_d": "Puts <code>nexremote</code>, <code>nexremote-mcp</code>, <code>nexremote-http</code> and <code>nexremote-agent</code> in <code>~/bin</code>, then lists anything missing.",
         "s3_t": "Grant access once",
-        "s3_d": "Turns on the accessibility tree and opens KDE's remote-control dialog: tick <em>Allow restoring</em>, press <em>Share</em>.",
-        "reqs": "Needs <code>python3-dbus</code> <code>python3-gi</code> <code>xdg-desktop-portal-kde</code> <code>pipewire</code> <code>wl-clipboard</code>. Optional: <code>tmux</code> <code>python3-pil</code> <code>python3-xlib</code>, <code>pip install mcp</code>.",
+        "s3_d": "Turns on the accessibility tree and, on Wayland, opens the desktop's remote-control dialog: tick <em>Allow restoring</em>, press <em>Share</em>. X11 asks nothing.",
+        "reqs": "Needs <code>python3-dbus</code> <code>python3-gi</code> <code>xdg-desktop-portal-kde</code> <code>pipewire</code> <code>wl-clipboard</code>. Optional: <code>tmux</code> <code>python3-pil</code> <code>python3-xlib</code>, <code>pip install mcp</code>. Rather use pip? <code>pipx install --system-site-packages .</code> keeps the system's D-Bus and GObject bindings in view.",
+        "w2_t": "Install with pip",
+        "w2_d": "Puts <code>nexremote</code>, <code>nexremote-mcp</code>, <code>nexremote-http</code> and <code>nexremote-agent</code> on your path. <code>comtypes</code>, for UI Automation, comes along.",
+        "w3_t": "See what works",
+        "w3_d": "No permission dialog. Windows running as administrator are reachable only if NexRemote runs as administrator too.",
+        "reqs_win": "Needs Python 3.9 or newer, started with the <code>py</code> launcher. <code>[all]</code> adds <code>pillow</code> for cropping and scaling screenshots and <code>mcp</code> for the MCP server. Tested under Wine 10, not yet on real Windows 10 or 11.",
+        "m2_t": "Install with pip",
+        "m2_d": "Puts the four commands on your path. <code>[all]</code> adds screenshot scaling and the MCP server.",
+        "m3_t": "Grant access once",
+        "m3_d": "Opens the Accessibility and Screen Recording prompts. Allow your terminal in System Settings → Privacy &amp; Security; it is not asked again.",
+        "reqs_mac": "Needs Python 3.9 or newer. Optional: <code>tmux</code> for scrollback. Preview: tested against a fake Quartz, not yet on a real Mac.",
 
         "cta_h": "Give your agent the desktop.",
         "cta_p": "Unpack, install, approve once. For questions about the project, a partnership or an investment, write to us.",
@@ -327,20 +448,21 @@ S = {
         "home": "/", "path": "/",
     },
     "tr": {
-        "title": "NexRemote — AI ajanın Linux masaüstünü kullansın",
-        "description": "Bir AI ajanının Linux masaüstünü görmesini ve kullanmasını sağlayan kabuk komutları: her pencere, gerçek fare ve klavye, adıyla kontroller ve ekranda açık terminaller.",
+        "title": "NexRemote — AI ajanın masaüstünü kullansın",
+        "description": "Bir AI ajanının Linux, Windows ve macOS'ta masaüstünü görmesini ve kullanmasını sağlayan kabuk komutları: her pencere, gerçek fare ve klavye, adıyla kontroller ve ekranda açık terminaller.",
         "skip": "İçeriğe geç",
         "nav_label": "Bölümler", "nav_how": "Nasıl çalışır", "nav_replay": "Oturum",
         "nav_compare": "Karşılaştır", "nav_roadmap": "Yol haritası", "nav_install": "Kurulum",
+        "nav_platforms": "Platformlar",
         "theme_label": "Açık / koyu tema",
-        "eyebrow": "AI ajanları için masaüstü kontrolü · Linux · Wayland",
+        "eyebrow": "AI ajanları için masaüstü kontrolü · Linux · Windows · macOS",
         "h1a": "Ajanın komut çalıştırabiliyor.",
         "h1b": "Artık ekranı da kullanabilir.",
-        "lede": "NexRemote bir Linux masaüstünü kabuk komutlarına çevirir: her pencere, gerçek fare ve klavye, adıyla basılan düğmeler ve zaten açık olan terminallerin, diğer ajanlar dahil. Root yok, SDK yok; görsel model ancak uygulama okunacak başka bir şey vermediğinde devreye girer.",
+        "lede": "NexRemote masaüstünü kabuk komutlarına çevirir; Linux'ta, Windows'ta ve macOS'ta aynı komutlarla: her pencere, gerçek fare ve klavye, adıyla basılan düğmeler ve zaten açık olan terminallerin, diğer ajanlar dahil. Root yok, SDK yok; görsel model ancak uygulama okunacak başka bir şey vermediğinde devreye girer.",
         "cta_download": "İndir", "cta_see": "Çalışırken gör",
         "copy": "Kopyala", "copied": "Kopyalandı",
-        "hero_meta": "MIT · KDE Plasma 6, Wayland · Python 3.10+",
-        "hv_title": "Terminallerin, bir ayarlar penceresinin ve bir video oynatıcının açık olduğu bir Linux masaüstü çizimi. Ajanın yeşil artı imleci pencereleri listeler, Koyu anahtarını adıyla bulup basar, bir terminali okur ve ekran görüntüsünden oynatıcıya tıklar.",
+        "hero_meta": "MIT · Linux · Windows · macOS (önizleme) · Python 3.9+",
+        "hv_title": "Bir masaüstü çizimi (burada Linux'ta KDE Plasma): terminaller, bir ayarlar penceresi ve bir video oynatıcı. Ajanın yeşil artı imleci pencereleri listeler, Koyu anahtarını adıyla bulup basar, bir terminali okur ve ekran görüntüsünden oynatıcıya tıklar.",
         "hv1": "Pencere yöneticisi", "hv2": "Erişilebilirlik ağacı", "hv3": "Terminal metni", "hv4": "En son piksel",
         "mq_label": "Kurulumu belgelenmiş ortamlar",
 
@@ -363,23 +485,23 @@ S = {
         "how_h": "Önce yapı. Piksel en son.",
         "how_p": "NexRemote tek bir piksele bakmadan önce masaüstüne zaten ne bildiğini sorar. Bir alt basamağa ancak üstteki basamak verecek bir şey bulamadığında iner.",
         "lad1_t": "Pencere yöneticisine sor",
-        "lad1_d": "KWin her pencereyi başlığı, uygulaması, konumu ve odağıyla listeler. Ajan bir pencereyi öne getirebilir, küçültebilir ya da kapatabilir; başka hiçbir şey yayınlamayan uygulamalar dahil.",
+        "lad1_d": "Pencere yöneticisi her pencereyi başlığı, uygulaması, konumu ve odağıyla listeler: Linux'ta KWin, Sway, Hyprland ya da EWMH, Windows'ta Win32, macOS'ta CGWindowList. Ajan bir pencereyi öne getirebilir, küçültebilir ya da kapatabilir; başka hiçbir şey yayınlamayan uygulamalar dahil.",
         "lad2_t": "Erişilebilirlik ağacını oku, adıyla bas",
-        "lad2_d": "Düğmeler, anahtarlar ve alanlar adları ve rolleriyle gelir. Ajan “Dark” anahtarına adıyla basar. Fare hiç oynamaz ve hiçbir şey kontrolün ekranda nerede çizildiğine bağlı değildir.",
+        "lad2_d": "Düğmeler, anahtarlar ve alanlar adları ve rolleriyle gelir; AT-SPI, UI Automation ya da macOS'un erişilebilirlik arayüzü üzerinden. Ajan “Dark” anahtarına adıyla basar. Fare hiç oynamaz ve hiçbir şey kontrolün ekranda nerede çizildiğine bağlı değildir.",
         "lad3_t": "Terminal metnini doğrudan oku",
-        "lad3_d": "Konsole sekmeleri ve tmux bölmeleri metinlerini, her birinde çalışan programla birlikte verir. Ekran görüntüsü yok, OCR yok, odak değişmez.",
+        "lad3_d": "Konsole sekmeleri ve tmux bölmeleri metinlerini, her birinde çalışan programla birlikte verir; Windows konsolları, Terminal.app ve iTerm2 de metnini verir. Ekran görüntüsü yok, OCR yok, odak değişmez.",
         "lad4_t": "Ancak o zaman: ekran görüntüsü ve piksel",
-        "lad4_d": "Tarayıcılar, oyunlar ve çoğu Electron uygulaması için. Görüntü tek pencereye kırpılır ve modele göre küçültülür; o görüntüdeki bir piksel ekrana geri çevrilir ve RemoteDesktop portalı üzerinden tıklanır.",
+        "lad4_d": "Tarayıcılar, oyunlar ve çoğu Electron uygulaması için. Görüntü tek pencereye kırpılır ve modele göre küçültülür; o görüntüdeki bir piksel ekrana geri çevrilir ve sistemin kendi girdi kanalıyla tıklanır: RemoteDesktop portalı ya da XTEST, SendInput, CGEvent.",
         "via": "Kanal", "model_gets": "Modele giden", "gets_text": "metin", "gets_image": "tek görüntü",
         "lp_structured": "yapısal", "lp_pixels": "piksel",
         "st_notree": "ağaç yayınlamıyor", "st_lift": "düz metin, görüntü yok",
         "arch_h": "Her ajanla masaüstü arasında tek çekirdek",
         "arch_p": "Adaptörler yalnızca çekirdeği bilir; çekirdek yalnızca masaüstünün zaten sunduğu kanallarla konuşur. Bir backend eksikse geri kalanı çalışmaya devam eder ve <code>nexremote caps</code> neyin kapalı olduğunu söyler.",
-        "arch_alt": "Mimari: ajanın dört adaptörden biriyle (kabuk CLI, MCP, HTTP, metin döngüsü) NexRemote çekirdeğine bağlanır; çekirdek masaüstüne KWin betikleri, AT-SPI, RemoteDesktop portalı, Konsole D-Bus ve tmux, kendi tmux ya da PTY oturumları ve spectacle ya da grim üzerinden ulaşır.",
+        "arch_alt": "Mimari: ajanın dört adaptörden biriyle (kabuk CLI, MCP, HTTP, metin döngüsü) NexRemote çekirdeğine bağlanır; çekirdek masaüstüne her platformun zaten sunduğu kanallardan ulaşır: pencereler için KWin, Win32 ya da CGWindowList; kontroller için AT-SPI, UI Automation ya da AX; girdi için RemoteDesktop portalı, SendInput ya da CGEvent; açık terminaller için Konsole, Windows konsolları ya da Terminal.app; kendi kabuğu için tmux, PTY ya da cmd.exe; ekran görüntüsü için grim, GDI ya da screencapture.",
         "arch_agent": "Ajanın", "arch_agent_s": "her harness, her model",
         "arch_text": "Metin döngüsü", "arch_core": "Çekirdek", "arch_desk": "Masaüstün",
-        "a_win": "pencereler", "a_ctl": "adıyla kontroller", "a_in": "fare + klavye",
-        "a_term": "açık terminaller", "a_sh": "kendi kabuğu", "a_shot": "ekran görüntüleri",
+        "a_win": "Pencereler", "a_ctl": "Adıyla kontroller", "a_in": "Fare + klavye",
+        "a_term": "Açık terminaller", "a_sh": "Kendi kabuğu", "a_shot": "Ekran görüntüleri",
 
         "replay_kicker": "Oturum",
         "replay_h": "Bir oturumun tekrarı",
@@ -390,21 +512,55 @@ S = {
 
         "reach_kicker": "Erişim",
         "reach_h": "Neye uzanır",
-        "reach_note": "Her yüzey, masaüstünün sunduğu en doğrudan kanalı kullanır; biri eksikse <code>nexremote caps</code> bunu söyler.",
-        "th_cmd": "Komutlar", "th_how": "Nereden",
+        "reach_note": "Linux'ta, Windows'ta ve macOS'ta aynı komutlar. Her yüzey, sistemin sunduğu en doğrudan kanalı kullanır (aşağıdaki platform tablosu hangisi olduğunu gösterir); biri eksikse <code>nexremote caps</code> bunu söyler.",
+        "th_cmd": "Komutlar",
         "r_win": "Pencereler", "r_win_n": "Ekrandaki her pencere; erişilebilirlik ağacı yayınlamayan uygulamalar dahil.",
         "r_mouse": "Fare", "r_mouse_n": "Her tıktan hemen sonra imleciniz eski yerine konur.",
-        "r_keys": "Klavye", "r_keys_how": "portal + pano",
-        "r_keys_n": "Her dil. Klavye düzeninizde olmayan karakterler yapıştırılır, panonuz geri yüklenir.",
+        "r_keys": "Klavye",
+        "r_keys_n": "Her dil. Metin Unicode olarak gider; kanalın taşıyamadığı karakter yapıştırılır, panonuz geri yüklenir.",
         "r_names": "Adıyla kontroller", "r_names_n": "Düğmelere ve anahtarlara, fareyi hiç oynatmadan basar.",
         "r_terms": "Açık terminaller", "r_terms_n": "Her birinde ne çalıştığını gösterir: claude, ssh, vim, bir build.",
         "r_shell": "Kendi kabuğu", "r_shell_n": "Oturumlar çağrılar arasında yaşar; bir şeyi başlatıp sonra dönüp bakabilir.",
         "r_shot": "Ekran", "r_shot_n": "Kırpma ve ölçek hatırlanır; <code>click X Y --from-shot</code> doğru piksele düşer.",
         "r_caps": "Bir şey eksik mi?", "r_caps_n": "Tek komut, bu makinede hangi kanalların çalıştığını ve geri kalanı için hangi paketlerin gerektiğini söyler.",
+        "plat_kicker": "Platformlar",
+        "plat_h": "Üç masaüstü, tek komut seti.",
+        "plat_p": "Ref'ler, çıktı ve bayraklar her yerde aynı. Altta her platform kendi kanalını kullanır; tablo hangisi olduğunu gösterir. Her birinin ne kadar test edildiği ortam ortam yazılı, yuvarlanmadan.",
+        "preview": "Önizleme",
+        "os_tested": "Test durumu",
+        "os_linux_s": "KDE Plasma 6, GNOME, X11, Sway, Hyprland",
+        "os_win_s": "Windows 10 ve 11 için yazıldı",
+        "os_mac_s": "Quartz olayları ve erişilebilirlik arayüzü",
+        "tb_real": "Gerçek masaüstü",
+        "tb_xvfb": "Xvfb sandbox",
+        "tb_fake": "Sahte IPC",
+        "tb_none": "Test edilmedi",
+        "tb_wine": "{{wine_result}} geçti",
+        "tb_mock": "Sahte Quartz",
+        "env_mac_n": "Birim testleri",
+        "env_kde": "Gerçek masaüstünde çalıştırıldı. Girdi testleri kendi D-Bus'ı, sanal KWin'i, portalı ve PipeWire'ı olan bir sandbox'ta koşar.",
+        "env_x11": "Ekransız bir X sunucusunda uçtan uca test: XTEST girdisi, EWMH pencereleri, ekran görüntüsü, CLI.",
+        "env_wl": "swaymsg ve hyprctl yerine sahteleri konur; henüz gerçek bir compositor'da çalıştırılmadı.",
+        "env_gnome": "Portal yolu çalışmalı; pencere listesi AT-SPI'ye düşer.",
+        "env_win": "Wine içinde gerçek Windows Python'u; gerçek bir Notepad penceresi ve cmd.exe konsoluyla. Henüz gerçek Windows 10 ya da 11 donanımında çalıştırılmadı.",
+        "env_win2": "İsimle tıklama sınanamadı: Wine'ın UI Automation'ı gezilecek bir denetim ağacı vermiyor.",
+        "env_mac": "Mantık, sahte bir Quartz kütüphanesiyle birim testinden geçti. Henüz gerçek bir Mac'te çalıştırılmadı.",
+        "env_mac2": "Erişilebilirlik ve Ekran Kaydı izni Sistem Ayarları'ndan bir kez verilir.",
+        "tb_legend": "Dolu: gerçek masaüstü. Çerçeve: ekransız ya da Wine altında çalışan gerçek bir görüntü sunucusu. Amber: mantık sahtelerle sınandı. Kesikli: test edilmedi.",
+        "pm_caption": "Her yeteneğin Linux, Windows ve macOS'ta kullandığı kanal",
+        "pm_cap": "Yetenek",
+        "pm_rows": "Ekrandaki her pencere|Gerçek fare|Gerçek klavye|Butona adıyla basma|Açık terminaller|Kendi terminali|Ekran görüntüsü",
+        "pm_cursor": "Görünür ajan imleci",
+        "pm_cursor_linux": "tıklamayı engellemeyen katman",
+        "pm_planned": "planlandı",
+        "pm_note_gnome": "GNOME'da yalnızca AT-SPI",
+        "pm_note_wine": "Wine'da sınanamadı",
+        "pm_dim": "{{surfaces}} yüzey × {{platforms}} platform",
+        "pm_src": "Kanallar, sayfa her üretildiğinde proje README'sinden okunur.",
 
         "watch_kicker": "Terminaller",
         "watch_h": "Sekiz ajan açık mı? Biri diğerlerini yönetebilir.",
-        "watch_p1": "Her Konsole sekmesi ve tmux bölmesi, ön plandaki programıyla listelenir. Bir ajan başka bir ajanın ekranını okuyabilir, sorusuna cevap verebilir ya da <code>--key C-c</code> ile durdurabilir.",
+        "watch_p1": "Her Konsole sekmesi ve tmux bölmesi ön plandaki programıyla listelenir; Windows konsolları, Terminal.app ve iTerm2 pencereleri de listededir. Bir ajan başka bir ajanın ekranını okuyabilir, sorusuna cevap verebilir ya da <code>--key C-c</code> ile durdurabilir.",
         "watch_p2": "Bunların hiçbiri pencere odağı ya da klavyeniz gerektirmez. O çalışırken siz de çalışmaya devam edersiniz.",
         "watch_cap": "Çıktı CLI'ın birebir biçiminde; terminal adları örnektir. Son iki komut test sandbox'ında çalıştı.",
 
@@ -422,6 +578,7 @@ S = {
         "c_api": "Uygulamaya özel API ve SDK'lar",
         "yes": "Evet", "no": "Hayır", "partly": "Kısmen",
         "cr1": "Kontrollere koordinatla değil, adıyla basar",
+        "c1u": "AT-SPI · UI Automation · AX",
         "c1s": "koordinatı görüntüden tahmin eder",
         "c1r": "bazı RPA araçları seçici kullanır; xdotool koordinata tıklar",
         "c_inapp": "yalnızca o uygulamada",
@@ -435,11 +592,13 @@ S = {
         "c3r": "kör koordinatlar",
         "c3a": "API gerekir",
         "cr4": "Zaten açık terminalleri okur ve onlara cevap verir",
+        "c4u": "Konsole · tmux · Windows konsolları · Terminal.app",
         "c4s": "pencere görünürse, pikselden",
         "c4r": "yazabilir, okuyamaz",
         "c4a": "kapsam dışı",
-        "cr5": "Wayland'de root olmadan çalışır",
-        "c5s": "kuruluma bağlı; çoğu zaman X11 sanal makinesi",
+        "cr5": "Root ya da yönetici yetkisi olmadan çalışır, Wayland dahil",
+        "c5u": "Wayland'de portal; Windows ve macOS'ta kullanıcı yetkisi",
+        "c5s": "kuruluma bağlı; çoğu zaman sanal makine",
         "c5r": "yalnızca X11 ya da /dev/uinput için root",
         "c5a": "girdiye dokunmaz",
         "cr6": "Her ajana tek bir kabuk komutuyla takılır",
@@ -458,7 +617,7 @@ S = {
         "n_harn": "kurulumu belgelenmiş harness",
         "n_tests": "test paketi; {{sandbox_suites}} tanesi atılabilir bir masaüstünde",
         "n_loc": "satır Python, çekirdek ve adaptörler",
-        "n_root": "gereken root yetkisi",
+        "n_root": "gereken root ya da yönetici yetkisi",
 
         "why_kicker": "Neden şimdi",
         "why_h": "Parçalar yerine oturdu.",
@@ -468,25 +627,32 @@ S = {
         "why2_t": "MCP ortak bir araç protokolü oldu",
         "why2_d": "Editörler ve ajan istemcileri araçlarını MCP üzerinden yükler. Tek bir NexRemote sunucusu hepsine aynı masaüstü araçlarını verir; ekran görüntüleri görsel olarak döner.",
         "why3_t": "Linux masaüstleri Wayland'e geçti",
-        "why3_d": "Wayland, eski otomasyonun dayandığı X11 kestirmelerini kaldırdı. Resmî giriş yolu, kullanıcıya bir kez soran xdg-desktop-portal RemoteDesktop arayüzüdür. NexRemote bunun üzerine kurulu.",
+        "why3_d": "Wayland, eski otomasyonun dayandığı X11 kestirmelerini kaldırdı. Resmî giriş yolu, kullanıcıya bir kez soran xdg-desktop-portal RemoteDesktop arayüzüdür. NexRemote Linux'ta bunun üzerine kurulu.",
 
         "rm_kicker": "Yol haritası",
         "rm_h": "Bugün olan, sırada olan",
         "rm_p": "Sol sütun bugün indirdiğiniz pakette var. Sağ sütun planlandı, henüz yapılmadı.",
         "rm_now": "Bugün v{{version}} içinde", "rm_next": "Planlanan",
-        "sh1": "KWin betikleriyle her pencere",
-        "sh2": "Bir kez onaylanan RemoteDesktop portalı üzerinden fare ve klavye",
+        "sh1": "KDE Plasma: KWin betikleriyle her pencere, bir kez onaylanan RemoteDesktop portalı üzerinden fare ve klavye",
+        "sh2": "Aynı komutların arkasında X11 (XTEST, EWMH), Sway ve Hyprland (kendi IPC'leri)",
         "sh3": "Açık Konsole sekmelerini ve tmux bölmelerini okuma ve onlara yazma",
         "sh4": "{{mcp_tools}} MCP aracı, {{cli_cmds}} CLI komutu, bir HTTP API ve tool calling'i olmayan modeller için metin döngüsü",
-        "sh5": "Yalıtılmış bir sandbox masaüstünde koşan girdi testleri",
+        "sh5": "Yalıtılmış bir sandbox masaüstünde girdi testleri; X11 Xvfb'de, Windows Wine altında",
+        "sh6": "Windows: Win32 pencereleri, SendInput ile Unicode girdi, GDI ekran görüntüsü, UI Automation, açık konsolları okuma ve onlara yazma",
+        "sh7": "macOS önizlemesi: Quartz girdisi, CGWindowList pencereleri, erişilebilirlik ağacı, Terminal.app, iTerm2 ve tmux",
+        "sh8": "Bir pip paketi: Linux'ta, Windows'ta ve macOS'ta <code>pip install .[all]</code>",
         "rm1_t": "Electron erişilebilirlik sarmalayıcısı.",
         "rm1_d": "Electron uygulamalarını otomatik olarak <code>--force-renderer-accessibility</code> ile başlatmak; böylece düğmelerine pikselle değil adıyla basılabilir.",
-        "rm2_t": "GNOME ve wlroots doğrulaması.",
-        "rm2_d": "Portal yolunu GNOME'da ve Sway gibi wlroots tabanlı ortamlarda test etmek, neyin çalıştığını belgelemek.",
+        "rm2_t": "GNOME ve gerçek Sway, Hyprland.",
+        "rm2_d": "Portal yolunu ve pencere listesini GNOME'da test etmek; Sway ve Hyprland'i sahte IPC yerine gerçek bir compositor'da çalıştırmak.",
         "rm3_t": "Uzak kurulum.",
-        "rm3_d": "HTTP adaptörünü başka bir makinede çalıştırmak için bir systemd birimiyle birlikte sunmak.",
+        "rm3_d": "HTTP adaptörünü başka bir makinede çalıştırmak için bir servis birimiyle birlikte sunmak.",
         "rm4_t": "MCP üzerinden canlı pencere ağacı.",
         "rm4_d": "Pencere listesini ve erişilebilirlik ağacını, araçların yanında MCP kaynakları olarak sunmak.",
+        "rm5_t": "Gerçek Windows ve Mac donanımı.",
+        "rm5_d": "Testleri Windows 10 ve 11'de ve bir Mac'te koşmak, sonra önizleme etiketini kaldırmak.",
+        "rm6_t": "Windows ve macOS'ta ajan imleci.",
+        "rm6_d": "Ajanın nerede çalıştığını gösteren görünür artı imleci bugün yalnızca Linux'ta var.",
 
         "connect_kicker": "Bağlantı",
         "connect_h": "Ajanına bağla",
@@ -501,24 +667,38 @@ S = {
 
         "trust_kicker": "Güvenlik",
         "trust_h": "Makinene ne yapar",
-        "f1_t": "Bir kez sorar", "f1_d": "İlk seferde KDE bir uzaktan kontrol penceresi açar. <em>Allow restoring</em> kutusunu işaretleyin, bir daha sormaz. Geri almak için <code>~/.config/nexremote/portal.json</code> dosyasını silin.",
-        "f2_t": "İmlecini geri verir", "f2_d": "Wayland'de tek imleç vardır. Tık onu ödünç alır ve eski yerine geri koyar.",
-        "f3_t": "Root yok", "f3_d": "<code>/dev/uinput</code> yok, başka kullanıcı olarak çalışan servis yok.",
+        "f1_t": "Bir kez sorar", "f1_d": "Wayland'de masaüstü ilk seferde bir uzaktan kontrol penceresi açar; <em>Allow restoring</em> kutusunu işaretleyin, bir daha sormaz (geri almak için <code>~/.config/nexremote/portal.json</code> dosyasını silin). macOS'ta Erişilebilirlik ve Ekran Kaydı izni bir kez verilir. Windows ve X11 sormaz.",
+        "f2_t": "İmlecini geri verir", "f2_d": "Ekranda tek imleç vardır. Tık onu ödünç alır ve eski yerine geri koyar.",
+        "f3_t": "Root yok, yönetici yok", "f3_d": "<code>/dev/uinput</code> yok, sürücü yok, başka kullanıcı olarak çalışan servis yok. Windows'ta sizin hesabınızla çalışır; yönetici olarak çalışan pencerelere ancak NexRemote da yönetici olarak çalışırsa ulaşır.",
         "f4_t": "Ağa kapalı", "f4_d": "HTTP adaptörü token olmadan localhost dışını dinlemez.",
-        "f5_t": "Zarar veremeyeceği yerde test edilir", "f5_d": "Girdi testleri, kendi D-Bus'ı, sanal KWin'i, kendi portalı ve PipeWire'ı olan atılabilir bir masaüstünde koşar.",
+        "f5_t": "Zarar veremeyeceği yerde test edilir", "f5_d": "Girdi testleri, kendi D-Bus'ı, sanal KWin'i, kendi portalı ve PipeWire'ı olan atılabilir bir masaüstünde koşar. X11 Xvfb'de, Windows ekransız bir görüntüde ayrı bir Wine prefix'inde çalışır.",
         "limits_h": "Sınırlar",
-        "l1": "KDE Plasma 6 (Wayland) üzerinde test edildi. GNOME'da aynı portal üzerinden çalışmalı, ama pencere listesi erişilebilirliğe düşer. wlroots tabanlı ortamlar test edilmedi.",
-        "l2": "Konsole yalnızca görünen ekranı verir. Geçmiş satırlar için ajanı tmux içinde çalıştırın.",
-        "l3": "Tarayıcılar ve Electron uygulamaları ekran görüntüsü ve koordinatla kullanılır.",
+        "l1": "Linux: KDE Plasma 6 Wayland gerçek masaüstünde, X11 gerçek bir X sunucusunda (Xvfb), Sway ve Hyprland sahte IPC ile test edildi. GNOME'da pencere listesi yalnızca AT-SPI'ye düşer.",
+        "l2": "Windows: Wine 10 üzerinde test edildi; gerçek Windows 10/11'de doğrulanmadı. Wine'ın UI Automation'ı denetim ağacını gezemediği için isimle tıklama Wine'da sınanamadı. Yönetici olarak çalışan pencerelere yalnızca yönetici olarak çalışan NexRemote ulaşır (UIPI).",
+        "l3": "macOS: kod yazıldı ve mantığı sahte Quartz ile test edildi, ama gerçek bir Mac'te henüz doğrulanmadı; önizleme sürümü.",
+        "l4": "Konsole yalnızca görünen ekranı verir. Geçmiş satırlar için ajanı tmux içinde çalıştırın.",
+        "l5": "Tarayıcılar ve Electron uygulamaları çoğunlukla ağaç yayınlamaz; bunlar ekran görüntüsü ve koordinatla kullanılır.",
+        "l6": "Görünür ajan imleci şimdilik yalnızca Linux'ta.",
 
         "install_kicker": "Kurulum",
         "install_h": "Üç adımda kurulum",
+        "install_os_label": "İşletim sistemi",
         "s1_t": "İndir ve aç",
         "s2_t": "Komutları kur",
         "s2_d": "<code>nexremote</code>, <code>nexremote-mcp</code>, <code>nexremote-http</code> ve <code>nexremote-agent</code> komutlarını <code>~/bin</code> altına koyar, eksik paketleri listeler.",
         "s3_t": "Erişimi bir kez ver",
-        "s3_d": "Erişilebilirlik ağacını açar ve KDE'nin uzaktan kontrol penceresini getirir: <em>Allow restoring</em> işaretle, <em>Share</em>'e bas.",
-        "reqs": "Gerekli: <code>python3-dbus</code> <code>python3-gi</code> <code>xdg-desktop-portal-kde</code> <code>pipewire</code> <code>wl-clipboard</code>. İsteğe bağlı: <code>tmux</code> <code>python3-pil</code> <code>python3-xlib</code>, <code>pip install mcp</code>.",
+        "s3_d": "Erişilebilirlik ağacını açar; Wayland'de masaüstünün uzaktan kontrol penceresini getirir: <em>Allow restoring</em> işaretle, <em>Share</em>'e bas. X11 bir şey sormaz.",
+        "reqs": "Gerekli: <code>python3-dbus</code> <code>python3-gi</code> <code>xdg-desktop-portal-kde</code> <code>pipewire</code> <code>wl-clipboard</code>. İsteğe bağlı: <code>tmux</code> <code>python3-pil</code> <code>python3-xlib</code>, <code>pip install mcp</code>. pip ile kurmak isterseniz: <code>pipx install --system-site-packages .</code> sistemdeki D-Bus ve GObject paketlerini görünür tutar.",
+        "w2_t": "pip ile kur",
+        "w2_d": "<code>nexremote</code>, <code>nexremote-mcp</code>, <code>nexremote-http</code> ve <code>nexremote-agent</code> komutlarını kurar. UI Automation için <code>comtypes</code> da birlikte gelir.",
+        "w3_t": "Neyin çalıştığına bak",
+        "w3_d": "İzin penceresi yok. Yönetici olarak çalışan pencerelere yalnızca NexRemote da yönetici olarak çalışırsa ulaşılır.",
+        "reqs_win": "Gerekli: Python 3.9 ya da daha yenisi, <code>py</code> başlatıcısıyla. <code>[all]</code>, ekran görüntüsünü kırpıp küçültmek için <code>pillow</code> ve MCP sunucusu için <code>mcp</code> ekler. Wine 10 altında test edildi; gerçek Windows 10/11'de henüz değil.",
+        "m2_t": "pip ile kur",
+        "m2_d": "Dört komutu kurar. <code>[all]</code> ekran görüntüsü küçültmeyi ve MCP sunucusunu ekler.",
+        "m3_t": "Erişimi bir kez ver",
+        "m3_d": "Erişilebilirlik ve Ekran Kaydı izin istemlerini açar. Sistem Ayarları → Gizlilik ve Güvenlik'te terminalinize izin verin; bir daha sorulmaz.",
+        "reqs_mac": "Gerekli: Python 3.9 ya da daha yenisi. İsteğe bağlı: geçmiş satırlar için <code>tmux</code>. Önizleme: sahte Quartz ile test edildi, gerçek bir Mac'te henüz değil.",
 
         "cta_h": "Ajanına masaüstünü ver.",
         "cta_p": "Aç, kur, bir kez onayla. Proje, iş birliği ya da yatırım hakkında sorularınız için bize yazın.",
@@ -531,9 +711,9 @@ S = {
 
 # Değeri HTML içeren anahtarlar (geri kalanı kaçışlanır)
 RAW = {"reach_note", "r_shot_n", "watch_p1", "p_text", "f1_d", "f3_d", "s2_d", "s3_d", "reqs",
-       "pa3_b", "arch_p", "rm1_d"}
+       "pa3_b", "arch_p", "rm1_d", "sh8", "w2_d", "reqs_win", "m2_d", "m3_d", "reqs_mac"}
 # Derlemede üretilen, HTML içeren değerler
-GENERATED_RAW = {"replay_json", "h1_html", "marquee_html", "arch_svg_h", "arch_svg_v"}
+GENERATED_RAW = {"replay_json", "h1_html", "marquee_html", "arch_svg_h", "arch_svg_v", "plat_matrix"}
 
 esc = html.escape
 
@@ -562,16 +742,51 @@ def marquee_html(lang: str) -> str:
     return lis
 
 
+def plat_matrix(lang: str, t: dict) -> str:
+    """Platform x yetenek tablosu. Kanallar README tablosundan okunur; masaüstünde
+    tablo, dar ekranda her satır bir kart olur (CSS, data-os etiketleriyle)."""
+    head, rows = readme_matrix()
+    labels = t["pm_rows"].split("|")
+    if len(labels) != len(rows):
+        raise SystemExit(f"[{lang}] pm_rows {len(labels)} satır, README {len(rows)}")
+    # (satır, platform) -> hücre altı not; README "Sınırlar" ile aynı uyarılar
+    notes = {(0, "Linux"): t["pm_note_gnome"], (3, "Windows"): t["pm_note_wine"]}
+    planned = (f'<span class="pm-plan"><svg class="ico" aria-hidden="true"><use href="#i-planned"/></svg>'
+               f'{esc(t["pm_planned"])}</span>')
+
+    def th_os(name: str) -> str:
+        tag = f' <span class="pv">{esc(t["preview"])}</span>' if name == "macOS" else ""
+        return f'<th scope="col">{esc(name)}{tag}</th>'
+
+    def td(os_name: str, body: str, note: str = "") -> str:
+        small = f"<small>{esc(note)}</small>" if note else ""
+        return f'<td data-os="{esc(os_name)}">{body}{small}</td>'
+
+    out = [f'<table class="pm"><caption class="sr">{esc(t["pm_caption"])}</caption>',
+           f'<thead><tr><td><span class="pm-cap">{esc(t["pm_cap"])}</span></td>{"".join(th_os(h) for h in head)}</tr></thead><tbody>']
+    for i, (label, (_, cells)) in enumerate(zip(labels, rows)):
+        tds = "".join(td(h, f'<span class="pm-ch">{esc(cell_text(c, lang))}</span>', notes.get((i, h), ""))
+                      for h, c in zip(head, cells))
+        out.append(f'<tr><th scope="row">{esc(label)}</th>{tds}</tr>')
+    # görünür ajan imleci README tablosunda değil, "Sınırlar"da: yalnızca Linux
+    cur = td("Linux", f'<span class="pm-ch">{esc(t["pm_cursor_linux"])}</span>')
+    cur += td("Windows", planned) + td("macOS", planned)
+    out.append(f'<tr><th scope="row">{esc(t["pm_cursor"])}</th>{cur}</tr>')
+    out.append("</tbody></table>")
+    return "".join(out)
+
+
 def arch_svgs(t: dict) -> tuple[str, str]:
     """Mimari diyagramı iki yönde (yatay masaüstü, dikey mobil) üretir."""
     agent = (t["arch_agent"], t["arch_agent_s"])
     adapters = [("Shell CLI", "nexremote"), ("MCP", "nexremote-mcp"),
                 ("HTTP", "nexremote-http"), (t["arch_text"], "nexremote-agent")]
     core = (t["arch_core"], "nexremote.py")
-    channels = [("KWin scripting", t["a_win"]), ("AT-SPI", t["a_ctl"]),
-                ("RemoteDesktop portal", t["a_in"]), ("Konsole D-Bus · tmux", t["a_term"]),
-                ("tmux · PTY", t["a_sh"]), ("spectacle · grim", t["a_shot"])]
-    desk = (t["arch_desk"], "KDE Plasma 6 · Wayland")
+    # başlık: yetenek; alt satır: Linux · Windows · macOS'taki kanal
+    channels = [(t["a_win"], "KWin · Win32 · CGWindowList"), (t["a_ctl"], "AT-SPI · UIA · AX"),
+                (t["a_in"], "portal · SendInput · CGEvent"), (t["a_term"], "Konsole · wincon · Terminal"),
+                (t["a_sh"], "tmux · PTY · cmd.exe"), (t["a_shot"], "grim · GDI · screencapture")]
+    desk = (t["arch_desk"], "Linux · Windows · macOS")
 
     def node(nid, x, y, w, h, title, sub, cls=""):
         cx = x + w / 2
@@ -593,8 +808,8 @@ def arch_svgs(t: dict) -> tuple[str, str]:
     A = (0, cy - 60, 180, 120)
     ad = [(270, cy + (k - 1.5) * 72 - 23, 170, 46) for k in range(4)]
     C = (530, cy - 60, 150, 120)
-    ch = [(760, cy + (j - 2.5) * 66 - 24, 210, 48) for j in range(6)]
-    D = (1010, cy - 70, 150, 140)
+    ch = [(738, cy + (j - 2.5) * 66 - 24, 225, 48) for j in range(6)]
+    D = (982, cy - 70, 178, 140)
 
     def hcurve(x1, y1, x2, y2):
         m = (x1 + x2) / 2
@@ -611,7 +826,7 @@ def arch_svgs(t: dict) -> tuple[str, str]:
     hn += [node(f"ad{k}", *b, *adapters[k]) for k, b in enumerate(ad)]
     hn.append(node("C", *C, *core, "an-core"))
     hn += [node(f"ch{j}", *b, *channels[j]) for j, b in enumerate(ch)]
-    hn.append(node("D", *D, desk[0], "Plasma 6 · Wayland", "an-desk"))
+    hn.append(node("D", *D, *desk, "an-desk"))
     horiz = svg(f"0 0 1160 {H}", hp, hn, "arch-hz")
 
     # ----- dikey: 360 x 900 (gövde hattı x=180)
@@ -646,7 +861,7 @@ def arch_svgs(t: dict) -> tuple[str, str]:
     vn.append(node("A", *Av, *agent, "an-agent"))
     vn += [node(f"ad{k}", *b, *adv_lbl[k], "an-sm") for k, b in enumerate(adv)]
     vn.append(node("C", *Cv, *core, "an-core"))
-    vn += [node(f"ch{j}", *b, *channels[j], "an-sm") for j, b in enumerate(chv)]
+    vn += [node(f"ch{j}", *b, *channels[j], "an-sm an-ch") for j, b in enumerate(chv)]
     vn.append(node("D", *Dv, *desk, "an-desk"))
     vert = svg("0 0 360 724", vp, vn, "arch-vt")
     return horiz, vert
@@ -661,6 +876,7 @@ def render(lang: str, st: dict[str, int]) -> str:
     nums["py_lines_fmt"] = f"{st['py_lines']:,}".replace(",", sep)
     inner = {k: str(v) for k, v in nums.items()}
     inner["version"] = ver
+    inner["wine_result"] = WINE_RESULT
 
     def fill(text: str) -> str:
         return re.sub(r"\{\{([a-z0-9_]+)\}\}", lambda m: inner[m.group(1)], text)
@@ -677,6 +893,8 @@ def render(lang: str, st: dict[str, int]) -> str:
     vals["h1_html"] = h1_html(t)
     vals["marquee_html"] = marquee_html(lang)
     vals["arch_svg_h"], vals["arch_svg_v"] = arch_svgs(t)
+    vals["plat_matrix"] = plat_matrix(lang, t)
+    vals["wine_result"] = WINE_RESULT
 
     def sub(m: re.Match) -> str:
         key = m.group(1)
@@ -690,7 +908,9 @@ def render(lang: str, st: dict[str, int]) -> str:
     # h1a/h1b, h1_html üzerinden; mail_subject, mailto üzerinden kullanılır
     unused = set(S[lang]) - used - {"h1a", "h1b", "mail_subject", "arch_agent", "arch_agent_s",
                                      "arch_text", "arch_core", "arch_desk", "arch_alt",
-                                     "a_win", "a_ctl", "a_in", "a_term", "a_sh", "a_shot"}
+                                     "a_win", "a_ctl", "a_in", "a_term", "a_sh", "a_shot",
+                                     "pm_rows", "pm_caption", "pm_cap", "pm_planned", "pm_cursor",
+                                     "pm_cursor_linux", "pm_note_gnome", "pm_note_wine"}
     if unused:
         print(f"[{lang}] kullanılmayan anahtarlar: {sorted(unused)}", file=sys.stderr)
     # Yüzey kartları README tablosuyla aynı sayıda olmalı (sayfadaki sayı kartlarla tutarlı kalsın)

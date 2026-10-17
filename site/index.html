@@ -3,20 +3,20 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>NexRemote — let your AI agent use the Linux desktop</title>
-<meta name="description" content="Shell commands that let an AI agent see and use a Linux desktop: every window, a real mouse and keyboard, controls by name, and the terminals already open on screen.">
+<title>NexRemote — let your AI agent use the desktop</title>
+<meta name="description" content="Shell commands that let an AI agent see and use the desktop on Linux, Windows and macOS: every window, a real mouse and keyboard, controls by name, and the terminals already open on screen.">
 <link rel="canonical" href="https://nexremote.vercel.app/">
 <link rel="alternate" hreflang="en" href="https://nexremote.vercel.app/">
 <link rel="alternate" hreflang="tr" href="https://nexremote.vercel.app/tr/">
-<meta property="og:title" content="NexRemote — let your AI agent use the Linux desktop">
-<meta property="og:description" content="Shell commands that let an AI agent see and use a Linux desktop: every window, a real mouse and keyboard, controls by name, and the terminals already open on screen.">
+<meta property="og:title" content="NexRemote — let your AI agent use the desktop">
+<meta property="og:description" content="Shell commands that let an AI agent see and use the desktop on Linux, Windows and macOS: every window, a real mouse and keyboard, controls by name, and the terminals already open on screen.">
 <meta property="og:type" content="website">
 <meta name="theme-color" content="#0c0d0b">
 <link rel="icon" href="/assets/mark.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Schibsted+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/assets/site.css?v=0.2.0">
+<link rel="stylesheet" href="/assets/site.css?v=0.3.0">
 <script>
   // JS varsa "js" sınıfı: yalnızca o zaman, görünmeden önce gizlenecek öğeler gizlenir.
   // Tema, boyamadan önce uygulanır (yanıp sönme olmasın).
@@ -63,6 +63,7 @@
     <nav class="nav" aria-label="Sections">
       <a href="#how">How it works</a>
       <a href="#replay">Replay</a>
+      <a href="#platforms">Platforms</a>
       <a href="#compare">Compare</a>
       <a href="#roadmap">Roadmap</a>
       <a href="#install">Install</a>
@@ -84,16 +85,16 @@
 <section class="hero band" aria-labelledby="hero-h">
   <div class="grid-bg" data-parallax aria-hidden="true"></div>
   <div class="wrap hero-top">
-    <p class="eyebrow"><span class="dot" aria-hidden="true"></span>Desktop control for AI agents · Linux · Wayland</p>
+    <p class="eyebrow"><span class="dot" aria-hidden="true"></span>Desktop control for AI agents · Linux · Windows · macOS</p>
     <h1 id="hero-h" class="mega"><span class="l l1"><span class="w"><span style="--wi:0">Your</span></span> <span class="w"><span style="--wi:1">agent</span></span> <span class="w"><span style="--wi:2">can</span></span> <span class="w"><span style="--wi:3">run</span></span> <span class="w"><span style="--wi:4">commands.</span></span></span> <span class="l l2"><span class="w"><span style="--wi:5">Now</span></span> <span class="w"><span style="--wi:6">it</span></span> <span class="w"><span style="--wi:7">can</span></span> <span class="w"><span style="--wi:8">use</span></span> <span class="w"><span style="--wi:9">the</span></span> <span class="w"><span style="--wi:10">screen.</span></span></span></h1>
     <div class="hero-row">
-      <p class="lede" data-reveal>NexRemote turns a Linux desktop into shell commands: every window, a real mouse and keyboard, buttons pressed by name, and the terminals you already have open, other agents included. No root, no SDK, and a vision model only when an app gives it nothing else to read.</p>
+      <p class="lede" data-reveal>NexRemote turns the desktop into shell commands, the same ones on Linux, Windows and macOS: every window, a real mouse and keyboard, buttons pressed by name, and the terminals you already have open, other agents included. No root, no SDK, and a vision model only when an app gives it nothing else to read.</p>
       <div class="hero-cta" data-reveal>
         <div class="btn-row">
           <a class="btn btn-invert" href="/download/nexremote.zip" download data-magnet>
             <svg class="ico" aria-hidden="true"><use href="#i-download"/></svg>
             <span>Download</span>
-            <span class="btn-meta">v0.2.0 · zip · 82 KB</span>
+            <span class="btn-meta">v0.3.0 · zip · 174 KB</span>
           </a>
           <a class="btn btn-ghost" href="#replay" data-magnet>
             <svg class="ico" aria-hidden="true"><use href="#i-play"/></svg>
@@ -104,7 +105,7 @@
           <code id="cmd-setup">./install.sh &amp;&amp; nexremote setup</code>
           <button class="copy" type="button" data-copy="#cmd-setup" data-done="Copied"><span class="copy-ico" aria-hidden="true"><svg class="ico i1"><use href="#i-copy"/></svg><svg class="ico i2"><use href="#i-check"/></svg></span><span data-label>Copy</span></button>
         </div>
-        <p class="meta">MIT · KDE Plasma 6 on Wayland · Python 3.10+</p>
+        <p class="meta">MIT · Linux · Windows · macOS (preview) · Python 3.9+</p>
       </div>
     </div>
   </div>
@@ -113,7 +114,7 @@
     <div class="hero-tilt" data-hero-tilt>
       <figure class="hd s-node s-dark s-hl s-reply s-shot s-play s-agent" data-hero>
         <svg class="hd-scene" viewBox="0 0 1200 720" role="img" aria-labelledby="hd-t">
-          <title id="hd-t">Drawing of a Linux desktop with terminals, a settings window and a video player. The agent&#x27;s green crosshair lists the windows, finds the Dark switch by name and presses it, reads a terminal, and clicks the player from a screenshot.</title>
+          <title id="hd-t">Drawing of a desktop, here KDE Plasma on Linux, with terminals, a settings window and a video player. The agent&#x27;s green crosshair lists the windows, finds the Dark switch by name and presses it, reads a terminal, and clicks the player from a screenshot.</title>
           <defs>
             <linearGradient id="hd-wall" x1="0" y1="0" x2="1" y2="1"><stop offset="0" class="hd-wall-a"/><stop offset="1" class="hd-wall-b"/></linearGradient>
           </defs>
@@ -292,8 +293,8 @@
           <div class="rung-in" data-reveal>
             <span class="rung-n" aria-hidden="true">1</span>
             <h3>Ask the window manager</h3>
-            <p>KWin lists every window with its title, app, position and focus. The agent can bring one forward, minimize or close it, including apps that publish nothing else.</p>
-            <p class="rung-meta"><span>Channel</span> KWin scripting <span>Model receives</span> text</p>
+            <p>The window manager lists every window with its title, app, position and focus: KWin, Sway, Hyprland or EWMH on Linux, Win32 on Windows, CGWindowList on macOS. The agent can bring one forward, minimize or close it, including apps that publish nothing else.</p>
+            <p class="rung-meta"><span>Channel</span> KWin · EnumWindows · CGWindowList <span>Model receives</span> text</p>
 <pre class="rung-code"><code><span class="c">$</span> nexremote windows
 * win:{c31f…}  org.kde.konsole  1100x780+0+0      api : claude — Konsole
   win:{8c1e…}  systemsettings   760x540+1180+60   Appearance — System Settings
@@ -304,8 +305,8 @@
           <div class="rung-in" data-reveal>
             <span class="rung-n" aria-hidden="true">2</span>
             <h3>Read the accessibility tree, act by name</h3>
-            <p>Buttons, switches and fields come with names and roles. The agent presses “Dark” by its name. The mouse does not move, and nothing depends on where the control is drawn.</p>
-            <p class="rung-meta"><span>Channel</span> AT-SPI <span>Model receives</span> text</p>
+            <p>Buttons, switches and fields come with names and roles, through AT-SPI, UI Automation or the macOS accessibility API. The agent presses “Dark” by its name. The mouse does not move, and nothing depends on where the control is drawn.</p>
+            <p class="rung-meta"><span>Channel</span> AT-SPI · UI Automation · AX <span>Model receives</span> text</p>
 <pre class="rung-code"><code><span class="c">$</span> nexremote find "Dark" --window win:{8c1e…}
 atspi:4:0/2/7	[checkbox] Dark  &lt;toggle,click&gt;
 <span class="c">$</span> nexremote click atspi:4:0/2/7 --json
@@ -316,8 +317,8 @@ atspi:4:0/2/7	[checkbox] Dark  &lt;toggle,click&gt;
           <div class="rung-in" data-reveal>
             <span class="rung-n" aria-hidden="true">3</span>
             <h3>Read terminal text directly</h3>
-            <p>Konsole tabs and tmux panes hand over their text, along with the program running in each. No screenshot, no OCR, no focus change.</p>
-            <p class="rung-meta"><span>Channel</span> Konsole D-Bus · tmux <span>Model receives</span> text</p>
+            <p>Konsole tabs and tmux panes hand over their text along with the program running in each; Windows consoles, Terminal.app and iTerm2 hand over theirs too. No screenshot, no OCR, no focus change.</p>
+            <p class="rung-meta"><span>Channel</span> Konsole D-Bus · tmux · AttachConsole · Terminal.app <span>Model receives</span> text</p>
 <pre class="rung-code"><code><span class="c">$</span> nexremote term-read konsole:7891:2
 ● Running test suite…
   tests/test_api.py ........F.F
@@ -329,8 +330,8 @@ Should I fix them? (y/n, or tell me)</code></pre>
           <div class="rung-in" data-reveal>
             <span class="rung-n" aria-hidden="true">4</span>
             <h3>Only then: screenshot and click pixels</h3>
-            <p>For browsers, games and most Electron apps. The shot is cropped to one window and scaled for the model; a pixel in that image is mapped back to the screen and clicked through the RemoteDesktop portal.</p>
-            <p class="rung-meta"><span>Channel</span> spectacle / grim · RemoteDesktop portal <span>Model receives</span> one image</p>
+            <p>For browsers, games and most Electron apps. The shot is cropped to one window and scaled for the model; a pixel in that image is mapped back to the screen and clicked through the system&#x27;s own input: the RemoteDesktop portal or XTEST, SendInput, CGEvent.</p>
+            <p class="rung-meta"><span>Channel</span> spectacle / grim · GDI · screencapture <span>Model receives</span> one image</p>
 <pre class="rung-code"><code><span class="c">$</span> nexremote screenshot --window win:{a41f…} --max-width 1568
 <span class="c">$</span> nexremote click 440 190 --from-shot --json
 { "ok": true, "x": 1500, "y": 710, "button": "left" }</code></pre>
@@ -467,7 +468,7 @@ Should I fix them? (y/n, or tell me)</code></pre>
         <h3 class="arch-h">One core between any agent and the desktop</h3>
         <p>Adapters only know the core; the core only talks to channels the desktop already provides. If a backend is missing, the rest keep working and <code>nexremote caps</code> says what is off.</p>
       </div>
-      <div class="arch"><svg class="arch-svg arch-hz" viewBox="0 0 1160 470" role="img" aria-label="Architecture: your agent connects through one of four adapters (shell CLI, MCP, HTTP, text loop) to the NexRemote core, which reaches the desktop through KWin scripting, AT-SPI, the RemoteDesktop portal, Konsole D-Bus and tmux, its own tmux or PTY sessions, and spectacle or grim."><g class="ap-g"><path class="ap" data-ap="a0" data-stage="0" d="M180 235 C225.0 235 225.0 127.0 270 127.0" pathLength="1"/><path class="ap" data-ap="b0" data-stage="1" d="M440 127.0 C485.0 127.0 485.0 235 530 235" pathLength="1"/><path class="ap" data-ap="a1" data-stage="0" d="M180 235 C225.0 235 225.0 199.0 270 199.0" pathLength="1"/><path class="ap" data-ap="b1" data-stage="1" d="M440 199.0 C485.0 199.0 485.0 235 530 235" pathLength="1"/><path class="ap" data-ap="a2" data-stage="0" d="M180 235 C225.0 235 225.0 271.0 270 271.0" pathLength="1"/><path class="ap" data-ap="b2" data-stage="1" d="M440 271.0 C485.0 271.0 485.0 235 530 235" pathLength="1"/><path class="ap" data-ap="a3" data-stage="0" d="M180 235 C225.0 235 225.0 343.0 270 343.0" pathLength="1"/><path class="ap" data-ap="b3" data-stage="1" d="M440 343.0 C485.0 343.0 485.0 235 530 235" pathLength="1"/><path class="ap" data-ap="c0" data-stage="2" d="M680 235 C720.0 235 720.0 70.0 760 70.0" pathLength="1"/><path class="ap" data-ap="d0" data-stage="3" d="M970 70.0 C990.0 70.0 990.0 235 1010 235" pathLength="1"/><path class="ap" data-ap="c1" data-stage="2" d="M680 235 C720.0 235 720.0 136.0 760 136.0" pathLength="1"/><path class="ap" data-ap="d1" data-stage="3" d="M970 136.0 C990.0 136.0 990.0 235 1010 235" pathLength="1"/><path class="ap" data-ap="c2" data-stage="2" d="M680 235 C720.0 235 720.0 202.0 760 202.0" pathLength="1"/><path class="ap" data-ap="d2" data-stage="3" d="M970 202.0 C990.0 202.0 990.0 235 1010 235" pathLength="1"/><path class="ap" data-ap="c3" data-stage="2" d="M680 235 C720.0 235 720.0 268.0 760 268.0" pathLength="1"/><path class="ap" data-ap="d3" data-stage="3" d="M970 268.0 C990.0 268.0 990.0 235 1010 235" pathLength="1"/><path class="ap" data-ap="c4" data-stage="2" d="M680 235 C720.0 235 720.0 334.0 760 334.0" pathLength="1"/><path class="ap" data-ap="d4" data-stage="3" d="M970 334.0 C990.0 334.0 990.0 235 1010 235" pathLength="1"/><path class="ap" data-ap="c5" data-stage="2" d="M680 235 C720.0 235 720.0 400.0 760 400.0" pathLength="1"/><path class="ap" data-ap="d5" data-stage="3" d="M970 400.0 C990.0 400.0 990.0 235 1010 235" pathLength="1"/></g><g class="pk-g"></g><g class="an an-agent" data-an="A"><rect class="an-box" x="0" y="175" width="180" height="120" rx="10"/><rect class="an-hit" x="0" y="175" width="180" height="120" rx="10"/><text class="an-t" x="90.0" y="232.0" text-anchor="middle">Your agent</text><text class="an-s" x="90.0" y="249.0" text-anchor="middle">any harness, any model</text></g><g class="an " data-an="ad0"><rect class="an-box" x="270" y="104.0" width="170" height="46" rx="10"/><rect class="an-hit" x="270" y="104.0" width="170" height="46" rx="10"/><text class="an-t" x="355.0" y="124.0" text-anchor="middle">Shell CLI</text><text class="an-s" x="355.0" y="141.0" text-anchor="middle">nexremote</text></g><g class="an " data-an="ad1"><rect class="an-box" x="270" y="176.0" width="170" height="46" rx="10"/><rect class="an-hit" x="270" y="176.0" width="170" height="46" rx="10"/><text class="an-t" x="355.0" y="196.0" text-anchor="middle">MCP</text><text class="an-s" x="355.0" y="213.0" text-anchor="middle">nexremote-mcp</text></g><g class="an " data-an="ad2"><rect class="an-box" x="270" y="248.0" width="170" height="46" rx="10"/><rect class="an-hit" x="270" y="248.0" width="170" height="46" rx="10"/><text class="an-t" x="355.0" y="268.0" text-anchor="middle">HTTP</text><text class="an-s" x="355.0" y="285.0" text-anchor="middle">nexremote-http</text></g><g class="an " data-an="ad3"><rect class="an-box" x="270" y="320.0" width="170" height="46" rx="10"/><rect class="an-hit" x="270" y="320.0" width="170" height="46" rx="10"/><text class="an-t" x="355.0" y="340.0" text-anchor="middle">Text loop</text><text class="an-s" x="355.0" y="357.0" text-anchor="middle">nexremote-agent</text></g><g class="an an-core" data-an="C"><rect class="an-box" x="530" y="175" width="150" height="120" rx="10"/><rect class="an-hit" x="530" y="175" width="150" height="120" rx="10"/><text class="an-t" x="605.0" y="232.0" text-anchor="middle">Core</text><text class="an-s" x="605.0" y="249.0" text-anchor="middle">nexremote.py</text></g><g class="an " data-an="ch0"><rect class="an-box" x="760" y="46.0" width="210" height="48" rx="10"/><rect class="an-hit" x="760" y="46.0" width="210" height="48" rx="10"/><text class="an-t" x="865.0" y="67.0" text-anchor="middle">KWin scripting</text><text class="an-s" x="865.0" y="84.0" text-anchor="middle">windows</text></g><g class="an " data-an="ch1"><rect class="an-box" x="760" y="112.0" width="210" height="48" rx="10"/><rect class="an-hit" x="760" y="112.0" width="210" height="48" rx="10"/><text class="an-t" x="865.0" y="133.0" text-anchor="middle">AT-SPI</text><text class="an-s" x="865.0" y="150.0" text-anchor="middle">controls by name</text></g><g class="an " data-an="ch2"><rect class="an-box" x="760" y="178.0" width="210" height="48" rx="10"/><rect class="an-hit" x="760" y="178.0" width="210" height="48" rx="10"/><text class="an-t" x="865.0" y="199.0" text-anchor="middle">RemoteDesktop portal</text><text class="an-s" x="865.0" y="216.0" text-anchor="middle">mouse + keyboard</text></g><g class="an " data-an="ch3"><rect class="an-box" x="760" y="244.0" width="210" height="48" rx="10"/><rect class="an-hit" x="760" y="244.0" width="210" height="48" rx="10"/><text class="an-t" x="865.0" y="265.0" text-anchor="middle">Konsole D-Bus · tmux</text><text class="an-s" x="865.0" y="282.0" text-anchor="middle">open terminals</text></g><g class="an " data-an="ch4"><rect class="an-box" x="760" y="310.0" width="210" height="48" rx="10"/><rect class="an-hit" x="760" y="310.0" width="210" height="48" rx="10"/><text class="an-t" x="865.0" y="331.0" text-anchor="middle">tmux · PTY</text><text class="an-s" x="865.0" y="348.0" text-anchor="middle">its own shell</text></g><g class="an " data-an="ch5"><rect class="an-box" x="760" y="376.0" width="210" height="48" rx="10"/><rect class="an-hit" x="760" y="376.0" width="210" height="48" rx="10"/><text class="an-t" x="865.0" y="397.0" text-anchor="middle">spectacle · grim</text><text class="an-s" x="865.0" y="414.0" text-anchor="middle">screenshots</text></g><g class="an an-desk" data-an="D"><rect class="an-box" x="1010" y="165" width="150" height="140" rx="10"/><rect class="an-hit" x="1010" y="165" width="150" height="140" rx="10"/><text class="an-t" x="1085.0" y="232.0" text-anchor="middle">Your desktop</text><text class="an-s" x="1085.0" y="249.0" text-anchor="middle">Plasma 6 · Wayland</text></g></svg><svg class="arch-svg arch-vt" viewBox="0 0 360 724" role="img" aria-label="Architecture: your agent connects through one of four adapters (shell CLI, MCP, HTTP, text loop) to the NexRemote core, which reaches the desktop through KWin scripting, AT-SPI, the RemoteDesktop portal, Konsole D-Bus and tmux, its own tmux or PTY sessions, and spectacle or grim."><g class="ap-g"><path class="ap" data-ap="a0" data-stage="0" d="M180 70 C180 105.0 48.0 105.0 48.0 140" pathLength="1"/><path class="ap" data-ap="b0" data-stage="1" d="M48.0 192 C48.0 227.0 180 227.0 180 262" pathLength="1"/><path class="ap" data-ap="a1" data-stage="0" d="M180 70 C180 105.0 136.0 105.0 136.0 140" pathLength="1"/><path class="ap" data-ap="b1" data-stage="1" d="M136.0 192 C136.0 227.0 180 227.0 180 262" pathLength="1"/><path class="ap" data-ap="a2" data-stage="0" d="M180 70 C180 105.0 224.0 105.0 224.0 140" pathLength="1"/><path class="ap" data-ap="b2" data-stage="1" d="M224.0 192 C224.0 227.0 180 227.0 180 262" pathLength="1"/><path class="ap" data-ap="a3" data-stage="0" d="M180 70 C180 105.0 312.0 105.0 312.0 140" pathLength="1"/><path class="ap" data-ap="b3" data-stage="1" d="M312.0 192 C312.0 227.0 180 227.0 180 262" pathLength="1"/><path class="ap" data-ap="c0" data-stage="2" d="M180 332 V398.0 Q180 410.0 168 410.0 H168" pathLength="1"/><path class="ap" data-ap="d0" data-stage="3" d="M168 410.0 H168 Q180 410.0 180 422.0 V640" pathLength="1"/><path class="ap" data-ap="c1" data-stage="2" d="M180 332 V398.0 Q180 410.0 192 410.0 H192" pathLength="1"/><path class="ap" data-ap="d1" data-stage="3" d="M192 410.0 H192 Q180 410.0 180 422.0 V640" pathLength="1"/><path class="ap" data-ap="c2" data-stage="2" d="M180 332 V468.0 Q180 480.0 168 480.0 H168" pathLength="1"/><path class="ap" data-ap="d2" data-stage="3" d="M168 480.0 H168 Q180 480.0 180 492.0 V640" pathLength="1"/><path class="ap" data-ap="c3" data-stage="2" d="M180 332 V468.0 Q180 480.0 192 480.0 H192" pathLength="1"/><path class="ap" data-ap="d3" data-stage="3" d="M192 480.0 H192 Q180 480.0 180 492.0 V640" pathLength="1"/><path class="ap" data-ap="c4" data-stage="2" d="M180 332 V538.0 Q180 550.0 168 550.0 H168" pathLength="1"/><path class="ap" data-ap="d4" data-stage="3" d="M168 550.0 H168 Q180 550.0 180 562.0 V640" pathLength="1"/><path class="ap" data-ap="c5" data-stage="2" d="M180 332 V538.0 Q180 550.0 192 550.0 H192" pathLength="1"/><path class="ap" data-ap="d5" data-stage="3" d="M192 550.0 H192 Q180 550.0 180 562.0 V640" pathLength="1"/></g><g class="pk-g"></g><g class="an an-agent" data-an="A"><rect class="an-box" x="30" y="0" width="300" height="70" rx="10"/><rect class="an-hit" x="30" y="0" width="300" height="70" rx="10"/><text class="an-t" x="180.0" y="32.0" text-anchor="middle">Your agent</text><text class="an-s" x="180.0" y="49.0" text-anchor="middle">any harness, any model</text></g><g class="an an-sm" data-an="ad0"><rect class="an-box" x="6" y="140" width="84" height="52" rx="10"/><rect class="an-hit" x="6" y="140" width="84" height="52" rx="10"/><text class="an-t" x="48.0" y="163.0" text-anchor="middle">Shell</text><text class="an-s" x="48.0" y="180.0" text-anchor="middle">CLI</text></g><g class="an an-sm" data-an="ad1"><rect class="an-box" x="94" y="140" width="84" height="52" rx="10"/><rect class="an-hit" x="94" y="140" width="84" height="52" rx="10"/><text class="an-t" x="136.0" y="163.0" text-anchor="middle">MCP</text><text class="an-s" x="136.0" y="180.0" text-anchor="middle">stdio</text></g><g class="an an-sm" data-an="ad2"><rect class="an-box" x="182" y="140" width="84" height="52" rx="10"/><rect class="an-hit" x="182" y="140" width="84" height="52" rx="10"/><text class="an-t" x="224.0" y="163.0" text-anchor="middle">HTTP</text><text class="an-s" x="224.0" y="180.0" text-anchor="middle">token</text></g><g class="an an-sm" data-an="ad3"><rect class="an-box" x="270" y="140" width="84" height="52" rx="10"/><rect class="an-hit" x="270" y="140" width="84" height="52" rx="10"/><text class="an-t" x="312.0" y="163.0" text-anchor="middle">Text</text><text class="an-s" x="312.0" y="180.0" text-anchor="middle">loop</text></g><g class="an an-core" data-an="C"><rect class="an-box" x="30" y="262" width="300" height="70" rx="10"/><rect class="an-hit" x="30" y="262" width="300" height="70" rx="10"/><text class="an-t" x="180.0" y="294.0" text-anchor="middle">Core</text><text class="an-s" x="180.0" y="311.0" text-anchor="middle">nexremote.py</text></g><g class="an an-sm" data-an="ch0"><rect class="an-box" x="4" y="384" width="164" height="52" rx="10"/><rect class="an-hit" x="4" y="384" width="164" height="52" rx="10"/><text class="an-t" x="86.0" y="407.0" text-anchor="middle">KWin scripting</text><text class="an-s" x="86.0" y="424.0" text-anchor="middle">windows</text></g><g class="an an-sm" data-an="ch1"><rect class="an-box" x="192" y="384" width="164" height="52" rx="10"/><rect class="an-hit" x="192" y="384" width="164" height="52" rx="10"/><text class="an-t" x="274.0" y="407.0" text-anchor="middle">AT-SPI</text><text class="an-s" x="274.0" y="424.0" text-anchor="middle">controls by name</text></g><g class="an an-sm" data-an="ch2"><rect class="an-box" x="4" y="454" width="164" height="52" rx="10"/><rect class="an-hit" x="4" y="454" width="164" height="52" rx="10"/><text class="an-t" x="86.0" y="477.0" text-anchor="middle">RemoteDesktop portal</text><text class="an-s" x="86.0" y="494.0" text-anchor="middle">mouse + keyboard</text></g><g class="an an-sm" data-an="ch3"><rect class="an-box" x="192" y="454" width="164" height="52" rx="10"/><rect class="an-hit" x="192" y="454" width="164" height="52" rx="10"/><text class="an-t" x="274.0" y="477.0" text-anchor="middle">Konsole D-Bus · tmux</text><text class="an-s" x="274.0" y="494.0" text-anchor="middle">open terminals</text></g><g class="an an-sm" data-an="ch4"><rect class="an-box" x="4" y="524" width="164" height="52" rx="10"/><rect class="an-hit" x="4" y="524" width="164" height="52" rx="10"/><text class="an-t" x="86.0" y="547.0" text-anchor="middle">tmux · PTY</text><text class="an-s" x="86.0" y="564.0" text-anchor="middle">its own shell</text></g><g class="an an-sm" data-an="ch5"><rect class="an-box" x="192" y="524" width="164" height="52" rx="10"/><rect class="an-hit" x="192" y="524" width="164" height="52" rx="10"/><text class="an-t" x="274.0" y="547.0" text-anchor="middle">spectacle · grim</text><text class="an-s" x="274.0" y="564.0" text-anchor="middle">screenshots</text></g><g class="an an-desk" data-an="D"><rect class="an-box" x="30" y="640" width="300" height="80" rx="10"/><rect class="an-hit" x="30" y="640" width="300" height="80" rx="10"/><text class="an-t" x="180.0" y="677.0" text-anchor="middle">Your desktop</text><text class="an-s" x="180.0" y="694.0" text-anchor="middle">KDE Plasma 6 · Wayland</text></g></svg></div>
+      <div class="arch"><svg class="arch-svg arch-hz" viewBox="0 0 1160 470" role="img" aria-label="Architecture: your agent connects through one of four adapters (shell CLI, MCP, HTTP, text loop) to the NexRemote core, which reaches the desktop through the channels each platform already has: KWin, Win32 or CGWindowList for windows; AT-SPI, UI Automation or AX for controls; the RemoteDesktop portal, SendInput or CGEvent for input; Konsole, Windows consoles or Terminal.app for open terminals; tmux, a PTY or cmd.exe for its own shell; grim, GDI or screencapture for screenshots."><g class="ap-g"><path class="ap" data-ap="a0" data-stage="0" d="M180 235 C225.0 235 225.0 127.0 270 127.0" pathLength="1"/><path class="ap" data-ap="b0" data-stage="1" d="M440 127.0 C485.0 127.0 485.0 235 530 235" pathLength="1"/><path class="ap" data-ap="a1" data-stage="0" d="M180 235 C225.0 235 225.0 199.0 270 199.0" pathLength="1"/><path class="ap" data-ap="b1" data-stage="1" d="M440 199.0 C485.0 199.0 485.0 235 530 235" pathLength="1"/><path class="ap" data-ap="a2" data-stage="0" d="M180 235 C225.0 235 225.0 271.0 270 271.0" pathLength="1"/><path class="ap" data-ap="b2" data-stage="1" d="M440 271.0 C485.0 271.0 485.0 235 530 235" pathLength="1"/><path class="ap" data-ap="a3" data-stage="0" d="M180 235 C225.0 235 225.0 343.0 270 343.0" pathLength="1"/><path class="ap" data-ap="b3" data-stage="1" d="M440 343.0 C485.0 343.0 485.0 235 530 235" pathLength="1"/><path class="ap" data-ap="c0" data-stage="2" d="M680 235 C709.0 235 709.0 70.0 738 70.0" pathLength="1"/><path class="ap" data-ap="d0" data-stage="3" d="M963 70.0 C972.5 70.0 972.5 235 982 235" pathLength="1"/><path class="ap" data-ap="c1" data-stage="2" d="M680 235 C709.0 235 709.0 136.0 738 136.0" pathLength="1"/><path class="ap" data-ap="d1" data-stage="3" d="M963 136.0 C972.5 136.0 972.5 235 982 235" pathLength="1"/><path class="ap" data-ap="c2" data-stage="2" d="M680 235 C709.0 235 709.0 202.0 738 202.0" pathLength="1"/><path class="ap" data-ap="d2" data-stage="3" d="M963 202.0 C972.5 202.0 972.5 235 982 235" pathLength="1"/><path class="ap" data-ap="c3" data-stage="2" d="M680 235 C709.0 235 709.0 268.0 738 268.0" pathLength="1"/><path class="ap" data-ap="d3" data-stage="3" d="M963 268.0 C972.5 268.0 972.5 235 982 235" pathLength="1"/><path class="ap" data-ap="c4" data-stage="2" d="M680 235 C709.0 235 709.0 334.0 738 334.0" pathLength="1"/><path class="ap" data-ap="d4" data-stage="3" d="M963 334.0 C972.5 334.0 972.5 235 982 235" pathLength="1"/><path class="ap" data-ap="c5" data-stage="2" d="M680 235 C709.0 235 709.0 400.0 738 400.0" pathLength="1"/><path class="ap" data-ap="d5" data-stage="3" d="M963 400.0 C972.5 400.0 972.5 235 982 235" pathLength="1"/></g><g class="pk-g"></g><g class="an an-agent" data-an="A"><rect class="an-box" x="0" y="175" width="180" height="120" rx="10"/><rect class="an-hit" x="0" y="175" width="180" height="120" rx="10"/><text class="an-t" x="90.0" y="232.0" text-anchor="middle">Your agent</text><text class="an-s" x="90.0" y="249.0" text-anchor="middle">any harness, any model</text></g><g class="an " data-an="ad0"><rect class="an-box" x="270" y="104.0" width="170" height="46" rx="10"/><rect class="an-hit" x="270" y="104.0" width="170" height="46" rx="10"/><text class="an-t" x="355.0" y="124.0" text-anchor="middle">Shell CLI</text><text class="an-s" x="355.0" y="141.0" text-anchor="middle">nexremote</text></g><g class="an " data-an="ad1"><rect class="an-box" x="270" y="176.0" width="170" height="46" rx="10"/><rect class="an-hit" x="270" y="176.0" width="170" height="46" rx="10"/><text class="an-t" x="355.0" y="196.0" text-anchor="middle">MCP</text><text class="an-s" x="355.0" y="213.0" text-anchor="middle">nexremote-mcp</text></g><g class="an " data-an="ad2"><rect class="an-box" x="270" y="248.0" width="170" height="46" rx="10"/><rect class="an-hit" x="270" y="248.0" width="170" height="46" rx="10"/><text class="an-t" x="355.0" y="268.0" text-anchor="middle">HTTP</text><text class="an-s" x="355.0" y="285.0" text-anchor="middle">nexremote-http</text></g><g class="an " data-an="ad3"><rect class="an-box" x="270" y="320.0" width="170" height="46" rx="10"/><rect class="an-hit" x="270" y="320.0" width="170" height="46" rx="10"/><text class="an-t" x="355.0" y="340.0" text-anchor="middle">Text loop</text><text class="an-s" x="355.0" y="357.0" text-anchor="middle">nexremote-agent</text></g><g class="an an-core" data-an="C"><rect class="an-box" x="530" y="175" width="150" height="120" rx="10"/><rect class="an-hit" x="530" y="175" width="150" height="120" rx="10"/><text class="an-t" x="605.0" y="232.0" text-anchor="middle">Core</text><text class="an-s" x="605.0" y="249.0" text-anchor="middle">nexremote.py</text></g><g class="an " data-an="ch0"><rect class="an-box" x="738" y="46.0" width="225" height="48" rx="10"/><rect class="an-hit" x="738" y="46.0" width="225" height="48" rx="10"/><text class="an-t" x="850.5" y="67.0" text-anchor="middle">Windows</text><text class="an-s" x="850.5" y="84.0" text-anchor="middle">KWin · Win32 · CGWindowList</text></g><g class="an " data-an="ch1"><rect class="an-box" x="738" y="112.0" width="225" height="48" rx="10"/><rect class="an-hit" x="738" y="112.0" width="225" height="48" rx="10"/><text class="an-t" x="850.5" y="133.0" text-anchor="middle">Controls by name</text><text class="an-s" x="850.5" y="150.0" text-anchor="middle">AT-SPI · UIA · AX</text></g><g class="an " data-an="ch2"><rect class="an-box" x="738" y="178.0" width="225" height="48" rx="10"/><rect class="an-hit" x="738" y="178.0" width="225" height="48" rx="10"/><text class="an-t" x="850.5" y="199.0" text-anchor="middle">Mouse + keyboard</text><text class="an-s" x="850.5" y="216.0" text-anchor="middle">portal · SendInput · CGEvent</text></g><g class="an " data-an="ch3"><rect class="an-box" x="738" y="244.0" width="225" height="48" rx="10"/><rect class="an-hit" x="738" y="244.0" width="225" height="48" rx="10"/><text class="an-t" x="850.5" y="265.0" text-anchor="middle">Open terminals</text><text class="an-s" x="850.5" y="282.0" text-anchor="middle">Konsole · wincon · Terminal</text></g><g class="an " data-an="ch4"><rect class="an-box" x="738" y="310.0" width="225" height="48" rx="10"/><rect class="an-hit" x="738" y="310.0" width="225" height="48" rx="10"/><text class="an-t" x="850.5" y="331.0" text-anchor="middle">Its own shell</text><text class="an-s" x="850.5" y="348.0" text-anchor="middle">tmux · PTY · cmd.exe</text></g><g class="an " data-an="ch5"><rect class="an-box" x="738" y="376.0" width="225" height="48" rx="10"/><rect class="an-hit" x="738" y="376.0" width="225" height="48" rx="10"/><text class="an-t" x="850.5" y="397.0" text-anchor="middle">Screenshots</text><text class="an-s" x="850.5" y="414.0" text-anchor="middle">grim · GDI · screencapture</text></g><g class="an an-desk" data-an="D"><rect class="an-box" x="982" y="165" width="178" height="140" rx="10"/><rect class="an-hit" x="982" y="165" width="178" height="140" rx="10"/><text class="an-t" x="1071.0" y="232.0" text-anchor="middle">Your desktop</text><text class="an-s" x="1071.0" y="249.0" text-anchor="middle">Linux · Windows · macOS</text></g></svg><svg class="arch-svg arch-vt" viewBox="0 0 360 724" role="img" aria-label="Architecture: your agent connects through one of four adapters (shell CLI, MCP, HTTP, text loop) to the NexRemote core, which reaches the desktop through the channels each platform already has: KWin, Win32 or CGWindowList for windows; AT-SPI, UI Automation or AX for controls; the RemoteDesktop portal, SendInput or CGEvent for input; Konsole, Windows consoles or Terminal.app for open terminals; tmux, a PTY or cmd.exe for its own shell; grim, GDI or screencapture for screenshots."><g class="ap-g"><path class="ap" data-ap="a0" data-stage="0" d="M180 70 C180 105.0 48.0 105.0 48.0 140" pathLength="1"/><path class="ap" data-ap="b0" data-stage="1" d="M48.0 192 C48.0 227.0 180 227.0 180 262" pathLength="1"/><path class="ap" data-ap="a1" data-stage="0" d="M180 70 C180 105.0 136.0 105.0 136.0 140" pathLength="1"/><path class="ap" data-ap="b1" data-stage="1" d="M136.0 192 C136.0 227.0 180 227.0 180 262" pathLength="1"/><path class="ap" data-ap="a2" data-stage="0" d="M180 70 C180 105.0 224.0 105.0 224.0 140" pathLength="1"/><path class="ap" data-ap="b2" data-stage="1" d="M224.0 192 C224.0 227.0 180 227.0 180 262" pathLength="1"/><path class="ap" data-ap="a3" data-stage="0" d="M180 70 C180 105.0 312.0 105.0 312.0 140" pathLength="1"/><path class="ap" data-ap="b3" data-stage="1" d="M312.0 192 C312.0 227.0 180 227.0 180 262" pathLength="1"/><path class="ap" data-ap="c0" data-stage="2" d="M180 332 V398.0 Q180 410.0 168 410.0 H168" pathLength="1"/><path class="ap" data-ap="d0" data-stage="3" d="M168 410.0 H168 Q180 410.0 180 422.0 V640" pathLength="1"/><path class="ap" data-ap="c1" data-stage="2" d="M180 332 V398.0 Q180 410.0 192 410.0 H192" pathLength="1"/><path class="ap" data-ap="d1" data-stage="3" d="M192 410.0 H192 Q180 410.0 180 422.0 V640" pathLength="1"/><path class="ap" data-ap="c2" data-stage="2" d="M180 332 V468.0 Q180 480.0 168 480.0 H168" pathLength="1"/><path class="ap" data-ap="d2" data-stage="3" d="M168 480.0 H168 Q180 480.0 180 492.0 V640" pathLength="1"/><path class="ap" data-ap="c3" data-stage="2" d="M180 332 V468.0 Q180 480.0 192 480.0 H192" pathLength="1"/><path class="ap" data-ap="d3" data-stage="3" d="M192 480.0 H192 Q180 480.0 180 492.0 V640" pathLength="1"/><path class="ap" data-ap="c4" data-stage="2" d="M180 332 V538.0 Q180 550.0 168 550.0 H168" pathLength="1"/><path class="ap" data-ap="d4" data-stage="3" d="M168 550.0 H168 Q180 550.0 180 562.0 V640" pathLength="1"/><path class="ap" data-ap="c5" data-stage="2" d="M180 332 V538.0 Q180 550.0 192 550.0 H192" pathLength="1"/><path class="ap" data-ap="d5" data-stage="3" d="M192 550.0 H192 Q180 550.0 180 562.0 V640" pathLength="1"/></g><g class="pk-g"></g><g class="an an-agent" data-an="A"><rect class="an-box" x="30" y="0" width="300" height="70" rx="10"/><rect class="an-hit" x="30" y="0" width="300" height="70" rx="10"/><text class="an-t" x="180.0" y="32.0" text-anchor="middle">Your agent</text><text class="an-s" x="180.0" y="49.0" text-anchor="middle">any harness, any model</text></g><g class="an an-sm" data-an="ad0"><rect class="an-box" x="6" y="140" width="84" height="52" rx="10"/><rect class="an-hit" x="6" y="140" width="84" height="52" rx="10"/><text class="an-t" x="48.0" y="163.0" text-anchor="middle">Shell</text><text class="an-s" x="48.0" y="180.0" text-anchor="middle">CLI</text></g><g class="an an-sm" data-an="ad1"><rect class="an-box" x="94" y="140" width="84" height="52" rx="10"/><rect class="an-hit" x="94" y="140" width="84" height="52" rx="10"/><text class="an-t" x="136.0" y="163.0" text-anchor="middle">MCP</text><text class="an-s" x="136.0" y="180.0" text-anchor="middle">stdio</text></g><g class="an an-sm" data-an="ad2"><rect class="an-box" x="182" y="140" width="84" height="52" rx="10"/><rect class="an-hit" x="182" y="140" width="84" height="52" rx="10"/><text class="an-t" x="224.0" y="163.0" text-anchor="middle">HTTP</text><text class="an-s" x="224.0" y="180.0" text-anchor="middle">token</text></g><g class="an an-sm" data-an="ad3"><rect class="an-box" x="270" y="140" width="84" height="52" rx="10"/><rect class="an-hit" x="270" y="140" width="84" height="52" rx="10"/><text class="an-t" x="312.0" y="163.0" text-anchor="middle">Text</text><text class="an-s" x="312.0" y="180.0" text-anchor="middle">loop</text></g><g class="an an-core" data-an="C"><rect class="an-box" x="30" y="262" width="300" height="70" rx="10"/><rect class="an-hit" x="30" y="262" width="300" height="70" rx="10"/><text class="an-t" x="180.0" y="294.0" text-anchor="middle">Core</text><text class="an-s" x="180.0" y="311.0" text-anchor="middle">nexremote.py</text></g><g class="an an-sm an-ch" data-an="ch0"><rect class="an-box" x="4" y="384" width="164" height="52" rx="10"/><rect class="an-hit" x="4" y="384" width="164" height="52" rx="10"/><text class="an-t" x="86.0" y="407.0" text-anchor="middle">Windows</text><text class="an-s" x="86.0" y="424.0" text-anchor="middle">KWin · Win32 · CGWindowList</text></g><g class="an an-sm an-ch" data-an="ch1"><rect class="an-box" x="192" y="384" width="164" height="52" rx="10"/><rect class="an-hit" x="192" y="384" width="164" height="52" rx="10"/><text class="an-t" x="274.0" y="407.0" text-anchor="middle">Controls by name</text><text class="an-s" x="274.0" y="424.0" text-anchor="middle">AT-SPI · UIA · AX</text></g><g class="an an-sm an-ch" data-an="ch2"><rect class="an-box" x="4" y="454" width="164" height="52" rx="10"/><rect class="an-hit" x="4" y="454" width="164" height="52" rx="10"/><text class="an-t" x="86.0" y="477.0" text-anchor="middle">Mouse + keyboard</text><text class="an-s" x="86.0" y="494.0" text-anchor="middle">portal · SendInput · CGEvent</text></g><g class="an an-sm an-ch" data-an="ch3"><rect class="an-box" x="192" y="454" width="164" height="52" rx="10"/><rect class="an-hit" x="192" y="454" width="164" height="52" rx="10"/><text class="an-t" x="274.0" y="477.0" text-anchor="middle">Open terminals</text><text class="an-s" x="274.0" y="494.0" text-anchor="middle">Konsole · wincon · Terminal</text></g><g class="an an-sm an-ch" data-an="ch4"><rect class="an-box" x="4" y="524" width="164" height="52" rx="10"/><rect class="an-hit" x="4" y="524" width="164" height="52" rx="10"/><text class="an-t" x="86.0" y="547.0" text-anchor="middle">Its own shell</text><text class="an-s" x="86.0" y="564.0" text-anchor="middle">tmux · PTY · cmd.exe</text></g><g class="an an-sm an-ch" data-an="ch5"><rect class="an-box" x="192" y="524" width="164" height="52" rx="10"/><rect class="an-hit" x="192" y="524" width="164" height="52" rx="10"/><text class="an-t" x="274.0" y="547.0" text-anchor="middle">Screenshots</text><text class="an-s" x="274.0" y="564.0" text-anchor="middle">grim · GDI · screencapture</text></g><g class="an an-desk" data-an="D"><rect class="an-box" x="30" y="640" width="300" height="80" rx="10"/><rect class="an-hit" x="30" y="640" width="300" height="80" rx="10"/><text class="an-t" x="180.0" y="677.0" text-anchor="middle">Your desktop</text><text class="an-s" x="180.0" y="694.0" text-anchor="middle">Linux · Windows · macOS</text></g></svg></div>
     </div>
   </div>
 </section>
@@ -547,50 +548,50 @@ Should I fix them? (y/n, or tell me)</code></pre>
     <div class="sec-head" data-reveal>
       <span class="bignum" aria-hidden="true" data-parallax>04</span>
       <div><p class="kicker">Reach</p><h2 id="reach-h" class="big">What it reaches</h2></div>
-      <p>Each surface uses the most direct channel the desktop offers, and says so in <code>nexremote caps</code> when one is missing.</p>
+      <p>The same commands on Linux, Windows and macOS. Each surface takes the most direct channel the system offers (the platform table below names it), and <code>nexremote caps</code> says when one is missing.</p>
     </div>
     <ul class="surfaces" data-stagger>
       <li class="surface" data-surface data-reveal data-tilt>
         <svg class="ico ico-lg" aria-hidden="true"><use href="#i-windows"/></svg>
         <h3>Windows</h3>
         <p>Every window on screen, including apps that publish no accessibility tree.</p>
-        <dl><dt>Commands</dt><dd><code>windows</code> <code>window REF activate</code></dd><dt>Through</dt><dd>KWin scripting</dd></dl>
+        <dl><dt>Commands</dt><dd><code>windows</code> <code>window REF activate</code></dd></dl>
       </li>
       <li class="surface" data-surface data-reveal data-tilt>
         <svg class="ico ico-lg" aria-hidden="true"><use href="#i-pointer"/></svg>
         <h3>Mouse</h3>
         <p>Your pointer is put back where it was right after each click.</p>
-        <dl><dt>Commands</dt><dd><code>click X Y</code> <code>scroll</code> <code>drag</code></dd><dt>Through</dt><dd>RemoteDesktop portal</dd></dl>
+        <dl><dt>Commands</dt><dd><code>click X Y</code> <code>scroll</code> <code>drag</code></dd></dl>
       </li>
       <li class="surface" data-surface data-reveal data-tilt>
         <svg class="ico ico-lg" aria-hidden="true"><use href="#i-keyboard"/></svg>
         <h3>Keyboard</h3>
-        <p>Any language. Characters your layout lacks are pasted, then your clipboard is restored.</p>
-        <dl><dt>Commands</dt><dd><code>type</code> <code>key ctrl+s</code></dd><dt>Through</dt><dd>portal + clipboard</dd></dl>
+        <p>Any language. Text goes in as Unicode; where the channel can&#x27;t carry a character, it is pasted and your clipboard restored.</p>
+        <dl><dt>Commands</dt><dd><code>type</code> <code>key ctrl+s</code></dd></dl>
       </li>
       <li class="surface" data-surface data-reveal data-tilt>
         <svg class="ico ico-lg" aria-hidden="true"><use href="#i-toggle"/></svg>
         <h3>Controls by name</h3>
         <p>Presses buttons and toggles without moving the mouse at all.</p>
-        <dl><dt>Commands</dt><dd><code>find</code> <code>click REF</code></dd><dt>Through</dt><dd>AT-SPI</dd></dl>
+        <dl><dt>Commands</dt><dd><code>find</code> <code>click REF</code></dd></dl>
       </li>
       <li class="surface" data-surface data-reveal data-tilt>
         <svg class="ico ico-lg" aria-hidden="true"><use href="#i-terminal"/></svg>
         <h3>Open terminals</h3>
         <p>Shows what runs in each one: claude, ssh, vim, a build.</p>
-        <dl><dt>Commands</dt><dd><code>terms</code> <code>term-read</code> <code>term-send</code></dd><dt>Through</dt><dd>Konsole D-Bus, tmux</dd></dl>
+        <dl><dt>Commands</dt><dd><code>terms</code> <code>term-read</code> <code>term-send</code></dd></dl>
       </li>
       <li class="surface" data-surface data-reveal data-tilt>
         <svg class="ico ico-lg" aria-hidden="true"><use href="#i-sessions"/></svg>
         <h3>Its own shell</h3>
         <p>Sessions survive between calls, so it can start something and check on it later.</p>
-        <dl><dt>Commands</dt><dd><code>run</code> <code>screen</code> <code>keys</code></dd><dt>Through</dt><dd>tmux / PTY</dd></dl>
+        <dl><dt>Commands</dt><dd><code>run</code> <code>screen</code> <code>keys</code></dd></dl>
       </li>
       <li class="surface" data-surface data-reveal data-tilt>
         <svg class="ico ico-lg" aria-hidden="true"><use href="#i-viewfinder"/></svg>
         <h3>Screen</h3>
         <p>Crop and scale are remembered, so <code>click X Y --from-shot</code> lands on the right pixel.</p>
-        <dl><dt>Commands</dt><dd><code>screenshot --window --max-width</code></dd><dt>Through</dt><dd>spectacle / grim</dd></dl>
+        <dl><dt>Commands</dt><dd><code>screenshot --window --max-width</code></dd></dl>
       </li>
       <li class="surface surface-caps" data-reveal data-tilt>
         <svg class="ico ico-lg" aria-hidden="true"><use href="#i-checklist"/></svg>
@@ -602,15 +603,60 @@ Should I fix them? (y/n, or tell me)</code></pre>
   </div>
 </section>
 
+<!-- =========================================================== PLATFORMS -->
+<section id="platforms" class="platforms sec" aria-labelledby="platforms-h">
+  <div class="wrap">
+    <div class="sec-head" data-reveal>
+      <span class="bignum" aria-hidden="true" data-parallax>05</span>
+      <div><p class="kicker">Platforms</p><h2 id="platforms-h" class="big">Three desktops, one set of commands.</h2></div>
+      <p>Refs, output and flags are the same everywhere. Underneath, each platform gets its own channel, named in the table. How far each one is tested is stated per environment, not rounded up.</p>
+    </div>
+
+    <ul class="oses" data-stagger>
+      <li class="os" data-reveal>
+        <div class="os-top"><h3>Linux</h3><p>KDE Plasma 6, GNOME, X11, Sway, Hyprland</p></div>
+        <p class="os-k">Tested</p>
+        <ul class="envs">
+          <li><span class="env-n">KDE Plasma 6 · Wayland</span><span class="tb tb-real">Real desktop</span><p>Run on a real desktop. Input tests run in a sandbox with its own D-Bus, a virtual KWin, portal and PipeWire.</p></li>
+          <li><span class="env-n">X11</span><span class="tb tb-virt">Xvfb sandbox</span><p>End-to-end suite on a headless X server: XTEST input, EWMH windows, screenshots, the CLI.</p></li>
+          <li><span class="env-n">Sway · Hyprland</span><span class="tb tb-mock">Fake IPC</span><p>swaymsg and hyprctl are replaced by fakes; not yet run on a real compositor.</p></li>
+          <li><span class="env-n">GNOME</span><span class="tb tb-none">Untested</span><p>The portal path should work; the window list falls back to AT-SPI.</p></li>
+        </ul>
+      </li>
+      <li class="os" data-reveal>
+        <div class="os-top"><h3>Windows</h3><p>Built for Windows 10 and 11</p></div>
+        <p class="os-k">Tested</p>
+        <ul class="envs">
+          <li><span class="env-n">Wine 10</span><span class="tb tb-virt">22/22 passed</span><p>Real Windows Python under Wine, against a real Notepad window and a cmd.exe console. Not yet run on Windows 10 or 11 hardware.</p><p>Click by name is untested: Wine&#x27;s UI Automation has no control tree to walk.</p></li>
+        </ul>
+      </li>
+      <li class="os os-pv" data-reveal>
+        <div class="os-top"><h3>macOS <span class="pv">Preview</span></h3><p>Quartz events and the accessibility API</p></div>
+        <p class="os-k">Tested</p>
+        <ul class="envs">
+          <li><span class="env-n">Unit tests</span><span class="tb tb-mock">Mock Quartz</span><p>The logic is unit-tested against a fake Quartz library. Not yet run on a real Mac.</p><p>Allow Accessibility and Screen Recording once, in System Settings.</p></li>
+        </ul>
+      </li>
+    </ul>
+    <p class="tb-legend" data-reveal>Solid: a real desktop. Outline: a real display server, run headless or under Wine. Amber: logic checked against fakes. Dashed: not tested.</p>
+
+    <div class="pm-wrap" data-reveal>
+      <p class="pm-dim">7 surfaces × 3 platforms</p>
+      <table class="pm"><caption class="sr">The channel each capability uses on Linux, Windows and macOS</caption><thead><tr><td><span class="pm-cap">Capability</span></td><th scope="col">Linux</th><th scope="col">Windows</th><th scope="col">macOS <span class="pv">Preview</span></th></tr></thead><tbody><tr><th scope="row">Every window on screen</th><td data-os="Linux"><span class="pm-ch">KWin · hyprctl · swaymsg · EWMH</span><small>GNOME: AT-SPI only</small></td><td data-os="Windows"><span class="pm-ch">EnumWindows</span></td><td data-os="macOS"><span class="pm-ch">CGWindowList + AX</span></td></tr><tr><th scope="row">Real mouse</th><td data-os="Linux"><span class="pm-ch">XTEST · RemoteDesktop portal</span></td><td data-os="Windows"><span class="pm-ch">SendInput</span></td><td data-os="macOS"><span class="pm-ch">CGEvent</span></td></tr><tr><th scope="row">Real keyboard</th><td data-os="Linux"><span class="pm-ch">XTEST · portal + clipboard</span></td><td data-os="Windows"><span class="pm-ch">SendInput (Unicode)</span></td><td data-os="macOS"><span class="pm-ch">CGEvent (Unicode)</span></td></tr><tr><th scope="row">Press a button by name</th><td data-os="Linux"><span class="pm-ch">AT-SPI</span></td><td data-os="Windows"><span class="pm-ch">UI Automation</span><small>not exercised under Wine</small></td><td data-os="macOS"><span class="pm-ch">Accessibility (AX)</span></td></tr><tr><th scope="row">Open terminals</th><td data-os="Linux"><span class="pm-ch">Konsole D-Bus, tmux</span></td><td data-os="Windows"><span class="pm-ch">console buffer (AttachConsole)</span></td><td data-os="macOS"><span class="pm-ch">Terminal.app, iTerm2, tmux</span></td></tr><tr><th scope="row">Its own terminal</th><td data-os="Linux"><span class="pm-ch">tmux / PTY</span></td><td data-os="Windows"><span class="pm-ch">cmd.exe</span></td><td data-os="macOS"><span class="pm-ch">tmux / PTY</span></td></tr><tr><th scope="row">Screenshots</th><td data-os="Linux"><span class="pm-ch">spectacle · grim · Xlib</span></td><td data-os="Windows"><span class="pm-ch">GDI</span></td><td data-os="macOS"><span class="pm-ch">screencapture</span></td></tr><tr><th scope="row">Visible agent cursor</th><td data-os="Linux"><span class="pm-ch">click-through overlay</span></td><td data-os="Windows"><span class="pm-plan"><svg class="ico" aria-hidden="true"><use href="#i-planned"/></svg>planned</span></td><td data-os="macOS"><span class="pm-plan"><svg class="ico" aria-hidden="true"><use href="#i-planned"/></svg>planned</span></td></tr></tbody></table>
+      <p class="pm-src">Channels are read from the project README when this page is built.</p>
+    </div>
+  </div>
+</section>
+
 <!-- =============================================================== WATCH -->
 <section class="watch band sec" data-wipe aria-labelledby="watch-h">
   <div class="grid-bg" data-parallax aria-hidden="true"></div>
   <div class="wrap watch-grid">
     <div data-reveal>
-      <span class="bignum bignum-inline" aria-hidden="true">05</span>
+      <span class="bignum bignum-inline" aria-hidden="true">06</span>
       <p class="kicker">Terminals</p>
       <h2 id="watch-h" class="big">Eight agents open? One of them can run the others.</h2>
-      <p>Every Konsole tab and tmux pane is listed with the program in its foreground. An agent can read another agent's screen, answer its question, or stop it with <code>--key C-c</code>.</p>
+      <p>Every Konsole tab and tmux pane is listed with the program in its foreground, and so are Windows consoles and Terminal.app and iTerm2 windows. An agent can read another agent's screen, answer its question, or stop it with <code>--key C-c</code>.</p>
       <p>None of it needs window focus or your keyboard. You keep working while it does.</p>
     </div>
     <figure class="sample" data-reveal>
@@ -635,7 +681,7 @@ bash-5.2$</code></pre>
 <section class="pixels sec" aria-labelledby="pixels-h">
   <div class="wrap pixels-grid">
     <div data-reveal>
-      <span class="bignum bignum-inline" aria-hidden="true">06</span>
+      <span class="bignum bignum-inline" aria-hidden="true">07</span>
       <p class="kicker">Last resort</p>
       <h2 id="pixels-h" class="big">When an app has nothing to read, it looks.</h2>
       <p>Browsers, games and most Electron apps publish no controls. Take a screenshot cropped to one window and scaled for the model; it clicks on pixels in that image and NexRemote converts them back to the screen.</p>
@@ -674,7 +720,7 @@ bash-5.2$</code></pre>
 <section id="compare" class="compare sec" aria-labelledby="compare-h">
   <div class="wrap">
     <div class="sec-head" data-reveal>
-      <span class="bignum" aria-hidden="true" data-parallax>07</span>
+      <span class="bignum" aria-hidden="true" data-parallax>08</span>
       <div><p class="kicker">Compare</p><h2 id="compare-h" class="big">Where it stands</h2></div>
       <p>Compared with the kinds of tools in use today, not with named products. Each approach has its place; this is how they do on the work NexRemote is built for.</p>
     </div>
@@ -693,7 +739,7 @@ bash-5.2$</code></pre>
           <tbody>
             <tr>
               <th scope="row">Presses controls by name, not by coordinates</th>
-              <td class="us"><span class="mk y"><svg class="ico" aria-hidden="true"><use href="#i-yes"/></svg>Yes</span><small>AT-SPI</small></td>
+              <td class="us"><span class="mk y"><svg class="ico" aria-hidden="true"><use href="#i-yes"/></svg>Yes</span><small>AT-SPI · UI Automation · AX</small></td>
               <td><span class="mk n"><svg class="ico" aria-hidden="true"><use href="#i-no"/></svg>No</span><small>guesses coordinates from the image</small></td>
               <td><span class="mk p"><svg class="ico" aria-hidden="true"><use href="#i-part"/></svg>Partly</span><small>some RPA tools use selectors; xdotool clicks coordinates</small></td>
               <td><span class="mk y"><svg class="ico" aria-hidden="true"><use href="#i-yes"/></svg>Yes</span><small>inside that one app</small></td>
@@ -714,15 +760,15 @@ bash-5.2$</code></pre>
             </tr>
             <tr>
               <th scope="row">Reads and answers terminals already open</th>
-              <td class="us"><span class="mk y"><svg class="ico" aria-hidden="true"><use href="#i-yes"/></svg>Yes</span><small>Konsole D-Bus · tmux</small></td>
+              <td class="us"><span class="mk y"><svg class="ico" aria-hidden="true"><use href="#i-yes"/></svg>Yes</span><small>Konsole · tmux · Windows consoles · Terminal.app</small></td>
               <td><span class="mk p"><svg class="ico" aria-hidden="true"><use href="#i-part"/></svg>Partly</span><small>from pixels, when the window is visible</small></td>
               <td><span class="mk p"><svg class="ico" aria-hidden="true"><use href="#i-part"/></svg>Partly</span><small>can type, cannot read</small></td>
               <td><span class="mk n"><svg class="ico" aria-hidden="true"><use href="#i-no"/></svg>No</span><small>out of scope</small></td>
             </tr>
             <tr>
-              <th scope="row">Runs on Wayland without root</th>
-              <td class="us"><span class="mk y"><svg class="ico" aria-hidden="true"><use href="#i-yes"/></svg>Yes</span><small>RemoteDesktop portal</small></td>
-              <td><span class="mk p"><svg class="ico" aria-hidden="true"><use href="#i-part"/></svg>Partly</span><small>depends on setup; often an X11 VM</small></td>
+              <th scope="row">Runs without root or admin rights, Wayland included</th>
+              <td class="us"><span class="mk y"><svg class="ico" aria-hidden="true"><use href="#i-yes"/></svg>Yes</span><small>Wayland portal; user rights on Windows and macOS</small></td>
+              <td><span class="mk p"><svg class="ico" aria-hidden="true"><use href="#i-part"/></svg>Partly</span><small>depends on setup; often a VM</small></td>
               <td><span class="mk n"><svg class="ico" aria-hidden="true"><use href="#i-no"/></svg>No</span><small>X11 only, or root for /dev/uinput</small></td>
               <td><span class="mk y"><svg class="ico" aria-hidden="true"><use href="#i-yes"/></svg>Yes</span><small>does not touch input</small></td>
             </tr>
@@ -747,9 +793,9 @@ bash-5.2$</code></pre>
   <div class="grid-bg" data-parallax aria-hidden="true"></div>
   <div class="wrap">
     <div class="sec-head" data-reveal>
-      <span class="bignum" aria-hidden="true" data-parallax>08</span>
+      <span class="bignum" aria-hidden="true" data-parallax>09</span>
       <div><p class="kicker">Numbers</p><h2 id="numbers-h" class="big">By the numbers</h2></div>
-      <p>Counted from the v0.2.0 source every time this page is built. No estimates, no projections.</p>
+      <p>Counted from the v0.3.0 source every time this page is built. No estimates, no projections.</p>
     </div>
     <dl class="stats" data-stagger>
       <div class="stat" data-reveal><dt>MCP tools</dt><dd data-count="21">21</dd></div>
@@ -757,9 +803,9 @@ bash-5.2$</code></pre>
       <div class="stat" data-reveal><dt>ways to plug in: shell, MCP, HTTP, text loop</dt><dd data-count="4">4</dd></div>
       <div class="stat" data-reveal><dt>desktop surfaces it reaches</dt><dd data-count="7">7</dd></div>
       <div class="stat" data-reveal><dt>harness setups documented</dt><dd data-count="11">11</dd></div>
-      <div class="stat" data-reveal><dt>test suites, 2 of them in a throwaway desktop</dt><dd data-count="5">5</dd></div>
-      <div class="stat stat-wide" data-reveal><dt>lines of Python, core and adapters</dt><dd data-count="4161">4,161</dd></div>
-      <div class="stat stat-zero" data-reveal><dt>root privileges needed</dt><dd data-count="0">0</dd></div>
+      <div class="stat" data-reveal><dt>test suites, 2 of them in a throwaway desktop</dt><dd data-count="8">8</dd></div>
+      <div class="stat stat-wide" data-reveal><dt>lines of Python, core and adapters</dt><dd data-count="9111">9,111</dd></div>
+      <div class="stat stat-zero" data-reveal><dt>root or admin rights needed</dt><dd data-count="0">0</dd></div>
     </dl>
   </div>
 </section>
@@ -768,7 +814,7 @@ bash-5.2$</code></pre>
 <section id="why" class="why sec" aria-labelledby="why-h">
   <div class="wrap">
     <div class="sec-head" data-reveal>
-      <span class="bignum" aria-hidden="true" data-parallax>09</span>
+      <span class="bignum" aria-hidden="true" data-parallax>10</span>
       <div><p class="kicker">Why now</p><h2 id="why-h" class="big">The pieces are in place.</h2></div>
       <p>No forecast needed. This is where the tools already are.</p>
     </div>
@@ -786,7 +832,7 @@ bash-5.2$</code></pre>
       <li data-reveal>
         <svg class="ico ico-lg" aria-hidden="true"><use href="#i-monitor"/></svg>
         <h3>Linux desktops moved to Wayland</h3>
-        <p>Wayland removed the X11 shortcuts that old automation relied on. The sanctioned way in is the xdg-desktop-portal RemoteDesktop interface, which asks the user once. NexRemote is built on it.</p>
+        <p>Wayland removed the X11 shortcuts that old automation relied on. The sanctioned way in is the xdg-desktop-portal RemoteDesktop interface, which asks the user once. On Linux, NexRemote is built on it.</p>
       </li>
     </ol>
   </div>
@@ -796,27 +842,32 @@ bash-5.2$</code></pre>
 <section id="roadmap" class="roadmap sec" aria-labelledby="roadmap-h">
   <div class="wrap">
     <div class="sec-head" data-reveal>
-      <span class="bignum" aria-hidden="true" data-parallax>10</span>
+      <span class="bignum" aria-hidden="true" data-parallax>11</span>
       <div><p class="kicker">Roadmap</p><h2 id="roadmap-h" class="big">What exists, what comes next</h2></div>
       <p>The left column ships in the download today. The right column is planned, not built.</p>
     </div>
     <div class="track">
       <div class="track-col" data-reveal>
-        <h3 class="track-h"><svg class="ico" aria-hidden="true"><use href="#i-yes"/></svg>In v0.2.0 today</h3>
+        <h3 class="track-h"><svg class="ico" aria-hidden="true"><use href="#i-yes"/></svg>In v0.3.0 today</h3>
         <ul class="track-list done" data-stagger>
-          <li data-reveal>Every window through KWin scripting</li>
-          <li data-reveal>Mouse and keyboard through the RemoteDesktop portal, approved once</li>
+          <li data-reveal>KDE Plasma: every window through KWin scripting, mouse and keyboard through the RemoteDesktop portal, approved once</li>
+          <li data-reveal>X11 (XTEST, EWMH), Sway and Hyprland (their own IPC) behind the same commands</li>
           <li data-reveal>Reading and typing into open Konsole tabs and tmux panes</li>
           <li data-reveal>21 MCP tools, 26 CLI commands, an HTTP API and a text loop for models without tool calling</li>
-          <li data-reveal>Input tests that run in an isolated sandbox desktop</li>
+          <li data-reveal>Windows: Win32 windows, Unicode input through SendInput, GDI screenshots, UI Automation, reading and typing into open consoles</li>
+          <li data-reveal>macOS preview: Quartz input, CGWindowList windows, the accessibility tree, Terminal.app, iTerm2 and tmux</li>
+          <li data-reveal>A pip package: <code>pip install .[all]</code> on Linux, Windows and macOS</li>
+          <li data-reveal>Input tests in an isolated sandbox desktop, X11 in Xvfb, Windows under Wine</li>
         </ul>
       </div>
       <div class="track-col" data-reveal>
         <h3 class="track-h"><svg class="ico" aria-hidden="true"><use href="#i-planned"/></svg>Planned</h3>
         <ul class="track-list next" data-stagger>
+          <li data-reveal><strong>Real Windows and Mac hardware.</strong> Run the suites on Windows 10 and 11 and on a Mac, then drop the preview label.</li>
+          <li data-reveal><strong>Agent cursor on Windows and macOS.</strong> The visible crosshair that shows where the agent is acting exists only on Linux today.</li>
           <li data-reveal><strong>Electron accessibility wrapper.</strong> Start Electron apps with <code>--force-renderer-accessibility</code> automatically, so their buttons can be pressed by name instead of by pixel.</li>
-          <li data-reveal><strong>GNOME and wlroots validation.</strong> Test the portal path on GNOME and on wlroots compositors such as Sway, and document what works.</li>
-          <li data-reveal><strong>Remote deployment.</strong> Ship the HTTP adapter with a systemd unit for running on another machine.</li>
+          <li data-reveal><strong>GNOME, and real Sway and Hyprland.</strong> Test the portal path and the window list on GNOME, and run Sway and Hyprland on a real compositor instead of fake IPC.</li>
+          <li data-reveal><strong>Remote deployment.</strong> Ship the HTTP adapter with a service unit for running it on another machine.</li>
           <li data-reveal><strong>Live window tree over MCP.</strong> Serve the window list and accessibility tree as MCP resources, alongside the tools.</li>
         </ul>
       </div>
@@ -828,7 +879,7 @@ bash-5.2$</code></pre>
 <section id="connect" class="connect sec" aria-labelledby="connect-h">
   <div class="wrap">
     <div class="sec-head" data-reveal>
-      <span class="bignum" aria-hidden="true" data-parallax>11</span>
+      <span class="bignum" aria-hidden="true" data-parallax>12</span>
       <div><p class="kicker">Connect</p><h2 id="connect-h" class="big">Plug it into your agent</h2></div>
       <p>Same core, four ways in. Pick whatever your harness already speaks.</p>
     </div>
@@ -867,23 +918,26 @@ curl -s -H "Authorization: Bearer $SECRET" -X POST localhost:8788/terminals</cod
 <section id="trust" class="trust sec" aria-labelledby="trust-h">
   <div class="wrap trust-grid">
     <div data-reveal>
-      <span class="bignum bignum-inline" aria-hidden="true">12</span>
+      <span class="bignum bignum-inline" aria-hidden="true">13</span>
       <p class="kicker">Safety</p>
       <h2 id="trust-h" class="big">What it does to your machine</h2>
     </div>
     <dl class="facts" data-stagger>
-      <div data-reveal><dt><svg class="ico" aria-hidden="true"><use href="#i-shield"/></svg>Asks once</dt><dd>KDE shows a remote-control dialog the first time. Tick <em>Allow restoring</em> and it won't ask again. Delete <code>~/.config/nexremote/portal.json</code> to take it back.</dd></div>
-      <div data-reveal><dt><svg class="ico" aria-hidden="true"><use href="#i-pointer"/></svg>Gives your pointer back</dt><dd>Wayland has one pointer. A click borrows it and returns it to where it was.</dd></div>
-      <div data-reveal><dt><svg class="ico" aria-hidden="true"><use href="#i-lock"/></svg>No root</dt><dd>No <code>/dev/uinput</code>, no daemon running as another user.</dd></div>
+      <div data-reveal><dt><svg class="ico" aria-hidden="true"><use href="#i-shield"/></svg>Asks once</dt><dd>On Wayland the desktop shows a remote-control dialog the first time; tick <em>Allow restoring</em> and it won't ask again (delete <code>~/.config/nexremote/portal.json</code> to take it back). On macOS you allow Accessibility and Screen Recording once. Windows and X11 don't ask.</dd></div>
+      <div data-reveal><dt><svg class="ico" aria-hidden="true"><use href="#i-pointer"/></svg>Gives your pointer back</dt><dd>There is one pointer. A click borrows it and puts it back where it was.</dd></div>
+      <div data-reveal><dt><svg class="ico" aria-hidden="true"><use href="#i-lock"/></svg>No root, no admin</dt><dd>No <code>/dev/uinput</code>, no driver, no service running as another user. On Windows it runs as you; windows running as administrator stay out of reach unless NexRemote is elevated too.</dd></div>
       <div data-reveal><dt><svg class="ico" aria-hidden="true"><use href="#i-globe"/></svg>Closed to the network</dt><dd>The HTTP adapter will not listen beyond localhost without a token.</dd></div>
-      <div data-reveal><dt><svg class="ico" aria-hidden="true"><use href="#i-flask"/></svg>Tested where it can&#x27;t hurt you</dt><dd>Input tests run in a throwaway desktop with its own D-Bus, a virtual KWin, its own portal and PipeWire.</dd></div>
+      <div data-reveal><dt><svg class="ico" aria-hidden="true"><use href="#i-flask"/></svg>Tested where it can&#x27;t hurt you</dt><dd>Input tests run in a throwaway desktop with its own D-Bus, a virtual KWin, its own portal and PipeWire. X11 runs in Xvfb, Windows in its own Wine prefix on a headless display.</dd></div>
     </dl>
     <div class="limits" data-reveal>
       <h3>Limits</h3>
       <ul>
-        <li>Tested on KDE Plasma 6 (Wayland). GNOME should work through the same portal, but the window list falls back to accessibility. wlroots compositors are untested.</li>
+        <li>Linux: KDE Plasma 6 on Wayland is tested on a real desktop, X11 on a real X server (Xvfb), Sway and Hyprland with fake IPC. On GNOME the window list falls back to AT-SPI only.</li>
+        <li>Windows: tested on Wine 10, not yet on real Windows 10 or 11. Wine&#x27;s UI Automation can&#x27;t walk the control tree, so click by name is untested there. Windows running as administrator are reachable only when NexRemote runs as administrator too (UIPI).</li>
+        <li>macOS: the code is written and its logic tested against a fake Quartz, but it has not yet been verified on a real Mac. It ships as a preview.</li>
         <li>Konsole exposes the visible screen only. For scrollback, run the agent in tmux.</li>
-        <li>Browsers and Electron apps are driven by screenshot and coordinates.</li>
+        <li>Browsers and Electron apps mostly publish no tree; they are driven by screenshot and coordinates.</li>
+        <li>The visible agent cursor is Linux-only for now.</li>
       </ul>
     </div>
   </div>
@@ -893,27 +947,80 @@ curl -s -H "Authorization: Bearer $SECRET" -X POST localhost:8788/terminals</cod
 <section id="install" class="install sec" aria-labelledby="install-h">
   <div class="wrap">
     <div class="sec-head sec-head-solo" data-reveal>
-      <span class="bignum" aria-hidden="true" data-parallax>13</span>
+      <span class="bignum" aria-hidden="true" data-parallax>14</span>
       <div><p class="kicker">Install</p><h2 id="install-h" class="big">Install in three steps</h2></div>
     </div>
-    <ol class="steps" data-stagger>
-      <li data-reveal>
-        <h3>Download and unpack</h3>
-        <div class="copyline"><code id="cmd-1">unzip nexremote.zip &amp;&amp; cd nexremote</code><button class="copy" type="button" data-copy="#cmd-1" data-done="Copied"><span class="copy-ico" aria-hidden="true"><svg class="ico i1"><use href="#i-copy"/></svg><svg class="ico i2"><use href="#i-check"/></svg></span><span data-label>Copy</span></button></div>
-        <p><a href="/download/nexremote.zip" download>nexremote.zip</a> (82 KB) · <a href="/download/nexremote.tar.gz" download>nexremote.tar.gz</a> (63 KB)</p>
-      </li>
-      <li data-reveal>
-        <h3>Install the commands</h3>
-        <div class="copyline"><code id="cmd-2">./install.sh</code><button class="copy" type="button" data-copy="#cmd-2" data-done="Copied"><span class="copy-ico" aria-hidden="true"><svg class="ico i1"><use href="#i-copy"/></svg><svg class="ico i2"><use href="#i-check"/></svg></span><span data-label>Copy</span></button></div>
-        <p>Puts <code>nexremote</code>, <code>nexremote-mcp</code>, <code>nexremote-http</code> and <code>nexremote-agent</code> in <code>~/bin</code>, then lists anything missing.</p>
-      </li>
-      <li data-reveal>
-        <h3>Grant access once</h3>
-        <div class="copyline"><code id="cmd-3">nexremote setup &amp;&amp; nexremote caps</code><button class="copy" type="button" data-copy="#cmd-3" data-done="Copied"><span class="copy-ico" aria-hidden="true"><svg class="ico i1"><use href="#i-copy"/></svg><svg class="ico i2"><use href="#i-check"/></svg></span><span data-label>Copy</span></button></div>
-        <p>Turns on the accessibility tree and opens KDE's remote-control dialog: tick <em>Allow restoring</em>, press <em>Share</em>.</p>
-      </li>
-    </ol>
-    <p class="reqs" data-reveal>Needs <code>python3-dbus</code> <code>python3-gi</code> <code>xdg-desktop-portal-kde</code> <code>pipewire</code> <code>wl-clipboard</code>. Optional: <code>tmux</code> <code>python3-pil</code> <code>python3-xlib</code>, <code>pip install mcp</code>.</p>
+    <div class="tabs os-tabs" data-tabs data-os-tabs data-reveal>
+      <div class="tablist" role="tablist" aria-label="Operating system">
+        <button type="button" role="tab" id="tab-linux" aria-controls="p-linux" aria-selected="true" data-os="linux">Linux</button>
+        <button type="button" role="tab" id="tab-windows" aria-controls="p-windows" aria-selected="false" tabindex="-1" data-os="windows">Windows</button>
+        <button type="button" role="tab" id="tab-macos" aria-controls="p-macos" aria-selected="false" tabindex="-1" data-os="macos">macOS <span class="pv">Preview</span></button>
+        <span class="tab-ind" aria-hidden="true"></span>
+      </div>
+      <div class="panel os-panel" role="tabpanel" id="p-linux" aria-labelledby="tab-linux" tabindex="0">
+        <h3 class="os-h">Linux</h3>
+        <ol class="steps">
+          <li>
+            <h3>Download and unpack</h3>
+            <div class="copyline"><code id="cmd-l1">unzip nexremote.zip &amp;&amp; cd nexremote</code><button class="copy" type="button" data-copy="#cmd-l1" data-done="Copied"><span class="copy-ico" aria-hidden="true"><svg class="ico i1"><use href="#i-copy"/></svg><svg class="ico i2"><use href="#i-check"/></svg></span><span data-label>Copy</span></button></div>
+            <p><a href="/download/nexremote.zip" download>nexremote.zip</a> (174 KB) · <a href="/download/nexremote.tar.gz" download>nexremote.tar.gz</a> (141 KB)</p>
+          </li>
+          <li>
+            <h3>Install the commands</h3>
+            <div class="copyline"><code id="cmd-l2">./install.sh</code><button class="copy" type="button" data-copy="#cmd-l2" data-done="Copied"><span class="copy-ico" aria-hidden="true"><svg class="ico i1"><use href="#i-copy"/></svg><svg class="ico i2"><use href="#i-check"/></svg></span><span data-label>Copy</span></button></div>
+            <p>Puts <code>nexremote</code>, <code>nexremote-mcp</code>, <code>nexremote-http</code> and <code>nexremote-agent</code> in <code>~/bin</code>, then lists anything missing.</p>
+          </li>
+          <li>
+            <h3>Grant access once</h3>
+            <div class="copyline"><code id="cmd-l3">nexremote setup &amp;&amp; nexremote caps</code><button class="copy" type="button" data-copy="#cmd-l3" data-done="Copied"><span class="copy-ico" aria-hidden="true"><svg class="ico i1"><use href="#i-copy"/></svg><svg class="ico i2"><use href="#i-check"/></svg></span><span data-label>Copy</span></button></div>
+            <p>Turns on the accessibility tree and, on Wayland, opens the desktop's remote-control dialog: tick <em>Allow restoring</em>, press <em>Share</em>. X11 asks nothing.</p>
+          </li>
+        </ol>
+        <p class="reqs">Needs <code>python3-dbus</code> <code>python3-gi</code> <code>xdg-desktop-portal-kde</code> <code>pipewire</code> <code>wl-clipboard</code>. Optional: <code>tmux</code> <code>python3-pil</code> <code>python3-xlib</code>, <code>pip install mcp</code>. Rather use pip? <code>pipx install --system-site-packages .</code> keeps the system's D-Bus and GObject bindings in view.</p>
+      </div>
+      <div class="panel os-panel" role="tabpanel" id="p-windows" aria-labelledby="tab-windows" tabindex="0">
+        <h3 class="os-h">Windows</h3>
+        <ol class="steps">
+          <li>
+            <h3>Download and unpack</h3>
+            <div class="copyline"><code id="cmd-w1">Expand-Archive nexremote.zip -DestinationPath .; cd nexremote</code><button class="copy" type="button" data-copy="#cmd-w1" data-done="Copied"><span class="copy-ico" aria-hidden="true"><svg class="ico i1"><use href="#i-copy"/></svg><svg class="ico i2"><use href="#i-check"/></svg></span><span data-label>Copy</span></button></div>
+            <p><a href="/download/nexremote.zip" download>nexremote.zip</a> (174 KB)</p>
+          </li>
+          <li>
+            <h3>Install with pip</h3>
+            <div class="copyline"><code id="cmd-w2">py -m pip install .[all]</code><button class="copy" type="button" data-copy="#cmd-w2" data-done="Copied"><span class="copy-ico" aria-hidden="true"><svg class="ico i1"><use href="#i-copy"/></svg><svg class="ico i2"><use href="#i-check"/></svg></span><span data-label>Copy</span></button></div>
+            <p>Puts <code>nexremote</code>, <code>nexremote-mcp</code>, <code>nexremote-http</code> and <code>nexremote-agent</code> on your path. <code>comtypes</code>, for UI Automation, comes along.</p>
+          </li>
+          <li>
+            <h3>See what works</h3>
+            <div class="copyline"><code id="cmd-w3">nexremote caps</code><button class="copy" type="button" data-copy="#cmd-w3" data-done="Copied"><span class="copy-ico" aria-hidden="true"><svg class="ico i1"><use href="#i-copy"/></svg><svg class="ico i2"><use href="#i-check"/></svg></span><span data-label>Copy</span></button></div>
+            <p>No permission dialog. Windows running as administrator are reachable only if NexRemote runs as administrator too.</p>
+          </li>
+        </ol>
+        <p class="reqs">Needs Python 3.9 or newer, started with the <code>py</code> launcher. <code>[all]</code> adds <code>pillow</code> for cropping and scaling screenshots and <code>mcp</code> for the MCP server. Tested under Wine 10, not yet on real Windows 10 or 11.</p>
+      </div>
+      <div class="panel os-panel" role="tabpanel" id="p-macos" aria-labelledby="tab-macos" tabindex="0">
+        <h3 class="os-h">macOS <span class="pv">Preview</span></h3>
+        <ol class="steps">
+          <li>
+            <h3>Download and unpack</h3>
+            <div class="copyline"><code id="cmd-m1">unzip nexremote.zip &amp;&amp; cd nexremote</code><button class="copy" type="button" data-copy="#cmd-m1" data-done="Copied"><span class="copy-ico" aria-hidden="true"><svg class="ico i1"><use href="#i-copy"/></svg><svg class="ico i2"><use href="#i-check"/></svg></span><span data-label>Copy</span></button></div>
+            <p><a href="/download/nexremote.zip" download>nexremote.zip</a> (174 KB) · <a href="/download/nexremote.tar.gz" download>nexremote.tar.gz</a> (141 KB)</p>
+          </li>
+          <li>
+            <h3>Install with pip</h3>
+            <div class="copyline"><code id="cmd-m2">python3 -m pip install '.[all]'</code><button class="copy" type="button" data-copy="#cmd-m2" data-done="Copied"><span class="copy-ico" aria-hidden="true"><svg class="ico i1"><use href="#i-copy"/></svg><svg class="ico i2"><use href="#i-check"/></svg></span><span data-label>Copy</span></button></div>
+            <p>Puts the four commands on your path. <code>[all]</code> adds screenshot scaling and the MCP server.</p>
+          </li>
+          <li>
+            <h3>Grant access once</h3>
+            <div class="copyline"><code id="cmd-m3">nexremote setup &amp;&amp; nexremote caps</code><button class="copy" type="button" data-copy="#cmd-m3" data-done="Copied"><span class="copy-ico" aria-hidden="true"><svg class="ico i1"><use href="#i-copy"/></svg><svg class="ico i2"><use href="#i-check"/></svg></span><span data-label>Copy</span></button></div>
+            <p>Opens the Accessibility and Screen Recording prompts. Allow your terminal in System Settings → Privacy &amp; Security; it is not asked again.</p>
+          </li>
+        </ol>
+        <p class="reqs">Needs Python 3.9 or newer. Optional: <code>tmux</code> for scrollback. Preview: tested against a fake Quartz, not yet on a real Mac.</p>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -929,7 +1036,7 @@ curl -s -H "Authorization: Bearer $SECRET" -X POST localhost:8788/terminals</cod
           <a class="btn btn-invert" href="/download/nexremote.zip" download data-magnet>
             <svg class="ico" aria-hidden="true"><use href="#i-download"/></svg>
             <span>Download</span>
-            <span class="btn-meta">v0.2.0 · zip · 82 KB</span>
+            <span class="btn-meta">v0.3.0 · zip · 174 KB</span>
           </a>
           <a class="btn btn-ghost" href="mailto:omeralibayrakcii@gmail.com?subject=NexRemote" data-magnet>
             <svg class="ico" aria-hidden="true"><use href="#i-mail"/></svg>
@@ -940,7 +1047,7 @@ curl -s -H "Authorization: Bearer $SECRET" -X POST localhost:8788/terminals</cod
           <code id="cmd-cta" data-typeline>./install.sh &amp;&amp; nexremote setup</code>
           <button class="copy" type="button" data-copy="#cmd-cta" data-done="Copied"><span class="copy-ico" aria-hidden="true"><svg class="ico i1"><use href="#i-copy"/></svg><svg class="ico i2"><use href="#i-check"/></svg></span><span data-label>Copy</span></button>
         </div>
-        <p class="meta"><a href="/download/nexremote.tar.gz" download>nexremote.tar.gz</a> (63 KB) · MIT · KDE Plasma 6 on Wayland · Python 3.10+</p>
+        <p class="meta"><a href="/download/nexremote.tar.gz" download>nexremote.tar.gz</a> (141 KB) · MIT · Linux · Windows · macOS (preview) · Python 3.9+</p>
       </div>
     </div>
   </div>
@@ -952,7 +1059,7 @@ curl -s -H "Authorization: Bearer $SECRET" -X POST localhost:8788/terminals</cod
   <div class="wrap foot-row">
     <span class="foot-brand">
       <svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="5.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 1.5v5M12 17.5v5M1.5 12h5M17.5 12h5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/></svg>
-      NexRemote v0.2.0 · MIT
+      NexRemote v0.3.0 · MIT
     </span>
     <a href="#how">How it works</a>
     <a href="#install">Install</a>
@@ -963,6 +1070,6 @@ curl -s -H "Authorization: Bearer $SECRET" -X POST localhost:8788/terminals</cod
 </footer>
 
 <script id="replay-i18n" type="application/json">{"captions": ["The agent asks what is on screen: every window with its ref, every terminal with the program in it.", "It reads another agent's terminal. Konsole hands over the visible text; no screenshot, no focus change.", "It answers in that terminal as if typed on its keyboard. The window never had to come forward.", "It finds the switch by its name and presses it through accessibility. The mouse does not move.", "The player publishes no controls, so it looks: a screenshot of that window, then a click on the pixel it saw. Your pointer goes back where it was."], "termMsg": "Fix both, then rerun the suite"}</script>
-<script src="/assets/site.js?v=0.2.0" defer></script>
+<script src="/assets/site.js?v=0.3.0" defer></script>
 </body>
 </html>

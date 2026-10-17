@@ -27,6 +27,8 @@ tar --exclude='./.git' \
     --exclude='*/__pycache__' \
     --exclude='*.pyc' \
     --exclude='./download' \
+    --exclude='./build' \
+    --exclude='*.egg-info' \
     -cf - . | (cd "$DEST" && tar -xf -)
 
 # Sürüm dosyası ekle

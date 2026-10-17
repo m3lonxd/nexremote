@@ -63,6 +63,7 @@
     <nav class="nav" aria-label="{{nav_label}}">
       <a href="#how">{{nav_how}}</a>
       <a href="#replay">{{nav_replay}}</a>
+      <a href="#platforms">{{nav_platforms}}</a>
       <a href="#compare">{{nav_compare}}</a>
       <a href="#roadmap">{{nav_roadmap}}</a>
       <a href="#install">{{nav_install}}</a>
@@ -293,7 +294,7 @@
             <span class="rung-n" aria-hidden="true">1</span>
             <h3>{{lad1_t}}</h3>
             <p>{{lad1_d}}</p>
-            <p class="rung-meta"><span>{{via}}</span> KWin scripting <span>{{model_gets}}</span> {{gets_text}}</p>
+            <p class="rung-meta"><span>{{via}}</span> KWin · EnumWindows · CGWindowList <span>{{model_gets}}</span> {{gets_text}}</p>
 <pre class="rung-code"><code><span class="c">$</span> nexremote windows
 * win:{c31f…}  org.kde.konsole  1100x780+0+0      api : claude — Konsole
   win:{8c1e…}  systemsettings   760x540+1180+60   Appearance — System Settings
@@ -305,7 +306,7 @@
             <span class="rung-n" aria-hidden="true">2</span>
             <h3>{{lad2_t}}</h3>
             <p>{{lad2_d}}</p>
-            <p class="rung-meta"><span>{{via}}</span> AT-SPI <span>{{model_gets}}</span> {{gets_text}}</p>
+            <p class="rung-meta"><span>{{via}}</span> AT-SPI · UI Automation · AX <span>{{model_gets}}</span> {{gets_text}}</p>
 <pre class="rung-code"><code><span class="c">$</span> nexremote find "Dark" --window win:{8c1e…}
 atspi:4:0/2/7	[checkbox] Dark  &lt;toggle,click&gt;
 <span class="c">$</span> nexremote click atspi:4:0/2/7 --json
@@ -317,7 +318,7 @@ atspi:4:0/2/7	[checkbox] Dark  &lt;toggle,click&gt;
             <span class="rung-n" aria-hidden="true">3</span>
             <h3>{{lad3_t}}</h3>
             <p>{{lad3_d}}</p>
-            <p class="rung-meta"><span>{{via}}</span> Konsole D-Bus · tmux <span>{{model_gets}}</span> {{gets_text}}</p>
+            <p class="rung-meta"><span>{{via}}</span> Konsole D-Bus · tmux · AttachConsole · Terminal.app <span>{{model_gets}}</span> {{gets_text}}</p>
 <pre class="rung-code"><code><span class="c">$</span> nexremote term-read konsole:7891:2
 ● Running test suite…
   tests/test_api.py ........F.F
@@ -330,7 +331,7 @@ Should I fix them? (y/n, or tell me)</code></pre>
             <span class="rung-n" aria-hidden="true">4</span>
             <h3>{{lad4_t}}</h3>
             <p>{{lad4_d}}</p>
-            <p class="rung-meta"><span>{{via}}</span> spectacle / grim · RemoteDesktop portal <span>{{model_gets}}</span> {{gets_image}}</p>
+            <p class="rung-meta"><span>{{via}}</span> spectacle / grim · GDI · screencapture <span>{{model_gets}}</span> {{gets_image}}</p>
 <pre class="rung-code"><code><span class="c">$</span> nexremote screenshot --window win:{a41f…} --max-width 1568
 <span class="c">$</span> nexremote click 440 190 --from-shot --json
 { "ok": true, "x": 1500, "y": 710, "button": "left" }</code></pre>
@@ -554,43 +555,43 @@ Should I fix them? (y/n, or tell me)</code></pre>
         <svg class="ico ico-lg" aria-hidden="true"><use href="#i-windows"/></svg>
         <h3>{{r_win}}</h3>
         <p>{{r_win_n}}</p>
-        <dl><dt>{{th_cmd}}</dt><dd><code>windows</code> <code>window REF activate</code></dd><dt>{{th_how}}</dt><dd>KWin scripting</dd></dl>
+        <dl><dt>{{th_cmd}}</dt><dd><code>windows</code> <code>window REF activate</code></dd></dl>
       </li>
       <li class="surface" data-surface data-reveal data-tilt>
         <svg class="ico ico-lg" aria-hidden="true"><use href="#i-pointer"/></svg>
         <h3>{{r_mouse}}</h3>
         <p>{{r_mouse_n}}</p>
-        <dl><dt>{{th_cmd}}</dt><dd><code>click X Y</code> <code>scroll</code> <code>drag</code></dd><dt>{{th_how}}</dt><dd>RemoteDesktop portal</dd></dl>
+        <dl><dt>{{th_cmd}}</dt><dd><code>click X Y</code> <code>scroll</code> <code>drag</code></dd></dl>
       </li>
       <li class="surface" data-surface data-reveal data-tilt>
         <svg class="ico ico-lg" aria-hidden="true"><use href="#i-keyboard"/></svg>
         <h3>{{r_keys}}</h3>
         <p>{{r_keys_n}}</p>
-        <dl><dt>{{th_cmd}}</dt><dd><code>type</code> <code>key ctrl+s</code></dd><dt>{{th_how}}</dt><dd>{{r_keys_how}}</dd></dl>
+        <dl><dt>{{th_cmd}}</dt><dd><code>type</code> <code>key ctrl+s</code></dd></dl>
       </li>
       <li class="surface" data-surface data-reveal data-tilt>
         <svg class="ico ico-lg" aria-hidden="true"><use href="#i-toggle"/></svg>
         <h3>{{r_names}}</h3>
         <p>{{r_names_n}}</p>
-        <dl><dt>{{th_cmd}}</dt><dd><code>find</code> <code>click REF</code></dd><dt>{{th_how}}</dt><dd>AT-SPI</dd></dl>
+        <dl><dt>{{th_cmd}}</dt><dd><code>find</code> <code>click REF</code></dd></dl>
       </li>
       <li class="surface" data-surface data-reveal data-tilt>
         <svg class="ico ico-lg" aria-hidden="true"><use href="#i-terminal"/></svg>
         <h3>{{r_terms}}</h3>
         <p>{{r_terms_n}}</p>
-        <dl><dt>{{th_cmd}}</dt><dd><code>terms</code> <code>term-read</code> <code>term-send</code></dd><dt>{{th_how}}</dt><dd>Konsole D-Bus, tmux</dd></dl>
+        <dl><dt>{{th_cmd}}</dt><dd><code>terms</code> <code>term-read</code> <code>term-send</code></dd></dl>
       </li>
       <li class="surface" data-surface data-reveal data-tilt>
         <svg class="ico ico-lg" aria-hidden="true"><use href="#i-sessions"/></svg>
         <h3>{{r_shell}}</h3>
         <p>{{r_shell_n}}</p>
-        <dl><dt>{{th_cmd}}</dt><dd><code>run</code> <code>screen</code> <code>keys</code></dd><dt>{{th_how}}</dt><dd>tmux / PTY</dd></dl>
+        <dl><dt>{{th_cmd}}</dt><dd><code>run</code> <code>screen</code> <code>keys</code></dd></dl>
       </li>
       <li class="surface" data-surface data-reveal data-tilt>
         <svg class="ico ico-lg" aria-hidden="true"><use href="#i-viewfinder"/></svg>
         <h3>{{r_shot}}</h3>
         <p>{{r_shot_n}}</p>
-        <dl><dt>{{th_cmd}}</dt><dd><code>screenshot --window --max-width</code></dd><dt>{{th_how}}</dt><dd>spectacle / grim</dd></dl>
+        <dl><dt>{{th_cmd}}</dt><dd><code>screenshot --window --max-width</code></dd></dl>
       </li>
       <li class="surface surface-caps" data-reveal data-tilt>
         <svg class="ico ico-lg" aria-hidden="true"><use href="#i-checklist"/></svg>
@@ -602,12 +603,57 @@ Should I fix them? (y/n, or tell me)</code></pre>
   </div>
 </section>
 
+<!-- =========================================================== PLATFORMS -->
+<section id="platforms" class="platforms sec" aria-labelledby="platforms-h">
+  <div class="wrap">
+    <div class="sec-head" data-reveal>
+      <span class="bignum" aria-hidden="true" data-parallax>05</span>
+      <div><p class="kicker">{{plat_kicker}}</p><h2 id="platforms-h" class="big">{{plat_h}}</h2></div>
+      <p>{{plat_p}}</p>
+    </div>
+
+    <ul class="oses" data-stagger>
+      <li class="os" data-reveal>
+        <div class="os-top"><h3>Linux</h3><p>{{os_linux_s}}</p></div>
+        <p class="os-k">{{os_tested}}</p>
+        <ul class="envs">
+          <li><span class="env-n">KDE Plasma 6 · Wayland</span><span class="tb tb-real">{{tb_real}}</span><p>{{env_kde}}</p></li>
+          <li><span class="env-n">X11</span><span class="tb tb-virt">{{tb_xvfb}}</span><p>{{env_x11}}</p></li>
+          <li><span class="env-n">Sway · Hyprland</span><span class="tb tb-mock">{{tb_fake}}</span><p>{{env_wl}}</p></li>
+          <li><span class="env-n">GNOME</span><span class="tb tb-none">{{tb_none}}</span><p>{{env_gnome}}</p></li>
+        </ul>
+      </li>
+      <li class="os" data-reveal>
+        <div class="os-top"><h3>Windows</h3><p>{{os_win_s}}</p></div>
+        <p class="os-k">{{os_tested}}</p>
+        <ul class="envs">
+          <li><span class="env-n">Wine 10</span><span class="tb tb-virt">{{tb_wine}}</span><p>{{env_win}}</p><p>{{env_win2}}</p></li>
+        </ul>
+      </li>
+      <li class="os os-pv" data-reveal>
+        <div class="os-top"><h3>macOS <span class="pv">{{preview}}</span></h3><p>{{os_mac_s}}</p></div>
+        <p class="os-k">{{os_tested}}</p>
+        <ul class="envs">
+          <li><span class="env-n">{{env_mac_n}}</span><span class="tb tb-mock">{{tb_mock}}</span><p>{{env_mac}}</p><p>{{env_mac2}}</p></li>
+        </ul>
+      </li>
+    </ul>
+    <p class="tb-legend" data-reveal>{{tb_legend}}</p>
+
+    <div class="pm-wrap" data-reveal>
+      <p class="pm-dim">{{pm_dim}}</p>
+      {{plat_matrix}}
+      <p class="pm-src">{{pm_src}}</p>
+    </div>
+  </div>
+</section>
+
 <!-- =============================================================== WATCH -->
 <section class="watch band sec" data-wipe aria-labelledby="watch-h">
   <div class="grid-bg" data-parallax aria-hidden="true"></div>
   <div class="wrap watch-grid">
     <div data-reveal>
-      <span class="bignum bignum-inline" aria-hidden="true">05</span>
+      <span class="bignum bignum-inline" aria-hidden="true">06</span>
       <p class="kicker">{{watch_kicker}}</p>
       <h2 id="watch-h" class="big">{{watch_h}}</h2>
       <p>{{watch_p1}}</p>
@@ -635,7 +681,7 @@ bash-5.2$</code></pre>
 <section class="pixels sec" aria-labelledby="pixels-h">
   <div class="wrap pixels-grid">
     <div data-reveal>
-      <span class="bignum bignum-inline" aria-hidden="true">06</span>
+      <span class="bignum bignum-inline" aria-hidden="true">07</span>
       <p class="kicker">{{pixels_kicker}}</p>
       <h2 id="pixels-h" class="big">{{pixels_h}}</h2>
       <p>{{pixels_p}}</p>
@@ -674,7 +720,7 @@ bash-5.2$</code></pre>
 <section id="compare" class="compare sec" aria-labelledby="compare-h">
   <div class="wrap">
     <div class="sec-head" data-reveal>
-      <span class="bignum" aria-hidden="true" data-parallax>07</span>
+      <span class="bignum" aria-hidden="true" data-parallax>08</span>
       <div><p class="kicker">{{cmp_kicker}}</p><h2 id="compare-h" class="big">{{cmp_h}}</h2></div>
       <p>{{cmp_p}}</p>
     </div>
@@ -693,7 +739,7 @@ bash-5.2$</code></pre>
           <tbody>
             <tr>
               <th scope="row">{{cr1}}</th>
-              <td class="us"><span class="mk y"><svg class="ico" aria-hidden="true"><use href="#i-yes"/></svg>{{yes}}</span><small>AT-SPI</small></td>
+              <td class="us"><span class="mk y"><svg class="ico" aria-hidden="true"><use href="#i-yes"/></svg>{{yes}}</span><small>{{c1u}}</small></td>
               <td><span class="mk n"><svg class="ico" aria-hidden="true"><use href="#i-no"/></svg>{{no}}</span><small>{{c1s}}</small></td>
               <td><span class="mk p"><svg class="ico" aria-hidden="true"><use href="#i-part"/></svg>{{partly}}</span><small>{{c1r}}</small></td>
               <td><span class="mk y"><svg class="ico" aria-hidden="true"><use href="#i-yes"/></svg>{{yes}}</span><small>{{c_inapp}}</small></td>
@@ -714,14 +760,14 @@ bash-5.2$</code></pre>
             </tr>
             <tr>
               <th scope="row">{{cr4}}</th>
-              <td class="us"><span class="mk y"><svg class="ico" aria-hidden="true"><use href="#i-yes"/></svg>{{yes}}</span><small>Konsole D-Bus · tmux</small></td>
+              <td class="us"><span class="mk y"><svg class="ico" aria-hidden="true"><use href="#i-yes"/></svg>{{yes}}</span><small>{{c4u}}</small></td>
               <td><span class="mk p"><svg class="ico" aria-hidden="true"><use href="#i-part"/></svg>{{partly}}</span><small>{{c4s}}</small></td>
               <td><span class="mk p"><svg class="ico" aria-hidden="true"><use href="#i-part"/></svg>{{partly}}</span><small>{{c4r}}</small></td>
               <td><span class="mk n"><svg class="ico" aria-hidden="true"><use href="#i-no"/></svg>{{no}}</span><small>{{c4a}}</small></td>
             </tr>
             <tr>
               <th scope="row">{{cr5}}</th>
-              <td class="us"><span class="mk y"><svg class="ico" aria-hidden="true"><use href="#i-yes"/></svg>{{yes}}</span><small>RemoteDesktop portal</small></td>
+              <td class="us"><span class="mk y"><svg class="ico" aria-hidden="true"><use href="#i-yes"/></svg>{{yes}}</span><small>{{c5u}}</small></td>
               <td><span class="mk p"><svg class="ico" aria-hidden="true"><use href="#i-part"/></svg>{{partly}}</span><small>{{c5s}}</small></td>
               <td><span class="mk n"><svg class="ico" aria-hidden="true"><use href="#i-no"/></svg>{{no}}</span><small>{{c5r}}</small></td>
               <td><span class="mk y"><svg class="ico" aria-hidden="true"><use href="#i-yes"/></svg>{{yes}}</span><small>{{c5a}}</small></td>
@@ -747,7 +793,7 @@ bash-5.2$</code></pre>
   <div class="grid-bg" data-parallax aria-hidden="true"></div>
   <div class="wrap">
     <div class="sec-head" data-reveal>
-      <span class="bignum" aria-hidden="true" data-parallax>08</span>
+      <span class="bignum" aria-hidden="true" data-parallax>09</span>
       <div><p class="kicker">{{num_kicker}}</p><h2 id="numbers-h" class="big">{{num_h}}</h2></div>
       <p>{{num_note}}</p>
     </div>
@@ -768,7 +814,7 @@ bash-5.2$</code></pre>
 <section id="why" class="why sec" aria-labelledby="why-h">
   <div class="wrap">
     <div class="sec-head" data-reveal>
-      <span class="bignum" aria-hidden="true" data-parallax>09</span>
+      <span class="bignum" aria-hidden="true" data-parallax>10</span>
       <div><p class="kicker">{{why_kicker}}</p><h2 id="why-h" class="big">{{why_h}}</h2></div>
       <p>{{why_p}}</p>
     </div>
@@ -796,7 +842,7 @@ bash-5.2$</code></pre>
 <section id="roadmap" class="roadmap sec" aria-labelledby="roadmap-h">
   <div class="wrap">
     <div class="sec-head" data-reveal>
-      <span class="bignum" aria-hidden="true" data-parallax>10</span>
+      <span class="bignum" aria-hidden="true" data-parallax>11</span>
       <div><p class="kicker">{{rm_kicker}}</p><h2 id="roadmap-h" class="big">{{rm_h}}</h2></div>
       <p>{{rm_p}}</p>
     </div>
@@ -808,12 +854,17 @@ bash-5.2$</code></pre>
           <li data-reveal>{{sh2}}</li>
           <li data-reveal>{{sh3}}</li>
           <li data-reveal>{{sh4}}</li>
+          <li data-reveal>{{sh6}}</li>
+          <li data-reveal>{{sh7}}</li>
+          <li data-reveal>{{sh8}}</li>
           <li data-reveal>{{sh5}}</li>
         </ul>
       </div>
       <div class="track-col" data-reveal>
         <h3 class="track-h"><svg class="ico" aria-hidden="true"><use href="#i-planned"/></svg>{{rm_next}}</h3>
         <ul class="track-list next" data-stagger>
+          <li data-reveal><strong>{{rm5_t}}</strong> {{rm5_d}}</li>
+          <li data-reveal><strong>{{rm6_t}}</strong> {{rm6_d}}</li>
           <li data-reveal><strong>{{rm1_t}}</strong> {{rm1_d}}</li>
           <li data-reveal><strong>{{rm2_t}}</strong> {{rm2_d}}</li>
           <li data-reveal><strong>{{rm3_t}}</strong> {{rm3_d}}</li>
@@ -828,7 +879,7 @@ bash-5.2$</code></pre>
 <section id="connect" class="connect sec" aria-labelledby="connect-h">
   <div class="wrap">
     <div class="sec-head" data-reveal>
-      <span class="bignum" aria-hidden="true" data-parallax>11</span>
+      <span class="bignum" aria-hidden="true" data-parallax>12</span>
       <div><p class="kicker">{{connect_kicker}}</p><h2 id="connect-h" class="big">{{connect_h}}</h2></div>
       <p>{{connect_note}}</p>
     </div>
@@ -867,7 +918,7 @@ curl -s -H "Authorization: Bearer $SECRET" -X POST localhost:8788/terminals</cod
 <section id="trust" class="trust sec" aria-labelledby="trust-h">
   <div class="wrap trust-grid">
     <div data-reveal>
-      <span class="bignum bignum-inline" aria-hidden="true">12</span>
+      <span class="bignum bignum-inline" aria-hidden="true">13</span>
       <p class="kicker">{{trust_kicker}}</p>
       <h2 id="trust-h" class="big">{{trust_h}}</h2>
     </div>
@@ -884,6 +935,9 @@ curl -s -H "Authorization: Bearer $SECRET" -X POST localhost:8788/terminals</cod
         <li>{{l1}}</li>
         <li>{{l2}}</li>
         <li>{{l3}}</li>
+        <li>{{l4}}</li>
+        <li>{{l5}}</li>
+        <li>{{l6}}</li>
       </ul>
     </div>
   </div>
@@ -893,27 +947,80 @@ curl -s -H "Authorization: Bearer $SECRET" -X POST localhost:8788/terminals</cod
 <section id="install" class="install sec" aria-labelledby="install-h">
   <div class="wrap">
     <div class="sec-head sec-head-solo" data-reveal>
-      <span class="bignum" aria-hidden="true" data-parallax>13</span>
+      <span class="bignum" aria-hidden="true" data-parallax>14</span>
       <div><p class="kicker">{{install_kicker}}</p><h2 id="install-h" class="big">{{install_h}}</h2></div>
     </div>
-    <ol class="steps" data-stagger>
-      <li data-reveal>
-        <h3>{{s1_t}}</h3>
-        <div class="copyline"><code id="cmd-1">unzip nexremote.zip &amp;&amp; cd nexremote</code><button class="copy" type="button" data-copy="#cmd-1" data-done="{{copied}}"><span class="copy-ico" aria-hidden="true"><svg class="ico i1"><use href="#i-copy"/></svg><svg class="ico i2"><use href="#i-check"/></svg></span><span data-label>{{copy}}</span></button></div>
-        <p><a href="/download/nexremote.zip" download>nexremote.zip</a> ({{zip_size}}) · <a href="/download/nexremote.tar.gz" download>nexremote.tar.gz</a> ({{tgz_size}})</p>
-      </li>
-      <li data-reveal>
-        <h3>{{s2_t}}</h3>
-        <div class="copyline"><code id="cmd-2">./install.sh</code><button class="copy" type="button" data-copy="#cmd-2" data-done="{{copied}}"><span class="copy-ico" aria-hidden="true"><svg class="ico i1"><use href="#i-copy"/></svg><svg class="ico i2"><use href="#i-check"/></svg></span><span data-label>{{copy}}</span></button></div>
-        <p>{{s2_d}}</p>
-      </li>
-      <li data-reveal>
-        <h3>{{s3_t}}</h3>
-        <div class="copyline"><code id="cmd-3">nexremote setup &amp;&amp; nexremote caps</code><button class="copy" type="button" data-copy="#cmd-3" data-done="{{copied}}"><span class="copy-ico" aria-hidden="true"><svg class="ico i1"><use href="#i-copy"/></svg><svg class="ico i2"><use href="#i-check"/></svg></span><span data-label>{{copy}}</span></button></div>
-        <p>{{s3_d}}</p>
-      </li>
-    </ol>
-    <p class="reqs" data-reveal>{{reqs}}</p>
+    <div class="tabs os-tabs" data-tabs data-os-tabs data-reveal>
+      <div class="tablist" role="tablist" aria-label="{{install_os_label}}">
+        <button type="button" role="tab" id="tab-linux" aria-controls="p-linux" aria-selected="true" data-os="linux">Linux</button>
+        <button type="button" role="tab" id="tab-windows" aria-controls="p-windows" aria-selected="false" tabindex="-1" data-os="windows">Windows</button>
+        <button type="button" role="tab" id="tab-macos" aria-controls="p-macos" aria-selected="false" tabindex="-1" data-os="macos">macOS <span class="pv">{{preview}}</span></button>
+        <span class="tab-ind" aria-hidden="true"></span>
+      </div>
+      <div class="panel os-panel" role="tabpanel" id="p-linux" aria-labelledby="tab-linux" tabindex="0">
+        <h3 class="os-h">Linux</h3>
+        <ol class="steps">
+          <li>
+            <h3>{{s1_t}}</h3>
+            <div class="copyline"><code id="cmd-l1">unzip nexremote.zip &amp;&amp; cd nexremote</code><button class="copy" type="button" data-copy="#cmd-l1" data-done="{{copied}}"><span class="copy-ico" aria-hidden="true"><svg class="ico i1"><use href="#i-copy"/></svg><svg class="ico i2"><use href="#i-check"/></svg></span><span data-label>{{copy}}</span></button></div>
+            <p><a href="/download/nexremote.zip" download>nexremote.zip</a> ({{zip_size}}) · <a href="/download/nexremote.tar.gz" download>nexremote.tar.gz</a> ({{tgz_size}})</p>
+          </li>
+          <li>
+            <h3>{{s2_t}}</h3>
+            <div class="copyline"><code id="cmd-l2">./install.sh</code><button class="copy" type="button" data-copy="#cmd-l2" data-done="{{copied}}"><span class="copy-ico" aria-hidden="true"><svg class="ico i1"><use href="#i-copy"/></svg><svg class="ico i2"><use href="#i-check"/></svg></span><span data-label>{{copy}}</span></button></div>
+            <p>{{s2_d}}</p>
+          </li>
+          <li>
+            <h3>{{s3_t}}</h3>
+            <div class="copyline"><code id="cmd-l3">nexremote setup &amp;&amp; nexremote caps</code><button class="copy" type="button" data-copy="#cmd-l3" data-done="{{copied}}"><span class="copy-ico" aria-hidden="true"><svg class="ico i1"><use href="#i-copy"/></svg><svg class="ico i2"><use href="#i-check"/></svg></span><span data-label>{{copy}}</span></button></div>
+            <p>{{s3_d}}</p>
+          </li>
+        </ol>
+        <p class="reqs">{{reqs}}</p>
+      </div>
+      <div class="panel os-panel" role="tabpanel" id="p-windows" aria-labelledby="tab-windows" tabindex="0">
+        <h3 class="os-h">Windows</h3>
+        <ol class="steps">
+          <li>
+            <h3>{{s1_t}}</h3>
+            <div class="copyline"><code id="cmd-w1">Expand-Archive nexremote.zip -DestinationPath .; cd nexremote</code><button class="copy" type="button" data-copy="#cmd-w1" data-done="{{copied}}"><span class="copy-ico" aria-hidden="true"><svg class="ico i1"><use href="#i-copy"/></svg><svg class="ico i2"><use href="#i-check"/></svg></span><span data-label>{{copy}}</span></button></div>
+            <p><a href="/download/nexremote.zip" download>nexremote.zip</a> ({{zip_size}})</p>
+          </li>
+          <li>
+            <h3>{{w2_t}}</h3>
+            <div class="copyline"><code id="cmd-w2">py -m pip install .[all]</code><button class="copy" type="button" data-copy="#cmd-w2" data-done="{{copied}}"><span class="copy-ico" aria-hidden="true"><svg class="ico i1"><use href="#i-copy"/></svg><svg class="ico i2"><use href="#i-check"/></svg></span><span data-label>{{copy}}</span></button></div>
+            <p>{{w2_d}}</p>
+          </li>
+          <li>
+            <h3>{{w3_t}}</h3>
+            <div class="copyline"><code id="cmd-w3">nexremote caps</code><button class="copy" type="button" data-copy="#cmd-w3" data-done="{{copied}}"><span class="copy-ico" aria-hidden="true"><svg class="ico i1"><use href="#i-copy"/></svg><svg class="ico i2"><use href="#i-check"/></svg></span><span data-label>{{copy}}</span></button></div>
+            <p>{{w3_d}}</p>
+          </li>
+        </ol>
+        <p class="reqs">{{reqs_win}}</p>
+      </div>
+      <div class="panel os-panel" role="tabpanel" id="p-macos" aria-labelledby="tab-macos" tabindex="0">
+        <h3 class="os-h">macOS <span class="pv">{{preview}}</span></h3>
+        <ol class="steps">
+          <li>
+            <h3>{{s1_t}}</h3>
+            <div class="copyline"><code id="cmd-m1">unzip nexremote.zip &amp;&amp; cd nexremote</code><button class="copy" type="button" data-copy="#cmd-m1" data-done="{{copied}}"><span class="copy-ico" aria-hidden="true"><svg class="ico i1"><use href="#i-copy"/></svg><svg class="ico i2"><use href="#i-check"/></svg></span><span data-label>{{copy}}</span></button></div>
+            <p><a href="/download/nexremote.zip" download>nexremote.zip</a> ({{zip_size}}) · <a href="/download/nexremote.tar.gz" download>nexremote.tar.gz</a> ({{tgz_size}})</p>
+          </li>
+          <li>
+            <h3>{{m2_t}}</h3>
+            <div class="copyline"><code id="cmd-m2">python3 -m pip install '.[all]'</code><button class="copy" type="button" data-copy="#cmd-m2" data-done="{{copied}}"><span class="copy-ico" aria-hidden="true"><svg class="ico i1"><use href="#i-copy"/></svg><svg class="ico i2"><use href="#i-check"/></svg></span><span data-label>{{copy}}</span></button></div>
+            <p>{{m2_d}}</p>
+          </li>
+          <li>
+            <h3>{{m3_t}}</h3>
+            <div class="copyline"><code id="cmd-m3">nexremote setup &amp;&amp; nexremote caps</code><button class="copy" type="button" data-copy="#cmd-m3" data-done="{{copied}}"><span class="copy-ico" aria-hidden="true"><svg class="ico i1"><use href="#i-copy"/></svg><svg class="ico i2"><use href="#i-check"/></svg></span><span data-label>{{copy}}</span></button></div>
+            <p>{{m3_d}}</p>
+          </li>
+        </ol>
+        <p class="reqs">{{reqs_mac}}</p>
+      </div>
+    </div>
   </div>
 </section>
 

@@ -10,3 +10,5 @@ site/.env.local
 
 # ajan imleci soketi
 /tmp/nexremote-cursor-*.sock
+build/
+*.egg-info/

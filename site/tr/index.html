@@ -3,20 +3,20 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>NexRemote — AI ajanın Linux masaüstünü kullansın</title>
-<meta name="description" content="Bir AI ajanının Linux masaüstünü görmesini ve kullanmasını sağlayan kabuk komutları: her pencere, gerçek fare ve klavye, adıyla kontroller ve ekranda açık terminaller.">
+<title>NexRemote — AI ajanın masaüstünü kullansın</title>
+<meta name="description" content="Bir AI ajanının Linux, Windows ve macOS&#x27;ta masaüstünü görmesini ve kullanmasını sağlayan kabuk komutları: her pencere, gerçek fare ve klavye, adıyla kontroller ve ekranda açık terminaller.">
 <link rel="canonical" href="https://nexremote.vercel.app/tr/">
 <link rel="alternate" hreflang="en" href="https://nexremote.vercel.app/">
 <link rel="alternate" hreflang="tr" href="https://nexremote.vercel.app/tr/">
-<meta property="og:title" content="NexRemote — AI ajanın Linux masaüstünü kullansın">
-<meta property="og:description" content="Bir AI ajanının Linux masaüstünü görmesini ve kullanmasını sağlayan kabuk komutları: her pencere, gerçek fare ve klavye, adıyla kontroller ve ekranda açık terminaller.">
+<meta property="og:title" content="NexRemote — AI ajanın masaüstünü kullansın">
+<meta property="og:description" content="Bir AI ajanının Linux, Windows ve macOS&#x27;ta masaüstünü görmesini ve kullanmasını sağlayan kabuk komutları: her pencere, gerçek fare ve klavye, adıyla kontroller ve ekranda açık terminaller.">
 <meta property="og:type" content="website">
 <meta name="theme-color" content="#0c0d0b">
 <link rel="icon" href="/assets/mark.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Schibsted+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/assets/site.css?v=0.2.0">
+<link rel="stylesheet" href="/assets/site.css?v=0.3.0">
 <script>
   // JS varsa "js" sınıfı: yalnızca o zaman, görünmeden önce gizlenecek öğeler gizlenir.
   // Tema, boyamadan önce uygulanır (yanıp sönme olmasın).
@@ -63,6 +63,7 @@
     <nav class="nav" aria-label="Bölümler">
       <a href="#how">Nasıl çalışır</a>
       <a href="#replay">Oturum</a>
+      <a href="#platforms">Platformlar</a>
       <a href="#compare">Karşılaştır</a>
       <a href="#roadmap">Yol haritası</a>
       <a href="#install">Kurulum</a>
@@ -84,16 +85,16 @@
 <section class="hero band" aria-labelledby="hero-h">
   <div class="grid-bg" data-parallax aria-hidden="true"></div>
   <div class="wrap hero-top">
-    <p class="eyebrow"><span class="dot" aria-hidden="true"></span>AI ajanları için masaüstü kontrolü · Linux · Wayland</p>
+    <p class="eyebrow"><span class="dot" aria-hidden="true"></span>AI ajanları için masaüstü kontrolü · Linux · Windows · macOS</p>
     <h1 id="hero-h" class="mega"><span class="l l1"><span class="w"><span style="--wi:0">Ajanın</span></span> <span class="w"><span style="--wi:1">komut</span></span> <span class="w"><span style="--wi:2">çalıştırabiliyor.</span></span></span> <span class="l l2"><span class="w"><span style="--wi:3">Artık</span></span> <span class="w"><span style="--wi:4">ekranı</span></span> <span class="w"><span style="--wi:5">da</span></span> <span class="w"><span style="--wi:6">kullanabilir.</span></span></span></h1>
     <div class="hero-row">
-      <p class="lede" data-reveal>NexRemote bir Linux masaüstünü kabuk komutlarına çevirir: her pencere, gerçek fare ve klavye, adıyla basılan düğmeler ve zaten açık olan terminallerin, diğer ajanlar dahil. Root yok, SDK yok; görsel model ancak uygulama okunacak başka bir şey vermediğinde devreye girer.</p>
+      <p class="lede" data-reveal>NexRemote masaüstünü kabuk komutlarına çevirir; Linux&#x27;ta, Windows&#x27;ta ve macOS&#x27;ta aynı komutlarla: her pencere, gerçek fare ve klavye, adıyla basılan düğmeler ve zaten açık olan terminallerin, diğer ajanlar dahil. Root yok, SDK yok; görsel model ancak uygulama okunacak başka bir şey vermediğinde devreye girer.</p>
       <div class="hero-cta" data-reveal>
         <div class="btn-row">
           <a class="btn btn-invert" href="/download/nexremote.zip" download data-magnet>
             <svg class="ico" aria-hidden="true"><use href="#i-download"/></svg>
             <span>İndir</span>
-            <span class="btn-meta">v0.2.0 · zip · 82 KB</span>
+            <span class="btn-meta">v0.3.0 · zip · 174 KB</span>
           </a>
           <a class="btn btn-ghost" href="#replay" data-magnet>
             <svg class="ico" aria-hidden="true"><use href="#i-play"/></svg>
@@ -104,7 +105,7 @@
           <code id="cmd-setup">./install.sh &amp;&amp; nexremote setup</code>
           <button class="copy" type="button" data-copy="#cmd-setup" data-done="Kopyalandı"><span class="copy-ico" aria-hidden="true"><svg class="ico i1"><use href="#i-copy"/></svg><svg class="ico i2"><use href="#i-check"/></svg></span><span data-label>Kopyala</span></button>
         </div>
-        <p class="meta">MIT · KDE Plasma 6, Wayland · Python 3.10+</p>
+        <p class="meta">MIT · Linux · Windows · macOS (önizleme) · Python 3.9+</p>
       </div>
     </div>
   </div>
@@ -113,7 +114,7 @@
     <div class="hero-tilt" data-hero-tilt>
       <figure class="hd s-node s-dark s-hl s-reply s-shot s-play s-agent" data-hero>
         <svg class="hd-scene" viewBox="0 0 1200 720" role="img" aria-labelledby="hd-t">
-          <title id="hd-t">Terminallerin, bir ayarlar penceresinin ve bir video oynatıcının açık olduğu bir Linux masaüstü çizimi. Ajanın yeşil artı imleci pencereleri listeler, Koyu anahtarını adıyla bulup basar, bir terminali okur ve ekran görüntüsünden oynatıcıya tıklar.</title>
+          <title id="hd-t">Bir masaüstü çizimi (burada Linux&#x27;ta KDE Plasma): terminaller, bir ayarlar penceresi ve bir video oynatıcı. Ajanın yeşil artı imleci pencereleri listeler, Koyu anahtarını adıyla bulup basar, bir terminali okur ve ekran görüntüsünden oynatıcıya tıklar.</title>
           <defs>
             <linearGradient id="hd-wall" x1="0" y1="0" x2="1" y2="1"><stop offset="0" class="hd-wall-a"/><stop offset="1" class="hd-wall-b"/></linearGradient>
           </defs>
@@ -292,8 +293,8 @@
           <div class="rung-in" data-reveal>
             <span class="rung-n" aria-hidden="true">1</span>
             <h3>Pencere yöneticisine sor</h3>
-            <p>KWin her pencereyi başlığı, uygulaması, konumu ve odağıyla listeler. Ajan bir pencereyi öne getirebilir, küçültebilir ya da kapatabilir; başka hiçbir şey yayınlamayan uygulamalar dahil.</p>
-            <p class="rung-meta"><span>Kanal</span> KWin scripting <span>Modele giden</span> metin</p>
+            <p>Pencere yöneticisi her pencereyi başlığı, uygulaması, konumu ve odağıyla listeler: Linux&#x27;ta KWin, Sway, Hyprland ya da EWMH, Windows&#x27;ta Win32, macOS&#x27;ta CGWindowList. Ajan bir pencereyi öne getirebilir, küçültebilir ya da kapatabilir; başka hiçbir şey yayınlamayan uygulamalar dahil.</p>
+            <p class="rung-meta"><span>Kanal</span> KWin · EnumWindows · CGWindowList <span>Modele giden</span> metin</p>
 <pre class="rung-code"><code><span class="c">$</span> nexremote windows
 * win:{c31f…}  org.kde.konsole  1100x780+0+0      api : claude — Konsole
   win:{8c1e…}  systemsettings   760x540+1180+60   Appearance — System Settings
@@ -304,8 +305,8 @@
           <div class="rung-in" data-reveal>
             <span class="rung-n" aria-hidden="true">2</span>
             <h3>Erişilebilirlik ağacını oku, adıyla bas</h3>
-            <p>Düğmeler, anahtarlar ve alanlar adları ve rolleriyle gelir. Ajan “Dark” anahtarına adıyla basar. Fare hiç oynamaz ve hiçbir şey kontrolün ekranda nerede çizildiğine bağlı değildir.</p>
-            <p class="rung-meta"><span>Kanal</span> AT-SPI <span>Modele giden</span> metin</p>
+            <p>Düğmeler, anahtarlar ve alanlar adları ve rolleriyle gelir; AT-SPI, UI Automation ya da macOS&#x27;un erişilebilirlik arayüzü üzerinden. Ajan “Dark” anahtarına adıyla basar. Fare hiç oynamaz ve hiçbir şey kontrolün ekranda nerede çizildiğine bağlı değildir.</p>
+            <p class="rung-meta"><span>Kanal</span> AT-SPI · UI Automation · AX <span>Modele giden</span> metin</p>
 <pre class="rung-code"><code><span class="c">$</span> nexremote find "Dark" --window win:{8c1e…}
 atspi:4:0/2/7	[checkbox] Dark  &lt;toggle,click&gt;
 <span class="c">$</span> nexremote click atspi:4:0/2/7 --json
@@ -316,8 +317,8 @@ atspi:4:0/2/7	[checkbox] Dark  &lt;toggle,click&gt;
           <div class="rung-in" data-reveal>
             <span class="rung-n" aria-hidden="true">3</span>
             <h3>Terminal metnini doğrudan oku</h3>
-            <p>Konsole sekmeleri ve tmux bölmeleri metinlerini, her birinde çalışan programla birlikte verir. Ekran görüntüsü yok, OCR yok, odak değişmez.</p>
-            <p class="rung-meta"><span>Kanal</span> Konsole D-Bus · tmux <span>Modele giden</span> metin</p>
+            <p>Konsole sekmeleri ve tmux bölmeleri metinlerini, her birinde çalışan programla birlikte verir; Windows konsolları, Terminal.app ve iTerm2 de metnini verir. Ekran görüntüsü yok, OCR yok, odak değişmez.</p>
+            <p class="rung-meta"><span>Kanal</span> Konsole D-Bus · tmux · AttachConsole · Terminal.app <span>Modele giden</span> metin</p>
 <pre class="rung-code"><code><span class="c">$</span> nexremote term-read konsole:7891:2
 ● Running test suite…
   tests/test_api.py ........F.F
@@ -329,8 +330,8 @@ Should I fix them? (y/n, or tell me)</code></pre>
           <div class="rung-in" data-reveal>
             <span class="rung-n" aria-hidden="true">4</span>
             <h3>Ancak o zaman: ekran görüntüsü ve piksel</h3>
-            <p>Tarayıcılar, oyunlar ve çoğu Electron uygulaması için. Görüntü tek pencereye kırpılır ve modele göre küçültülür; o görüntüdeki bir piksel ekrana geri çevrilir ve RemoteDesktop portalı üzerinden tıklanır.</p>
-            <p class="rung-meta"><span>Kanal</span> spectacle / grim · RemoteDesktop portal <span>Modele giden</span> tek görüntü</p>
+            <p>Tarayıcılar, oyunlar ve çoğu Electron uygulaması için. Görüntü tek pencereye kırpılır ve modele göre küçültülür; o görüntüdeki bir piksel ekrana geri çevrilir ve sistemin kendi girdi kanalıyla tıklanır: RemoteDesktop portalı ya da XTEST, SendInput, CGEvent.</p>
+            <p class="rung-meta"><span>Kanal</span> spectacle / grim · GDI · screencapture <span>Modele giden</span> tek görüntü</p>
 <pre class="rung-code"><code><span class="c">$</span> nexremote screenshot --window win:{a41f…} --max-width 1568
 <span class="c">$</span> nexremote click 440 190 --from-shot --json
 { "ok": true, "x": 1500, "y": 710, "button": "left" }</code></pre>
@@ -467,7 +468,7 @@ Should I fix them? (y/n, or tell me)</code></pre>
         <h3 class="arch-h">Her ajanla masaüstü arasında tek çekirdek</h3>
         <p>Adaptörler yalnızca çekirdeği bilir; çekirdek yalnızca masaüstünün zaten sunduğu kanallarla konuşur. Bir backend eksikse geri kalanı çalışmaya devam eder ve <code>nexremote caps</code> neyin kapalı olduğunu söyler.</p>
       </div>
-      <div class="arch"><svg class="arch-svg arch-hz" viewBox="0 0 1160 470" role="img" aria-label="Mimari: ajanın dört adaptörden biriyle (kabuk CLI, MCP, HTTP, metin döngüsü) NexRemote çekirdeğine bağlanır; çekirdek masaüstüne KWin betikleri, AT-SPI, RemoteDesktop portalı, Konsole D-Bus ve tmux, kendi tmux ya da PTY oturumları ve spectacle ya da grim üzerinden ulaşır."><g class="ap-g"><path class="ap" data-ap="a0" data-stage="0" d="M180 235 C225.0 235 225.0 127.0 270 127.0" pathLength="1"/><path class="ap" data-ap="b0" data-stage="1" d="M440 127.0 C485.0 127.0 485.0 235 530 235" pathLength="1"/><path class="ap" data-ap="a1" data-stage="0" d="M180 235 C225.0 235 225.0 199.0 270 199.0" pathLength="1"/><path class="ap" data-ap="b1" data-stage="1" d="M440 199.0 C485.0 199.0 485.0 235 530 235" pathLength="1"/><path class="ap" data-ap="a2" data-stage="0" d="M180 235 C225.0 235 225.0 271.0 270 271.0" pathLength="1"/><path class="ap" data-ap="b2" data-stage="1" d="M440 271.0 C485.0 271.0 485.0 235 530 235" pathLength="1"/><path class="ap" data-ap="a3" data-stage="0" d="M180 235 C225.0 235 225.0 343.0 270 343.0" pathLength="1"/><path class="ap" data-ap="b3" data-stage="1" d="M440 343.0 C485.0 343.0 485.0 235 530 235" pathLength="1"/><path class="ap" data-ap="c0" data-stage="2" d="M680 235 C720.0 235 720.0 70.0 760 70.0" pathLength="1"/><path class="ap" data-ap="d0" data-stage="3" d="M970 70.0 C990.0 70.0 990.0 235 1010 235" pathLength="1"/><path class="ap" data-ap="c1" data-stage="2" d="M680 235 C720.0 235 720.0 136.0 760 136.0" pathLength="1"/><path class="ap" data-ap="d1" data-stage="3" d="M970 136.0 C990.0 136.0 990.0 235 1010 235" pathLength="1"/><path class="ap" data-ap="c2" data-stage="2" d="M680 235 C720.0 235 720.0 202.0 760 202.0" pathLength="1"/><path class="ap" data-ap="d2" data-stage="3" d="M970 202.0 C990.0 202.0 990.0 235 1010 235" pathLength="1"/><path class="ap" data-ap="c3" data-stage="2" d="M680 235 C720.0 235 720.0 268.0 760 268.0" pathLength="1"/><path class="ap" data-ap="d3" data-stage="3" d="M970 268.0 C990.0 268.0 990.0 235 1010 235" pathLength="1"/><path class="ap" data-ap="c4" data-stage="2" d="M680 235 C720.0 235 720.0 334.0 760 334.0" pathLength="1"/><path class="ap" data-ap="d4" data-stage="3" d="M970 334.0 C990.0 334.0 990.0 235 1010 235" pathLength="1"/><path class="ap" data-ap="c5" data-stage="2" d="M680 235 C720.0 235 720.0 400.0 760 400.0" pathLength="1"/><path class="ap" data-ap="d5" data-stage="3" d="M970 400.0 C990.0 400.0 990.0 235 1010 235" pathLength="1"/></g><g class="pk-g"></g><g class="an an-agent" data-an="A"><rect class="an-box" x="0" y="175" width="180" height="120" rx="10"/><rect class="an-hit" x="0" y="175" width="180" height="120" rx="10"/><text class="an-t" x="90.0" y="232.0" text-anchor="middle">Ajanın</text><text class="an-s" x="90.0" y="249.0" text-anchor="middle">her harness, her model</text></g><g class="an " data-an="ad0"><rect class="an-box" x="270" y="104.0" width="170" height="46" rx="10"/><rect class="an-hit" x="270" y="104.0" width="170" height="46" rx="10"/><text class="an-t" x="355.0" y="124.0" text-anchor="middle">Shell CLI</text><text class="an-s" x="355.0" y="141.0" text-anchor="middle">nexremote</text></g><g class="an " data-an="ad1"><rect class="an-box" x="270" y="176.0" width="170" height="46" rx="10"/><rect class="an-hit" x="270" y="176.0" width="170" height="46" rx="10"/><text class="an-t" x="355.0" y="196.0" text-anchor="middle">MCP</text><text class="an-s" x="355.0" y="213.0" text-anchor="middle">nexremote-mcp</text></g><g class="an " data-an="ad2"><rect class="an-box" x="270" y="248.0" width="170" height="46" rx="10"/><rect class="an-hit" x="270" y="248.0" width="170" height="46" rx="10"/><text class="an-t" x="355.0" y="268.0" text-anchor="middle">HTTP</text><text class="an-s" x="355.0" y="285.0" text-anchor="middle">nexremote-http</text></g><g class="an " data-an="ad3"><rect class="an-box" x="270" y="320.0" width="170" height="46" rx="10"/><rect class="an-hit" x="270" y="320.0" width="170" height="46" rx="10"/><text class="an-t" x="355.0" y="340.0" text-anchor="middle">Metin döngüsü</text><text class="an-s" x="355.0" y="357.0" text-anchor="middle">nexremote-agent</text></g><g class="an an-core" data-an="C"><rect class="an-box" x="530" y="175" width="150" height="120" rx="10"/><rect class="an-hit" x="530" y="175" width="150" height="120" rx="10"/><text class="an-t" x="605.0" y="232.0" text-anchor="middle">Çekirdek</text><text class="an-s" x="605.0" y="249.0" text-anchor="middle">nexremote.py</text></g><g class="an " data-an="ch0"><rect class="an-box" x="760" y="46.0" width="210" height="48" rx="10"/><rect class="an-hit" x="760" y="46.0" width="210" height="48" rx="10"/><text class="an-t" x="865.0" y="67.0" text-anchor="middle">KWin scripting</text><text class="an-s" x="865.0" y="84.0" text-anchor="middle">pencereler</text></g><g class="an " data-an="ch1"><rect class="an-box" x="760" y="112.0" width="210" height="48" rx="10"/><rect class="an-hit" x="760" y="112.0" width="210" height="48" rx="10"/><text class="an-t" x="865.0" y="133.0" text-anchor="middle">AT-SPI</text><text class="an-s" x="865.0" y="150.0" text-anchor="middle">adıyla kontroller</text></g><g class="an " data-an="ch2"><rect class="an-box" x="760" y="178.0" width="210" height="48" rx="10"/><rect class="an-hit" x="760" y="178.0" width="210" height="48" rx="10"/><text class="an-t" x="865.0" y="199.0" text-anchor="middle">RemoteDesktop portal</text><text class="an-s" x="865.0" y="216.0" text-anchor="middle">fare + klavye</text></g><g class="an " data-an="ch3"><rect class="an-box" x="760" y="244.0" width="210" height="48" rx="10"/><rect class="an-hit" x="760" y="244.0" width="210" height="48" rx="10"/><text class="an-t" x="865.0" y="265.0" text-anchor="middle">Konsole D-Bus · tmux</text><text class="an-s" x="865.0" y="282.0" text-anchor="middle">açık terminaller</text></g><g class="an " data-an="ch4"><rect class="an-box" x="760" y="310.0" width="210" height="48" rx="10"/><rect class="an-hit" x="760" y="310.0" width="210" height="48" rx="10"/><text class="an-t" x="865.0" y="331.0" text-anchor="middle">tmux · PTY</text><text class="an-s" x="865.0" y="348.0" text-anchor="middle">kendi kabuğu</text></g><g class="an " data-an="ch5"><rect class="an-box" x="760" y="376.0" width="210" height="48" rx="10"/><rect class="an-hit" x="760" y="376.0" width="210" height="48" rx="10"/><text class="an-t" x="865.0" y="397.0" text-anchor="middle">spectacle · grim</text><text class="an-s" x="865.0" y="414.0" text-anchor="middle">ekran görüntüleri</text></g><g class="an an-desk" data-an="D"><rect class="an-box" x="1010" y="165" width="150" height="140" rx="10"/><rect class="an-hit" x="1010" y="165" width="150" height="140" rx="10"/><text class="an-t" x="1085.0" y="232.0" text-anchor="middle">Masaüstün</text><text class="an-s" x="1085.0" y="249.0" text-anchor="middle">Plasma 6 · Wayland</text></g></svg><svg class="arch-svg arch-vt" viewBox="0 0 360 724" role="img" aria-label="Mimari: ajanın dört adaptörden biriyle (kabuk CLI, MCP, HTTP, metin döngüsü) NexRemote çekirdeğine bağlanır; çekirdek masaüstüne KWin betikleri, AT-SPI, RemoteDesktop portalı, Konsole D-Bus ve tmux, kendi tmux ya da PTY oturumları ve spectacle ya da grim üzerinden ulaşır."><g class="ap-g"><path class="ap" data-ap="a0" data-stage="0" d="M180 70 C180 105.0 48.0 105.0 48.0 140" pathLength="1"/><path class="ap" data-ap="b0" data-stage="1" d="M48.0 192 C48.0 227.0 180 227.0 180 262" pathLength="1"/><path class="ap" data-ap="a1" data-stage="0" d="M180 70 C180 105.0 136.0 105.0 136.0 140" pathLength="1"/><path class="ap" data-ap="b1" data-stage="1" d="M136.0 192 C136.0 227.0 180 227.0 180 262" pathLength="1"/><path class="ap" data-ap="a2" data-stage="0" d="M180 70 C180 105.0 224.0 105.0 224.0 140" pathLength="1"/><path class="ap" data-ap="b2" data-stage="1" d="M224.0 192 C224.0 227.0 180 227.0 180 262" pathLength="1"/><path class="ap" data-ap="a3" data-stage="0" d="M180 70 C180 105.0 312.0 105.0 312.0 140" pathLength="1"/><path class="ap" data-ap="b3" data-stage="1" d="M312.0 192 C312.0 227.0 180 227.0 180 262" pathLength="1"/><path class="ap" data-ap="c0" data-stage="2" d="M180 332 V398.0 Q180 410.0 168 410.0 H168" pathLength="1"/><path class="ap" data-ap="d0" data-stage="3" d="M168 410.0 H168 Q180 410.0 180 422.0 V640" pathLength="1"/><path class="ap" data-ap="c1" data-stage="2" d="M180 332 V398.0 Q180 410.0 192 410.0 H192" pathLength="1"/><path class="ap" data-ap="d1" data-stage="3" d="M192 410.0 H192 Q180 410.0 180 422.0 V640" pathLength="1"/><path class="ap" data-ap="c2" data-stage="2" d="M180 332 V468.0 Q180 480.0 168 480.0 H168" pathLength="1"/><path class="ap" data-ap="d2" data-stage="3" d="M168 480.0 H168 Q180 480.0 180 492.0 V640" pathLength="1"/><path class="ap" data-ap="c3" data-stage="2" d="M180 332 V468.0 Q180 480.0 192 480.0 H192" pathLength="1"/><path class="ap" data-ap="d3" data-stage="3" d="M192 480.0 H192 Q180 480.0 180 492.0 V640" pathLength="1"/><path class="ap" data-ap="c4" data-stage="2" d="M180 332 V538.0 Q180 550.0 168 550.0 H168" pathLength="1"/><path class="ap" data-ap="d4" data-stage="3" d="M168 550.0 H168 Q180 550.0 180 562.0 V640" pathLength="1"/><path class="ap" data-ap="c5" data-stage="2" d="M180 332 V538.0 Q180 550.0 192 550.0 H192" pathLength="1"/><path class="ap" data-ap="d5" data-stage="3" d="M192 550.0 H192 Q180 550.0 180 562.0 V640" pathLength="1"/></g><g class="pk-g"></g><g class="an an-agent" data-an="A"><rect class="an-box" x="30" y="0" width="300" height="70" rx="10"/><rect class="an-hit" x="30" y="0" width="300" height="70" rx="10"/><text class="an-t" x="180.0" y="32.0" text-anchor="middle">Ajanın</text><text class="an-s" x="180.0" y="49.0" text-anchor="middle">her harness, her model</text></g><g class="an an-sm" data-an="ad0"><rect class="an-box" x="6" y="140" width="84" height="52" rx="10"/><rect class="an-hit" x="6" y="140" width="84" height="52" rx="10"/><text class="an-t" x="48.0" y="163.0" text-anchor="middle">Shell</text><text class="an-s" x="48.0" y="180.0" text-anchor="middle">CLI</text></g><g class="an an-sm" data-an="ad1"><rect class="an-box" x="94" y="140" width="84" height="52" rx="10"/><rect class="an-hit" x="94" y="140" width="84" height="52" rx="10"/><text class="an-t" x="136.0" y="163.0" text-anchor="middle">MCP</text><text class="an-s" x="136.0" y="180.0" text-anchor="middle">stdio</text></g><g class="an an-sm" data-an="ad2"><rect class="an-box" x="182" y="140" width="84" height="52" rx="10"/><rect class="an-hit" x="182" y="140" width="84" height="52" rx="10"/><text class="an-t" x="224.0" y="163.0" text-anchor="middle">HTTP</text><text class="an-s" x="224.0" y="180.0" text-anchor="middle">token</text></g><g class="an an-sm" data-an="ad3"><rect class="an-box" x="270" y="140" width="84" height="52" rx="10"/><rect class="an-hit" x="270" y="140" width="84" height="52" rx="10"/><text class="an-t" x="312.0" y="163.0" text-anchor="middle">Metin</text><text class="an-s" x="312.0" y="180.0" text-anchor="middle">döngüsü</text></g><g class="an an-core" data-an="C"><rect class="an-box" x="30" y="262" width="300" height="70" rx="10"/><rect class="an-hit" x="30" y="262" width="300" height="70" rx="10"/><text class="an-t" x="180.0" y="294.0" text-anchor="middle">Çekirdek</text><text class="an-s" x="180.0" y="311.0" text-anchor="middle">nexremote.py</text></g><g class="an an-sm" data-an="ch0"><rect class="an-box" x="4" y="384" width="164" height="52" rx="10"/><rect class="an-hit" x="4" y="384" width="164" height="52" rx="10"/><text class="an-t" x="86.0" y="407.0" text-anchor="middle">KWin scripting</text><text class="an-s" x="86.0" y="424.0" text-anchor="middle">pencereler</text></g><g class="an an-sm" data-an="ch1"><rect class="an-box" x="192" y="384" width="164" height="52" rx="10"/><rect class="an-hit" x="192" y="384" width="164" height="52" rx="10"/><text class="an-t" x="274.0" y="407.0" text-anchor="middle">AT-SPI</text><text class="an-s" x="274.0" y="424.0" text-anchor="middle">adıyla kontroller</text></g><g class="an an-sm" data-an="ch2"><rect class="an-box" x="4" y="454" width="164" height="52" rx="10"/><rect class="an-hit" x="4" y="454" width="164" height="52" rx="10"/><text class="an-t" x="86.0" y="477.0" text-anchor="middle">RemoteDesktop portal</text><text class="an-s" x="86.0" y="494.0" text-anchor="middle">fare + klavye</text></g><g class="an an-sm" data-an="ch3"><rect class="an-box" x="192" y="454" width="164" height="52" rx="10"/><rect class="an-hit" x="192" y="454" width="164" height="52" rx="10"/><text class="an-t" x="274.0" y="477.0" text-anchor="middle">Konsole D-Bus · tmux</text><text class="an-s" x="274.0" y="494.0" text-anchor="middle">açık terminaller</text></g><g class="an an-sm" data-an="ch4"><rect class="an-box" x="4" y="524" width="164" height="52" rx="10"/><rect class="an-hit" x="4" y="524" width="164" height="52" rx="10"/><text class="an-t" x="86.0" y="547.0" text-anchor="middle">tmux · PTY</text><text class="an-s" x="86.0" y="564.0" text-anchor="middle">kendi kabuğu</text></g><g class="an an-sm" data-an="ch5"><rect class="an-box" x="192" y="524" width="164" height="52" rx="10"/><rect class="an-hit" x="192" y="524" width="164" height="52" rx="10"/><text class="an-t" x="274.0" y="547.0" text-anchor="middle">spectacle · grim</text><text class="an-s" x="274.0" y="564.0" text-anchor="middle">ekran görüntüleri</text></g><g class="an an-desk" data-an="D"><rect class="an-box" x="30" y="640" width="300" height="80" rx="10"/><rect class="an-hit" x="30" y="640" width="300" height="80" rx="10"/><text class="an-t" x="180.0" y="677.0" text-anchor="middle">Masaüstün</text><text class="an-s" x="180.0" y="694.0" text-anchor="middle">KDE Plasma 6 · Wayland</text></g></svg></div>
+      <div class="arch"><svg class="arch-svg arch-hz" viewBox="0 0 1160 470" role="img" aria-label="Mimari: ajanın dört adaptörden biriyle (kabuk CLI, MCP, HTTP, metin döngüsü) NexRemote çekirdeğine bağlanır; çekirdek masaüstüne her platformun zaten sunduğu kanallardan ulaşır: pencereler için KWin, Win32 ya da CGWindowList; kontroller için AT-SPI, UI Automation ya da AX; girdi için RemoteDesktop portalı, SendInput ya da CGEvent; açık terminaller için Konsole, Windows konsolları ya da Terminal.app; kendi kabuğu için tmux, PTY ya da cmd.exe; ekran görüntüsü için grim, GDI ya da screencapture."><g class="ap-g"><path class="ap" data-ap="a0" data-stage="0" d="M180 235 C225.0 235 225.0 127.0 270 127.0" pathLength="1"/><path class="ap" data-ap="b0" data-stage="1" d="M440 127.0 C485.0 127.0 485.0 235 530 235" pathLength="1"/><path class="ap" data-ap="a1" data-stage="0" d="M180 235 C225.0 235 225.0 199.0 270 199.0" pathLength="1"/><path class="ap" data-ap="b1" data-stage="1" d="M440 199.0 C485.0 199.0 485.0 235 530 235" pathLength="1"/><path class="ap" data-ap="a2" data-stage="0" d="M180 235 C225.0 235 225.0 271.0 270 271.0" pathLength="1"/><path class="ap" data-ap="b2" data-stage="1" d="M440 271.0 C485.0 271.0 485.0 235 530 235" pathLength="1"/><path class="ap" data-ap="a3" data-stage="0" d="M180 235 C225.0 235 225.0 343.0 270 343.0" pathLength="1"/><path class="ap" data-ap="b3" data-stage="1" d="M440 343.0 C485.0 343.0 485.0 235 530 235" pathLength="1"/><path class="ap" data-ap="c0" data-stage="2" d="M680 235 C709.0 235 709.0 70.0 738 70.0" pathLength="1"/><path class="ap" data-ap="d0" data-stage="3" d="M963 70.0 C972.5 70.0 972.5 235 982 235" pathLength="1"/><path class="ap" data-ap="c1" data-stage="2" d="M680 235 C709.0 235 709.0 136.0 738 136.0" pathLength="1"/><path class="ap" data-ap="d1" data-stage="3" d="M963 136.0 C972.5 136.0 972.5 235 982 235" pathLength="1"/><path class="ap" data-ap="c2" data-stage="2" d="M680 235 C709.0 235 709.0 202.0 738 202.0" pathLength="1"/><path class="ap" data-ap="d2" data-stage="3" d="M963 202.0 C972.5 202.0 972.5 235 982 235" pathLength="1"/><path class="ap" data-ap="c3" data-stage="2" d="M680 235 C709.0 235 709.0 268.0 738 268.0" pathLength="1"/><path class="ap" data-ap="d3" data-stage="3" d="M963 268.0 C972.5 268.0 972.5 235 982 235" pathLength="1"/><path class="ap" data-ap="c4" data-stage="2" d="M680 235 C709.0 235 709.0 334.0 738 334.0" pathLength="1"/><path class="ap" data-ap="d4" data-stage="3" d="M963 334.0 C972.5 334.0 972.5 235 982 235" pathLength="1"/><path class="ap" data-ap="c5" data-stage="2" d="M680 235 C709.0 235 709.0 400.0 738 400.0" pathLength="1"/><path class="ap" data-ap="d5" data-stage="3" d="M963 400.0 C972.5 400.0 972.5 235 982 235" pathLength="1"/></g><g class="pk-g"></g><g class="an an-agent" data-an="A"><rect class="an-box" x="0" y="175" width="180" height="120" rx="10"/><rect class="an-hit" x="0" y="175" width="180" height="120" rx="10"/><text class="an-t" x="90.0" y="232.0" text-anchor="middle">Ajanın</text><text class="an-s" x="90.0" y="249.0" text-anchor="middle">her harness, her model</text></g><g class="an " data-an="ad0"><rect class="an-box" x="270" y="104.0" width="170" height="46" rx="10"/><rect class="an-hit" x="270" y="104.0" width="170" height="46" rx="10"/><text class="an-t" x="355.0" y="124.0" text-anchor="middle">Shell CLI</text><text class="an-s" x="355.0" y="141.0" text-anchor="middle">nexremote</text></g><g class="an " data-an="ad1"><rect class="an-box" x="270" y="176.0" width="170" height="46" rx="10"/><rect class="an-hit" x="270" y="176.0" width="170" height="46" rx="10"/><text class="an-t" x="355.0" y="196.0" text-anchor="middle">MCP</text><text class="an-s" x="355.0" y="213.0" text-anchor="middle">nexremote-mcp</text></g><g class="an " data-an="ad2"><rect class="an-box" x="270" y="248.0" width="170" height="46" rx="10"/><rect class="an-hit" x="270" y="248.0" width="170" height="46" rx="10"/><text class="an-t" x="355.0" y="268.0" text-anchor="middle">HTTP</text><text class="an-s" x="355.0" y="285.0" text-anchor="middle">nexremote-http</text></g><g class="an " data-an="ad3"><rect class="an-box" x="270" y="320.0" width="170" height="46" rx="10"/><rect class="an-hit" x="270" y="320.0" width="170" height="46" rx="10"/><text class="an-t" x="355.0" y="340.0" text-anchor="middle">Metin döngüsü</text><text class="an-s" x="355.0" y="357.0" text-anchor="middle">nexremote-agent</text></g><g class="an an-core" data-an="C"><rect class="an-box" x="530" y="175" width="150" height="120" rx="10"/><rect class="an-hit" x="530" y="175" width="150" height="120" rx="10"/><text class="an-t" x="605.0" y="232.0" text-anchor="middle">Çekirdek</text><text class="an-s" x="605.0" y="249.0" text-anchor="middle">nexremote.py</text></g><g class="an " data-an="ch0"><rect class="an-box" x="738" y="46.0" width="225" height="48" rx="10"/><rect class="an-hit" x="738" y="46.0" width="225" height="48" rx="10"/><text class="an-t" x="850.5" y="67.0" text-anchor="middle">Pencereler</text><text class="an-s" x="850.5" y="84.0" text-anchor="middle">KWin · Win32 · CGWindowList</text></g><g class="an " data-an="ch1"><rect class="an-box" x="738" y="112.0" width="225" height="48" rx="10"/><rect class="an-hit" x="738" y="112.0" width="225" height="48" rx="10"/><text class="an-t" x="850.5" y="133.0" text-anchor="middle">Adıyla kontroller</text><text class="an-s" x="850.5" y="150.0" text-anchor="middle">AT-SPI · UIA · AX</text></g><g class="an " data-an="ch2"><rect class="an-box" x="738" y="178.0" width="225" height="48" rx="10"/><rect class="an-hit" x="738" y="178.0" width="225" height="48" rx="10"/><text class="an-t" x="850.5" y="199.0" text-anchor="middle">Fare + klavye</text><text class="an-s" x="850.5" y="216.0" text-anchor="middle">portal · SendInput · CGEvent</text></g><g class="an " data-an="ch3"><rect class="an-box" x="738" y="244.0" width="225" height="48" rx="10"/><rect class="an-hit" x="738" y="244.0" width="225" height="48" rx="10"/><text class="an-t" x="850.5" y="265.0" text-anchor="middle">Açık terminaller</text><text class="an-s" x="850.5" y="282.0" text-anchor="middle">Konsole · wincon · Terminal</text></g><g class="an " data-an="ch4"><rect class="an-box" x="738" y="310.0" width="225" height="48" rx="10"/><rect class="an-hit" x="738" y="310.0" width="225" height="48" rx="10"/><text class="an-t" x="850.5" y="331.0" text-anchor="middle">Kendi kabuğu</text><text class="an-s" x="850.5" y="348.0" text-anchor="middle">tmux · PTY · cmd.exe</text></g><g class="an " data-an="ch5"><rect class="an-box" x="738" y="376.0" width="225" height="48" rx="10"/><rect class="an-hit" x="738" y="376.0" width="225" height="48" rx="10"/><text class="an-t" x="850.5" y="397.0" text-anchor="middle">Ekran görüntüleri</text><text class="an-s" x="850.5" y="414.0" text-anchor="middle">grim · GDI · screencapture</text></g><g class="an an-desk" data-an="D"><rect class="an-box" x="982" y="165" width="178" height="140" rx="10"/><rect class="an-hit" x="982" y="165" width="178" height="140" rx="10"/><text class="an-t" x="1071.0" y="232.0" text-anchor="middle">Masaüstün</text><text class="an-s" x="1071.0" y="249.0" text-anchor="middle">Linux · Windows · macOS</text></g></svg><svg class="arch-svg arch-vt" viewBox="0 0 360 724" role="img" aria-label="Mimari: ajanın dört adaptörden biriyle (kabuk CLI, MCP, HTTP, metin döngüsü) NexRemote çekirdeğine bağlanır; çekirdek masaüstüne her platformun zaten sunduğu kanallardan ulaşır: pencereler için KWin, Win32 ya da CGWindowList; kontroller için AT-SPI, UI Automation ya da AX; girdi için RemoteDesktop portalı, SendInput ya da CGEvent; açık terminaller için Konsole, Windows konsolları ya da Terminal.app; kendi kabuğu için tmux, PTY ya da cmd.exe; ekran görüntüsü için grim, GDI ya da screencapture."><g class="ap-g"><path class="ap" data-ap="a0" data-stage="0" d="M180 70 C180 105.0 48.0 105.0 48.0 140" pathLength="1"/><path class="ap" data-ap="b0" data-stage="1" d="M48.0 192 C48.0 227.0 180 227.0 180 262" pathLength="1"/><path class="ap" data-ap="a1" data-stage="0" d="M180 70 C180 105.0 136.0 105.0 136.0 140" pathLength="1"/><path class="ap" data-ap="b1" data-stage="1" d="M136.0 192 C136.0 227.0 180 227.0 180 262" pathLength="1"/><path class="ap" data-ap="a2" data-stage="0" d="M180 70 C180 105.0 224.0 105.0 224.0 140" pathLength="1"/><path class="ap" data-ap="b2" data-stage="1" d="M224.0 192 C224.0 227.0 180 227.0 180 262" pathLength="1"/><path class="ap" data-ap="a3" data-stage="0" d="M180 70 C180 105.0 312.0 105.0 312.0 140" pathLength="1"/><path class="ap" data-ap="b3" data-stage="1" d="M312.0 192 C312.0 227.0 180 227.0 180 262" pathLength="1"/><path class="ap" data-ap="c0" data-stage="2" d="M180 332 V398.0 Q180 410.0 168 410.0 H168" pathLength="1"/><path class="ap" data-ap="d0" data-stage="3" d="M168 410.0 H168 Q180 410.0 180 422.0 V640" pathLength="1"/><path class="ap" data-ap="c1" data-stage="2" d="M180 332 V398.0 Q180 410.0 192 410.0 H192" pathLength="1"/><path class="ap" data-ap="d1" data-stage="3" d="M192 410.0 H192 Q180 410.0 180 422.0 V640" pathLength="1"/><path class="ap" data-ap="c2" data-stage="2" d="M180 332 V468.0 Q180 480.0 168 480.0 H168" pathLength="1"/><path class="ap" data-ap="d2" data-stage="3" d="M168 480.0 H168 Q180 480.0 180 492.0 V640" pathLength="1"/><path class="ap" data-ap="c3" data-stage="2" d="M180 332 V468.0 Q180 480.0 192 480.0 H192" pathLength="1"/><path class="ap" data-ap="d3" data-stage="3" d="M192 480.0 H192 Q180 480.0 180 492.0 V640" pathLength="1"/><path class="ap" data-ap="c4" data-stage="2" d="M180 332 V538.0 Q180 550.0 168 550.0 H168" pathLength="1"/><path class="ap" data-ap="d4" data-stage="3" d="M168 550.0 H168 Q180 550.0 180 562.0 V640" pathLength="1"/><path class="ap" data-ap="c5" data-stage="2" d="M180 332 V538.0 Q180 550.0 192 550.0 H192" pathLength="1"/><path class="ap" data-ap="d5" data-stage="3" d="M192 550.0 H192 Q180 550.0 180 562.0 V640" pathLength="1"/></g><g class="pk-g"></g><g class="an an-agent" data-an="A"><rect class="an-box" x="30" y="0" width="300" height="70" rx="10"/><rect class="an-hit" x="30" y="0" width="300" height="70" rx="10"/><text class="an-t" x="180.0" y="32.0" text-anchor="middle">Ajanın</text><text class="an-s" x="180.0" y="49.0" text-anchor="middle">her harness, her model</text></g><g class="an an-sm" data-an="ad0"><rect class="an-box" x="6" y="140" width="84" height="52" rx="10"/><rect class="an-hit" x="6" y="140" width="84" height="52" rx="10"/><text class="an-t" x="48.0" y="163.0" text-anchor="middle">Shell</text><text class="an-s" x="48.0" y="180.0" text-anchor="middle">CLI</text></g><g class="an an-sm" data-an="ad1"><rect class="an-box" x="94" y="140" width="84" height="52" rx="10"/><rect class="an-hit" x="94" y="140" width="84" height="52" rx="10"/><text class="an-t" x="136.0" y="163.0" text-anchor="middle">MCP</text><text class="an-s" x="136.0" y="180.0" text-anchor="middle">stdio</text></g><g class="an an-sm" data-an="ad2"><rect class="an-box" x="182" y="140" width="84" height="52" rx="10"/><rect class="an-hit" x="182" y="140" width="84" height="52" rx="10"/><text class="an-t" x="224.0" y="163.0" text-anchor="middle">HTTP</text><text class="an-s" x="224.0" y="180.0" text-anchor="middle">token</text></g><g class="an an-sm" data-an="ad3"><rect class="an-box" x="270" y="140" width="84" height="52" rx="10"/><rect class="an-hit" x="270" y="140" width="84" height="52" rx="10"/><text class="an-t" x="312.0" y="163.0" text-anchor="middle">Metin</text><text class="an-s" x="312.0" y="180.0" text-anchor="middle">döngüsü</text></g><g class="an an-core" data-an="C"><rect class="an-box" x="30" y="262" width="300" height="70" rx="10"/><rect class="an-hit" x="30" y="262" width="300" height="70" rx="10"/><text class="an-t" x="180.0" y="294.0" text-anchor="middle">Çekirdek</text><text class="an-s" x="180.0" y="311.0" text-anchor="middle">nexremote.py</text></g><g class="an an-sm an-ch" data-an="ch0"><rect class="an-box" x="4" y="384" width="164" height="52" rx="10"/><rect class="an-hit" x="4" y="384" width="164" height="52" rx="10"/><text class="an-t" x="86.0" y="407.0" text-anchor="middle">Pencereler</text><text class="an-s" x="86.0" y="424.0" text-anchor="middle">KWin · Win32 · CGWindowList</text></g><g class="an an-sm an-ch" data-an="ch1"><rect class="an-box" x="192" y="384" width="164" height="52" rx="10"/><rect class="an-hit" x="192" y="384" width="164" height="52" rx="10"/><text class="an-t" x="274.0" y="407.0" text-anchor="middle">Adıyla kontroller</text><text class="an-s" x="274.0" y="424.0" text-anchor="middle">AT-SPI · UIA · AX</text></g><g class="an an-sm an-ch" data-an="ch2"><rect class="an-box" x="4" y="454" width="164" height="52" rx="10"/><rect class="an-hit" x="4" y="454" width="164" height="52" rx="10"/><text class="an-t" x="86.0" y="477.0" text-anchor="middle">Fare + klavye</text><text class="an-s" x="86.0" y="494.0" text-anchor="middle">portal · SendInput · CGEvent</text></g><g class="an an-sm an-ch" data-an="ch3"><rect class="an-box" x="192" y="454" width="164" height="52" rx="10"/><rect class="an-hit" x="192" y="454" width="164" height="52" rx="10"/><text class="an-t" x="274.0" y="477.0" text-anchor="middle">Açık terminaller</text><text class="an-s" x="274.0" y="494.0" text-anchor="middle">Konsole · wincon · Terminal</text></g><g class="an an-sm an-ch" data-an="ch4"><rect class="an-box" x="4" y="524" width="164" height="52" rx="10"/><rect class="an-hit" x="4" y="524" width="164" height="52" rx="10"/><text class="an-t" x="86.0" y="547.0" text-anchor="middle">Kendi kabuğu</text><text class="an-s" x="86.0" y="564.0" text-anchor="middle">tmux · PTY · cmd.exe</text></g><g class="an an-sm an-ch" data-an="ch5"><rect class="an-box" x="192" y="524" width="164" height="52" rx="10"/><rect class="an-hit" x="192" y="524" width="164" height="52" rx="10"/><text class="an-t" x="274.0" y="547.0" text-anchor="middle">Ekran görüntüleri</text><text class="an-s" x="274.0" y="564.0" text-anchor="middle">grim · GDI · screencapture</text></g><g class="an an-desk" data-an="D"><rect class="an-box" x="30" y="640" width="300" height="80" rx="10"/><rect class="an-hit" x="30" y="640" width="300" height="80" rx="10"/><text class="an-t" x="180.0" y="677.0" text-anchor="middle">Masaüstün</text><text class="an-s" x="180.0" y="694.0" text-anchor="middle">Linux · Windows · macOS</text></g></svg></div>
     </div>
   </div>
 </section>
@@ -547,50 +548,50 @@ Should I fix them? (y/n, or tell me)</code></pre>
     <div class="sec-head" data-reveal>
       <span class="bignum" aria-hidden="true" data-parallax>04</span>
       <div><p class="kicker">Erişim</p><h2 id="reach-h" class="big">Neye uzanır</h2></div>
-      <p>Her yüzey, masaüstünün sunduğu en doğrudan kanalı kullanır; biri eksikse <code>nexremote caps</code> bunu söyler.</p>
+      <p>Linux'ta, Windows'ta ve macOS'ta aynı komutlar. Her yüzey, sistemin sunduğu en doğrudan kanalı kullanır (aşağıdaki platform tablosu hangisi olduğunu gösterir); biri eksikse <code>nexremote caps</code> bunu söyler.</p>
     </div>
     <ul class="surfaces" data-stagger>
       <li class="surface" data-surface data-reveal data-tilt>
         <svg class="ico ico-lg" aria-hidden="true"><use href="#i-windows"/></svg>
         <h3>Pencereler</h3>
         <p>Ekrandaki her pencere; erişilebilirlik ağacı yayınlamayan uygulamalar dahil.</p>
-        <dl><dt>Komutlar</dt><dd><code>windows</code> <code>window REF activate</code></dd><dt>Nereden</dt><dd>KWin scripting</dd></dl>
+        <dl><dt>Komutlar</dt><dd><code>windows</code> <code>window REF activate</code></dd></dl>
       </li>
       <li class="surface" data-surface data-reveal data-tilt>
         <svg class="ico ico-lg" aria-hidden="true"><use href="#i-pointer"/></svg>
         <h3>Fare</h3>
         <p>Her tıktan hemen sonra imleciniz eski yerine konur.</p>
-        <dl><dt>Komutlar</dt><dd><code>click X Y</code> <code>scroll</code> <code>drag</code></dd><dt>Nereden</dt><dd>RemoteDesktop portal</dd></dl>
+        <dl><dt>Komutlar</dt><dd><code>click X Y</code> <code>scroll</code> <code>drag</code></dd></dl>
       </li>
       <li class="surface" data-surface data-reveal data-tilt>
         <svg class="ico ico-lg" aria-hidden="true"><use href="#i-keyboard"/></svg>
         <h3>Klavye</h3>
-        <p>Her dil. Klavye düzeninizde olmayan karakterler yapıştırılır, panonuz geri yüklenir.</p>
-        <dl><dt>Komutlar</dt><dd><code>type</code> <code>key ctrl+s</code></dd><dt>Nereden</dt><dd>portal + pano</dd></dl>
+        <p>Her dil. Metin Unicode olarak gider; kanalın taşıyamadığı karakter yapıştırılır, panonuz geri yüklenir.</p>
+        <dl><dt>Komutlar</dt><dd><code>type</code> <code>key ctrl+s</code></dd></dl>
       </li>
       <li class="surface" data-surface data-reveal data-tilt>
         <svg class="ico ico-lg" aria-hidden="true"><use href="#i-toggle"/></svg>
         <h3>Adıyla kontroller</h3>
         <p>Düğmelere ve anahtarlara, fareyi hiç oynatmadan basar.</p>
-        <dl><dt>Komutlar</dt><dd><code>find</code> <code>click REF</code></dd><dt>Nereden</dt><dd>AT-SPI</dd></dl>
+        <dl><dt>Komutlar</dt><dd><code>find</code> <code>click REF</code></dd></dl>
       </li>
       <li class="surface" data-surface data-reveal data-tilt>
         <svg class="ico ico-lg" aria-hidden="true"><use href="#i-terminal"/></svg>
         <h3>Açık terminaller</h3>
         <p>Her birinde ne çalıştığını gösterir: claude, ssh, vim, bir build.</p>
-        <dl><dt>Komutlar</dt><dd><code>terms</code> <code>term-read</code> <code>term-send</code></dd><dt>Nereden</dt><dd>Konsole D-Bus, tmux</dd></dl>
+        <dl><dt>Komutlar</dt><dd><code>terms</code> <code>term-read</code> <code>term-send</code></dd></dl>
       </li>
       <li class="surface" data-surface data-reveal data-tilt>
         <svg class="ico ico-lg" aria-hidden="true"><use href="#i-sessions"/></svg>
         <h3>Kendi kabuğu</h3>
         <p>Oturumlar çağrılar arasında yaşar; bir şeyi başlatıp sonra dönüp bakabilir.</p>
-        <dl><dt>Komutlar</dt><dd><code>run</code> <code>screen</code> <code>keys</code></dd><dt>Nereden</dt><dd>tmux / PTY</dd></dl>
+        <dl><dt>Komutlar</dt><dd><code>run</code> <code>screen</code> <code>keys</code></dd></dl>
       </li>
       <li class="surface" data-surface data-reveal data-tilt>
         <svg class="ico ico-lg" aria-hidden="true"><use href="#i-viewfinder"/></svg>
         <h3>Ekran</h3>
         <p>Kırpma ve ölçek hatırlanır; <code>click X Y --from-shot</code> doğru piksele düşer.</p>
-        <dl><dt>Komutlar</dt><dd><code>screenshot --window --max-width</code></dd><dt>Nereden</dt><dd>spectacle / grim</dd></dl>
+        <dl><dt>Komutlar</dt><dd><code>screenshot --window --max-width</code></dd></dl>
       </li>
       <li class="surface surface-caps" data-reveal data-tilt>
         <svg class="ico ico-lg" aria-hidden="true"><use href="#i-checklist"/></svg>
@@ -602,15 +603,60 @@ Should I fix them? (y/n, or tell me)</code></pre>
   </div>
 </section>
 
+<!-- =========================================================== PLATFORMS -->
+<section id="platforms" class="platforms sec" aria-labelledby="platforms-h">
+  <div class="wrap">
+    <div class="sec-head" data-reveal>
+      <span class="bignum" aria-hidden="true" data-parallax>05</span>
+      <div><p class="kicker">Platformlar</p><h2 id="platforms-h" class="big">Üç masaüstü, tek komut seti.</h2></div>
+      <p>Ref&#x27;ler, çıktı ve bayraklar her yerde aynı. Altta her platform kendi kanalını kullanır; tablo hangisi olduğunu gösterir. Her birinin ne kadar test edildiği ortam ortam yazılı, yuvarlanmadan.</p>
+    </div>
+
+    <ul class="oses" data-stagger>
+      <li class="os" data-reveal>
+        <div class="os-top"><h3>Linux</h3><p>KDE Plasma 6, GNOME, X11, Sway, Hyprland</p></div>
+        <p class="os-k">Test durumu</p>
+        <ul class="envs">
+          <li><span class="env-n">KDE Plasma 6 · Wayland</span><span class="tb tb-real">Gerçek masaüstü</span><p>Gerçek masaüstünde çalıştırıldı. Girdi testleri kendi D-Bus&#x27;ı, sanal KWin&#x27;i, portalı ve PipeWire&#x27;ı olan bir sandbox&#x27;ta koşar.</p></li>
+          <li><span class="env-n">X11</span><span class="tb tb-virt">Xvfb sandbox</span><p>Ekransız bir X sunucusunda uçtan uca test: XTEST girdisi, EWMH pencereleri, ekran görüntüsü, CLI.</p></li>
+          <li><span class="env-n">Sway · Hyprland</span><span class="tb tb-mock">Sahte IPC</span><p>swaymsg ve hyprctl yerine sahteleri konur; henüz gerçek bir compositor&#x27;da çalıştırılmadı.</p></li>
+          <li><span class="env-n">GNOME</span><span class="tb tb-none">Test edilmedi</span><p>Portal yolu çalışmalı; pencere listesi AT-SPI&#x27;ye düşer.</p></li>
+        </ul>
+      </li>
+      <li class="os" data-reveal>
+        <div class="os-top"><h3>Windows</h3><p>Windows 10 ve 11 için yazıldı</p></div>
+        <p class="os-k">Test durumu</p>
+        <ul class="envs">
+          <li><span class="env-n">Wine 10</span><span class="tb tb-virt">22/22 geçti</span><p>Wine içinde gerçek Windows Python&#x27;u; gerçek bir Notepad penceresi ve cmd.exe konsoluyla. Henüz gerçek Windows 10 ya da 11 donanımında çalıştırılmadı.</p><p>İsimle tıklama sınanamadı: Wine&#x27;ın UI Automation&#x27;ı gezilecek bir denetim ağacı vermiyor.</p></li>
+        </ul>
+      </li>
+      <li class="os os-pv" data-reveal>
+        <div class="os-top"><h3>macOS <span class="pv">Önizleme</span></h3><p>Quartz olayları ve erişilebilirlik arayüzü</p></div>
+        <p class="os-k">Test durumu</p>
+        <ul class="envs">
+          <li><span class="env-n">Birim testleri</span><span class="tb tb-mock">Sahte Quartz</span><p>Mantık, sahte bir Quartz kütüphanesiyle birim testinden geçti. Henüz gerçek bir Mac&#x27;te çalıştırılmadı.</p><p>Erişilebilirlik ve Ekran Kaydı izni Sistem Ayarları&#x27;ndan bir kez verilir.</p></li>
+        </ul>
+      </li>
+    </ul>
+    <p class="tb-legend" data-reveal>Dolu: gerçek masaüstü. Çerçeve: ekransız ya da Wine altında çalışan gerçek bir görüntü sunucusu. Amber: mantık sahtelerle sınandı. Kesikli: test edilmedi.</p>
+
+    <div class="pm-wrap" data-reveal>
+      <p class="pm-dim">7 yüzey × 3 platform</p>
+      <table class="pm"><caption class="sr">Her yeteneğin Linux, Windows ve macOS&#x27;ta kullandığı kanal</caption><thead><tr><td><span class="pm-cap">Yetenek</span></td><th scope="col">Linux</th><th scope="col">Windows</th><th scope="col">macOS <span class="pv">Önizleme</span></th></tr></thead><tbody><tr><th scope="row">Ekrandaki her pencere</th><td data-os="Linux"><span class="pm-ch">KWin · hyprctl · swaymsg · EWMH</span><small>GNOME&#x27;da yalnızca AT-SPI</small></td><td data-os="Windows"><span class="pm-ch">EnumWindows</span></td><td data-os="macOS"><span class="pm-ch">CGWindowList + AX</span></td></tr><tr><th scope="row">Gerçek fare</th><td data-os="Linux"><span class="pm-ch">XTEST · RemoteDesktop portalı</span></td><td data-os="Windows"><span class="pm-ch">SendInput</span></td><td data-os="macOS"><span class="pm-ch">CGEvent</span></td></tr><tr><th scope="row">Gerçek klavye</th><td data-os="Linux"><span class="pm-ch">XTEST · portal + pano</span></td><td data-os="Windows"><span class="pm-ch">SendInput (Unicode)</span></td><td data-os="macOS"><span class="pm-ch">CGEvent (Unicode)</span></td></tr><tr><th scope="row">Butona adıyla basma</th><td data-os="Linux"><span class="pm-ch">AT-SPI</span></td><td data-os="Windows"><span class="pm-ch">UI Automation</span><small>Wine&#x27;da sınanamadı</small></td><td data-os="macOS"><span class="pm-ch">Accessibility (AX)</span></td></tr><tr><th scope="row">Açık terminaller</th><td data-os="Linux"><span class="pm-ch">Konsole D-Bus, tmux</span></td><td data-os="Windows"><span class="pm-ch">konsol tamponu (AttachConsole)</span></td><td data-os="macOS"><span class="pm-ch">Terminal.app, iTerm2, tmux</span></td></tr><tr><th scope="row">Kendi terminali</th><td data-os="Linux"><span class="pm-ch">tmux / PTY</span></td><td data-os="Windows"><span class="pm-ch">cmd.exe</span></td><td data-os="macOS"><span class="pm-ch">tmux / PTY</span></td></tr><tr><th scope="row">Ekran görüntüsü</th><td data-os="Linux"><span class="pm-ch">spectacle · grim · Xlib</span></td><td data-os="Windows"><span class="pm-ch">GDI</span></td><td data-os="macOS"><span class="pm-ch">screencapture</span></td></tr><tr><th scope="row">Görünür ajan imleci</th><td data-os="Linux"><span class="pm-ch">tıklamayı engellemeyen katman</span></td><td data-os="Windows"><span class="pm-plan"><svg class="ico" aria-hidden="true"><use href="#i-planned"/></svg>planlandı</span></td><td data-os="macOS"><span class="pm-plan"><svg class="ico" aria-hidden="true"><use href="#i-planned"/></svg>planlandı</span></td></tr></tbody></table>
+      <p class="pm-src">Kanallar, sayfa her üretildiğinde proje README&#x27;sinden okunur.</p>
+    </div>
+  </div>
+</section>
+
 <!-- =============================================================== WATCH -->
 <section class="watch band sec" data-wipe aria-labelledby="watch-h">
   <div class="grid-bg" data-parallax aria-hidden="true"></div>
   <div class="wrap watch-grid">
     <div data-reveal>
-      <span class="bignum bignum-inline" aria-hidden="true">05</span>
+      <span class="bignum bignum-inline" aria-hidden="true">06</span>
       <p class="kicker">Terminaller</p>
       <h2 id="watch-h" class="big">Sekiz ajan açık mı? Biri diğerlerini yönetebilir.</h2>
-      <p>Her Konsole sekmesi ve tmux bölmesi, ön plandaki programıyla listelenir. Bir ajan başka bir ajanın ekranını okuyabilir, sorusuna cevap verebilir ya da <code>--key C-c</code> ile durdurabilir.</p>
+      <p>Her Konsole sekmesi ve tmux bölmesi ön plandaki programıyla listelenir; Windows konsolları, Terminal.app ve iTerm2 pencereleri de listededir. Bir ajan başka bir ajanın ekranını okuyabilir, sorusuna cevap verebilir ya da <code>--key C-c</code> ile durdurabilir.</p>
       <p>Bunların hiçbiri pencere odağı ya da klavyeniz gerektirmez. O çalışırken siz de çalışmaya devam edersiniz.</p>
     </div>
     <figure class="sample" data-reveal>
@@ -635,7 +681,7 @@ bash-5.2$</code></pre>
 <section class="pixels sec" aria-labelledby="pixels-h">
   <div class="wrap pixels-grid">
     <div data-reveal>
-      <span class="bignum bignum-inline" aria-hidden="true">06</span>
+      <span class="bignum bignum-inline" aria-hidden="true">07</span>
       <p class="kicker">Son çare</p>
       <h2 id="pixels-h" class="big">Okunacak bir şey yoksa bakar.</h2>
       <p>Tarayıcılar, oyunlar ve çoğu Electron uygulaması kontrollerini yayınlamaz. Tek pencereye kırpılmış ve modele göre küçültülmüş bir ekran görüntüsü alın; model o görüntüdeki piksele tıklar, NexRemote onu ekrana geri çevirir.</p>
@@ -674,7 +720,7 @@ bash-5.2$</code></pre>
 <section id="compare" class="compare sec" aria-labelledby="compare-h">
   <div class="wrap">
     <div class="sec-head" data-reveal>
-      <span class="bignum" aria-hidden="true" data-parallax>07</span>
+      <span class="bignum" aria-hidden="true" data-parallax>08</span>
       <div><p class="kicker">Karşılaştırma</p><h2 id="compare-h" class="big">Nerede duruyor</h2></div>
       <p>Ürünlerle değil, bugün kullanılan araç türleriyle karşılaştırma. Her yaklaşımın bir yeri var; tablo, NexRemote&#x27;un yapmak için tasarlandığı işte nerede durduklarını gösteriyor.</p>
     </div>
@@ -693,7 +739,7 @@ bash-5.2$</code></pre>
           <tbody>
             <tr>
               <th scope="row">Kontrollere koordinatla değil, adıyla basar</th>
-              <td class="us"><span class="mk y"><svg class="ico" aria-hidden="true"><use href="#i-yes"/></svg>Evet</span><small>AT-SPI</small></td>
+              <td class="us"><span class="mk y"><svg class="ico" aria-hidden="true"><use href="#i-yes"/></svg>Evet</span><small>AT-SPI · UI Automation · AX</small></td>
               <td><span class="mk n"><svg class="ico" aria-hidden="true"><use href="#i-no"/></svg>Hayır</span><small>koordinatı görüntüden tahmin eder</small></td>
               <td><span class="mk p"><svg class="ico" aria-hidden="true"><use href="#i-part"/></svg>Kısmen</span><small>bazı RPA araçları seçici kullanır; xdotool koordinata tıklar</small></td>
               <td><span class="mk y"><svg class="ico" aria-hidden="true"><use href="#i-yes"/></svg>Evet</span><small>yalnızca o uygulamada</small></td>
@@ -714,15 +760,15 @@ bash-5.2$</code></pre>
             </tr>
             <tr>
               <th scope="row">Zaten açık terminalleri okur ve onlara cevap verir</th>
-              <td class="us"><span class="mk y"><svg class="ico" aria-hidden="true"><use href="#i-yes"/></svg>Evet</span><small>Konsole D-Bus · tmux</small></td>
+              <td class="us"><span class="mk y"><svg class="ico" aria-hidden="true"><use href="#i-yes"/></svg>Evet</span><small>Konsole · tmux · Windows konsolları · Terminal.app</small></td>
               <td><span class="mk p"><svg class="ico" aria-hidden="true"><use href="#i-part"/></svg>Kısmen</span><small>pencere görünürse, pikselden</small></td>
               <td><span class="mk p"><svg class="ico" aria-hidden="true"><use href="#i-part"/></svg>Kısmen</span><small>yazabilir, okuyamaz</small></td>
               <td><span class="mk n"><svg class="ico" aria-hidden="true"><use href="#i-no"/></svg>Hayır</span><small>kapsam dışı</small></td>
             </tr>
             <tr>
-              <th scope="row">Wayland&#x27;de root olmadan çalışır</th>
-              <td class="us"><span class="mk y"><svg class="ico" aria-hidden="true"><use href="#i-yes"/></svg>Evet</span><small>RemoteDesktop portal</small></td>
-              <td><span class="mk p"><svg class="ico" aria-hidden="true"><use href="#i-part"/></svg>Kısmen</span><small>kuruluma bağlı; çoğu zaman X11 sanal makinesi</small></td>
+              <th scope="row">Root ya da yönetici yetkisi olmadan çalışır, Wayland dahil</th>
+              <td class="us"><span class="mk y"><svg class="ico" aria-hidden="true"><use href="#i-yes"/></svg>Evet</span><small>Wayland&#x27;de portal; Windows ve macOS&#x27;ta kullanıcı yetkisi</small></td>
+              <td><span class="mk p"><svg class="ico" aria-hidden="true"><use href="#i-part"/></svg>Kısmen</span><small>kuruluma bağlı; çoğu zaman sanal makine</small></td>
               <td><span class="mk n"><svg class="ico" aria-hidden="true"><use href="#i-no"/></svg>Hayır</span><small>yalnızca X11 ya da /dev/uinput için root</small></td>
               <td><span class="mk y"><svg class="ico" aria-hidden="true"><use href="#i-yes"/></svg>Evet</span><small>girdiye dokunmaz</small></td>
             </tr>
@@ -747,9 +793,9 @@ bash-5.2$</code></pre>
   <div class="grid-bg" data-parallax aria-hidden="true"></div>
   <div class="wrap">
     <div class="sec-head" data-reveal>
-      <span class="bignum" aria-hidden="true" data-parallax>08</span>
+      <span class="bignum" aria-hidden="true" data-parallax>09</span>
       <div><p class="kicker">Rakamlar</p><h2 id="numbers-h" class="big">Rakamlarla</h2></div>
-      <p>Bu sayfa her üretildiğinde v0.2.0 kaynak kodundan sayılır. Tahmin yok, öngörü yok.</p>
+      <p>Bu sayfa her üretildiğinde v0.3.0 kaynak kodundan sayılır. Tahmin yok, öngörü yok.</p>
     </div>
     <dl class="stats" data-stagger>
       <div class="stat" data-reveal><dt>MCP aracı</dt><dd data-count="21">21</dd></div>
@@ -757,9 +803,9 @@ bash-5.2$</code></pre>
       <div class="stat" data-reveal><dt>bağlanma yolu: kabuk, MCP, HTTP, metin döngüsü</dt><dd data-count="4">4</dd></div>
       <div class="stat" data-reveal><dt>ulaştığı masaüstü yüzeyi</dt><dd data-count="7">7</dd></div>
       <div class="stat" data-reveal><dt>kurulumu belgelenmiş harness</dt><dd data-count="11">11</dd></div>
-      <div class="stat" data-reveal><dt>test paketi; 2 tanesi atılabilir bir masaüstünde</dt><dd data-count="5">5</dd></div>
-      <div class="stat stat-wide" data-reveal><dt>satır Python, çekirdek ve adaptörler</dt><dd data-count="4161">4.161</dd></div>
-      <div class="stat stat-zero" data-reveal><dt>gereken root yetkisi</dt><dd data-count="0">0</dd></div>
+      <div class="stat" data-reveal><dt>test paketi; 2 tanesi atılabilir bir masaüstünde</dt><dd data-count="8">8</dd></div>
+      <div class="stat stat-wide" data-reveal><dt>satır Python, çekirdek ve adaptörler</dt><dd data-count="9111">9.111</dd></div>
+      <div class="stat stat-zero" data-reveal><dt>gereken root ya da yönetici yetkisi</dt><dd data-count="0">0</dd></div>
     </dl>
   </div>
 </section>
@@ -768,7 +814,7 @@ bash-5.2$</code></pre>
 <section id="why" class="why sec" aria-labelledby="why-h">
   <div class="wrap">
     <div class="sec-head" data-reveal>
-      <span class="bignum" aria-hidden="true" data-parallax>09</span>
+      <span class="bignum" aria-hidden="true" data-parallax>10</span>
       <div><p class="kicker">Neden şimdi</p><h2 id="why-h" class="big">Parçalar yerine oturdu.</h2></div>
       <p>Öngörüye gerek yok. Araçlar zaten bu noktada.</p>
     </div>
@@ -786,7 +832,7 @@ bash-5.2$</code></pre>
       <li data-reveal>
         <svg class="ico ico-lg" aria-hidden="true"><use href="#i-monitor"/></svg>
         <h3>Linux masaüstleri Wayland&#x27;e geçti</h3>
-        <p>Wayland, eski otomasyonun dayandığı X11 kestirmelerini kaldırdı. Resmî giriş yolu, kullanıcıya bir kez soran xdg-desktop-portal RemoteDesktop arayüzüdür. NexRemote bunun üzerine kurulu.</p>
+        <p>Wayland, eski otomasyonun dayandığı X11 kestirmelerini kaldırdı. Resmî giriş yolu, kullanıcıya bir kez soran xdg-desktop-portal RemoteDesktop arayüzüdür. NexRemote Linux&#x27;ta bunun üzerine kurulu.</p>
       </li>
     </ol>
   </div>
@@ -796,27 +842,32 @@ bash-5.2$</code></pre>
 <section id="roadmap" class="roadmap sec" aria-labelledby="roadmap-h">
   <div class="wrap">
     <div class="sec-head" data-reveal>
-      <span class="bignum" aria-hidden="true" data-parallax>10</span>
+      <span class="bignum" aria-hidden="true" data-parallax>11</span>
       <div><p class="kicker">Yol haritası</p><h2 id="roadmap-h" class="big">Bugün olan, sırada olan</h2></div>
       <p>Sol sütun bugün indirdiğiniz pakette var. Sağ sütun planlandı, henüz yapılmadı.</p>
     </div>
     <div class="track">
       <div class="track-col" data-reveal>
-        <h3 class="track-h"><svg class="ico" aria-hidden="true"><use href="#i-yes"/></svg>Bugün v0.2.0 içinde</h3>
+        <h3 class="track-h"><svg class="ico" aria-hidden="true"><use href="#i-yes"/></svg>Bugün v0.3.0 içinde</h3>
         <ul class="track-list done" data-stagger>
-          <li data-reveal>KWin betikleriyle her pencere</li>
-          <li data-reveal>Bir kez onaylanan RemoteDesktop portalı üzerinden fare ve klavye</li>
+          <li data-reveal>KDE Plasma: KWin betikleriyle her pencere, bir kez onaylanan RemoteDesktop portalı üzerinden fare ve klavye</li>
+          <li data-reveal>Aynı komutların arkasında X11 (XTEST, EWMH), Sway ve Hyprland (kendi IPC&#x27;leri)</li>
           <li data-reveal>Açık Konsole sekmelerini ve tmux bölmelerini okuma ve onlara yazma</li>
           <li data-reveal>21 MCP aracı, 26 CLI komutu, bir HTTP API ve tool calling&#x27;i olmayan modeller için metin döngüsü</li>
-          <li data-reveal>Yalıtılmış bir sandbox masaüstünde koşan girdi testleri</li>
+          <li data-reveal>Windows: Win32 pencereleri, SendInput ile Unicode girdi, GDI ekran görüntüsü, UI Automation, açık konsolları okuma ve onlara yazma</li>
+          <li data-reveal>macOS önizlemesi: Quartz girdisi, CGWindowList pencereleri, erişilebilirlik ağacı, Terminal.app, iTerm2 ve tmux</li>
+          <li data-reveal>Bir pip paketi: Linux'ta, Windows'ta ve macOS'ta <code>pip install .[all]</code></li>
+          <li data-reveal>Yalıtılmış bir sandbox masaüstünde girdi testleri; X11 Xvfb&#x27;de, Windows Wine altında</li>
         </ul>
       </div>
       <div class="track-col" data-reveal>
         <h3 class="track-h"><svg class="ico" aria-hidden="true"><use href="#i-planned"/></svg>Planlanan</h3>
         <ul class="track-list next" data-stagger>
+          <li data-reveal><strong>Gerçek Windows ve Mac donanımı.</strong> Testleri Windows 10 ve 11&#x27;de ve bir Mac&#x27;te koşmak, sonra önizleme etiketini kaldırmak.</li>
+          <li data-reveal><strong>Windows ve macOS&#x27;ta ajan imleci.</strong> Ajanın nerede çalıştığını gösteren görünür artı imleci bugün yalnızca Linux&#x27;ta var.</li>
           <li data-reveal><strong>Electron erişilebilirlik sarmalayıcısı.</strong> Electron uygulamalarını otomatik olarak <code>--force-renderer-accessibility</code> ile başlatmak; böylece düğmelerine pikselle değil adıyla basılabilir.</li>
-          <li data-reveal><strong>GNOME ve wlroots doğrulaması.</strong> Portal yolunu GNOME&#x27;da ve Sway gibi wlroots tabanlı ortamlarda test etmek, neyin çalıştığını belgelemek.</li>
-          <li data-reveal><strong>Uzak kurulum.</strong> HTTP adaptörünü başka bir makinede çalıştırmak için bir systemd birimiyle birlikte sunmak.</li>
+          <li data-reveal><strong>GNOME ve gerçek Sway, Hyprland.</strong> Portal yolunu ve pencere listesini GNOME&#x27;da test etmek; Sway ve Hyprland&#x27;i sahte IPC yerine gerçek bir compositor&#x27;da çalıştırmak.</li>
+          <li data-reveal><strong>Uzak kurulum.</strong> HTTP adaptörünü başka bir makinede çalıştırmak için bir servis birimiyle birlikte sunmak.</li>
           <li data-reveal><strong>MCP üzerinden canlı pencere ağacı.</strong> Pencere listesini ve erişilebilirlik ağacını, araçların yanında MCP kaynakları olarak sunmak.</li>
         </ul>
       </div>
@@ -828,7 +879,7 @@ bash-5.2$</code></pre>
 <section id="connect" class="connect sec" aria-labelledby="connect-h">
   <div class="wrap">
     <div class="sec-head" data-reveal>
-      <span class="bignum" aria-hidden="true" data-parallax>11</span>
+      <span class="bignum" aria-hidden="true" data-parallax>12</span>
       <div><p class="kicker">Bağlantı</p><h2 id="connect-h" class="big">Ajanına bağla</h2></div>
       <p>Aynı çekirdek, dört giriş. Harness&#x27;ın hangisini konuşuyorsa onu seç.</p>
     </div>
@@ -867,23 +918,26 @@ curl -s -H "Authorization: Bearer $SECRET" -X POST localhost:8788/terminals</cod
 <section id="trust" class="trust sec" aria-labelledby="trust-h">
   <div class="wrap trust-grid">
     <div data-reveal>
-      <span class="bignum bignum-inline" aria-hidden="true">12</span>
+      <span class="bignum bignum-inline" aria-hidden="true">13</span>
       <p class="kicker">Güvenlik</p>
       <h2 id="trust-h" class="big">Makinene ne yapar</h2>
     </div>
     <dl class="facts" data-stagger>
-      <div data-reveal><dt><svg class="ico" aria-hidden="true"><use href="#i-shield"/></svg>Bir kez sorar</dt><dd>İlk seferde KDE bir uzaktan kontrol penceresi açar. <em>Allow restoring</em> kutusunu işaretleyin, bir daha sormaz. Geri almak için <code>~/.config/nexremote/portal.json</code> dosyasını silin.</dd></div>
-      <div data-reveal><dt><svg class="ico" aria-hidden="true"><use href="#i-pointer"/></svg>İmlecini geri verir</dt><dd>Wayland&#x27;de tek imleç vardır. Tık onu ödünç alır ve eski yerine geri koyar.</dd></div>
-      <div data-reveal><dt><svg class="ico" aria-hidden="true"><use href="#i-lock"/></svg>Root yok</dt><dd><code>/dev/uinput</code> yok, başka kullanıcı olarak çalışan servis yok.</dd></div>
+      <div data-reveal><dt><svg class="ico" aria-hidden="true"><use href="#i-shield"/></svg>Bir kez sorar</dt><dd>Wayland'de masaüstü ilk seferde bir uzaktan kontrol penceresi açar; <em>Allow restoring</em> kutusunu işaretleyin, bir daha sormaz (geri almak için <code>~/.config/nexremote/portal.json</code> dosyasını silin). macOS'ta Erişilebilirlik ve Ekran Kaydı izni bir kez verilir. Windows ve X11 sormaz.</dd></div>
+      <div data-reveal><dt><svg class="ico" aria-hidden="true"><use href="#i-pointer"/></svg>İmlecini geri verir</dt><dd>Ekranda tek imleç vardır. Tık onu ödünç alır ve eski yerine geri koyar.</dd></div>
+      <div data-reveal><dt><svg class="ico" aria-hidden="true"><use href="#i-lock"/></svg>Root yok, yönetici yok</dt><dd><code>/dev/uinput</code> yok, sürücü yok, başka kullanıcı olarak çalışan servis yok. Windows'ta sizin hesabınızla çalışır; yönetici olarak çalışan pencerelere ancak NexRemote da yönetici olarak çalışırsa ulaşır.</dd></div>
       <div data-reveal><dt><svg class="ico" aria-hidden="true"><use href="#i-globe"/></svg>Ağa kapalı</dt><dd>HTTP adaptörü token olmadan localhost dışını dinlemez.</dd></div>
-      <div data-reveal><dt><svg class="ico" aria-hidden="true"><use href="#i-flask"/></svg>Zarar veremeyeceği yerde test edilir</dt><dd>Girdi testleri, kendi D-Bus&#x27;ı, sanal KWin&#x27;i, kendi portalı ve PipeWire&#x27;ı olan atılabilir bir masaüstünde koşar.</dd></div>
+      <div data-reveal><dt><svg class="ico" aria-hidden="true"><use href="#i-flask"/></svg>Zarar veremeyeceği yerde test edilir</dt><dd>Girdi testleri, kendi D-Bus&#x27;ı, sanal KWin&#x27;i, kendi portalı ve PipeWire&#x27;ı olan atılabilir bir masaüstünde koşar. X11 Xvfb&#x27;de, Windows ekransız bir görüntüde ayrı bir Wine prefix&#x27;inde çalışır.</dd></div>
     </dl>
     <div class="limits" data-reveal>
       <h3>Sınırlar</h3>
       <ul>
-        <li>KDE Plasma 6 (Wayland) üzerinde test edildi. GNOME&#x27;da aynı portal üzerinden çalışmalı, ama pencere listesi erişilebilirliğe düşer. wlroots tabanlı ortamlar test edilmedi.</li>
+        <li>Linux: KDE Plasma 6 Wayland gerçek masaüstünde, X11 gerçek bir X sunucusunda (Xvfb), Sway ve Hyprland sahte IPC ile test edildi. GNOME&#x27;da pencere listesi yalnızca AT-SPI&#x27;ye düşer.</li>
+        <li>Windows: Wine 10 üzerinde test edildi; gerçek Windows 10/11&#x27;de doğrulanmadı. Wine&#x27;ın UI Automation&#x27;ı denetim ağacını gezemediği için isimle tıklama Wine&#x27;da sınanamadı. Yönetici olarak çalışan pencerelere yalnızca yönetici olarak çalışan NexRemote ulaşır (UIPI).</li>
+        <li>macOS: kod yazıldı ve mantığı sahte Quartz ile test edildi, ama gerçek bir Mac&#x27;te henüz doğrulanmadı; önizleme sürümü.</li>
         <li>Konsole yalnızca görünen ekranı verir. Geçmiş satırlar için ajanı tmux içinde çalıştırın.</li>
-        <li>Tarayıcılar ve Electron uygulamaları ekran görüntüsü ve koordinatla kullanılır.</li>
+        <li>Tarayıcılar ve Electron uygulamaları çoğunlukla ağaç yayınlamaz; bunlar ekran görüntüsü ve koordinatla kullanılır.</li>
+        <li>Görünür ajan imleci şimdilik yalnızca Linux&#x27;ta.</li>
       </ul>
     </div>
   </div>
@@ -893,27 +947,80 @@ curl -s -H "Authorization: Bearer $SECRET" -X POST localhost:8788/terminals</cod
 <section id="install" class="install sec" aria-labelledby="install-h">
   <div class="wrap">
     <div class="sec-head sec-head-solo" data-reveal>
-      <span class="bignum" aria-hidden="true" data-parallax>13</span>
+      <span class="bignum" aria-hidden="true" data-parallax>14</span>
       <div><p class="kicker">Kurulum</p><h2 id="install-h" class="big">Üç adımda kurulum</h2></div>
     </div>
-    <ol class="steps" data-stagger>
-      <li data-reveal>
-        <h3>İndir ve aç</h3>
-        <div class="copyline"><code id="cmd-1">unzip nexremote.zip &amp;&amp; cd nexremote</code><button class="copy" type="button" data-copy="#cmd-1" data-done="Kopyalandı"><span class="copy-ico" aria-hidden="true"><svg class="ico i1"><use href="#i-copy"/></svg><svg class="ico i2"><use href="#i-check"/></svg></span><span data-label>Kopyala</span></button></div>
-        <p><a href="/download/nexremote.zip" download>nexremote.zip</a> (82 KB) · <a href="/download/nexremote.tar.gz" download>nexremote.tar.gz</a> (63 KB)</p>
-      </li>
-      <li data-reveal>
-        <h3>Komutları kur</h3>
-        <div class="copyline"><code id="cmd-2">./install.sh</code><button class="copy" type="button" data-copy="#cmd-2" data-done="Kopyalandı"><span class="copy-ico" aria-hidden="true"><svg class="ico i1"><use href="#i-copy"/></svg><svg class="ico i2"><use href="#i-check"/></svg></span><span data-label>Kopyala</span></button></div>
-        <p><code>nexremote</code>, <code>nexremote-mcp</code>, <code>nexremote-http</code> ve <code>nexremote-agent</code> komutlarını <code>~/bin</code> altına koyar, eksik paketleri listeler.</p>
-      </li>
-      <li data-reveal>
-        <h3>Erişimi bir kez ver</h3>
-        <div class="copyline"><code id="cmd-3">nexremote setup &amp;&amp; nexremote caps</code><button class="copy" type="button" data-copy="#cmd-3" data-done="Kopyalandı"><span class="copy-ico" aria-hidden="true"><svg class="ico i1"><use href="#i-copy"/></svg><svg class="ico i2"><use href="#i-check"/></svg></span><span data-label>Kopyala</span></button></div>
-        <p>Erişilebilirlik ağacını açar ve KDE'nin uzaktan kontrol penceresini getirir: <em>Allow restoring</em> işaretle, <em>Share</em>'e bas.</p>
-      </li>
-    </ol>
-    <p class="reqs" data-reveal>Gerekli: <code>python3-dbus</code> <code>python3-gi</code> <code>xdg-desktop-portal-kde</code> <code>pipewire</code> <code>wl-clipboard</code>. İsteğe bağlı: <code>tmux</code> <code>python3-pil</code> <code>python3-xlib</code>, <code>pip install mcp</code>.</p>
+    <div class="tabs os-tabs" data-tabs data-os-tabs data-reveal>
+      <div class="tablist" role="tablist" aria-label="İşletim sistemi">
+        <button type="button" role="tab" id="tab-linux" aria-controls="p-linux" aria-selected="true" data-os="linux">Linux</button>
+        <button type="button" role="tab" id="tab-windows" aria-controls="p-windows" aria-selected="false" tabindex="-1" data-os="windows">Windows</button>
+        <button type="button" role="tab" id="tab-macos" aria-controls="p-macos" aria-selected="false" tabindex="-1" data-os="macos">macOS <span class="pv">Önizleme</span></button>
+        <span class="tab-ind" aria-hidden="true"></span>
+      </div>
+      <div class="panel os-panel" role="tabpanel" id="p-linux" aria-labelledby="tab-linux" tabindex="0">
+        <h3 class="os-h">Linux</h3>
+        <ol class="steps">
+          <li>
+            <h3>İndir ve aç</h3>
+            <div class="copyline"><code id="cmd-l1">unzip nexremote.zip &amp;&amp; cd nexremote</code><button class="copy" type="button" data-copy="#cmd-l1" data-done="Kopyalandı"><span class="copy-ico" aria-hidden="true"><svg class="ico i1"><use href="#i-copy"/></svg><svg class="ico i2"><use href="#i-check"/></svg></span><span data-label>Kopyala</span></button></div>
+            <p><a href="/download/nexremote.zip" download>nexremote.zip</a> (174 KB) · <a href="/download/nexremote.tar.gz" download>nexremote.tar.gz</a> (141 KB)</p>
+          </li>
+          <li>
+            <h3>Komutları kur</h3>
+            <div class="copyline"><code id="cmd-l2">./install.sh</code><button class="copy" type="button" data-copy="#cmd-l2" data-done="Kopyalandı"><span class="copy-ico" aria-hidden="true"><svg class="ico i1"><use href="#i-copy"/></svg><svg class="ico i2"><use href="#i-check"/></svg></span><span data-label>Kopyala</span></button></div>
+            <p><code>nexremote</code>, <code>nexremote-mcp</code>, <code>nexremote-http</code> ve <code>nexremote-agent</code> komutlarını <code>~/bin</code> altına koyar, eksik paketleri listeler.</p>
+          </li>
+          <li>
+            <h3>Erişimi bir kez ver</h3>
+            <div class="copyline"><code id="cmd-l3">nexremote setup &amp;&amp; nexremote caps</code><button class="copy" type="button" data-copy="#cmd-l3" data-done="Kopyalandı"><span class="copy-ico" aria-hidden="true"><svg class="ico i1"><use href="#i-copy"/></svg><svg class="ico i2"><use href="#i-check"/></svg></span><span data-label>Kopyala</span></button></div>
+            <p>Erişilebilirlik ağacını açar; Wayland'de masaüstünün uzaktan kontrol penceresini getirir: <em>Allow restoring</em> işaretle, <em>Share</em>'e bas. X11 bir şey sormaz.</p>
+          </li>
+        </ol>
+        <p class="reqs">Gerekli: <code>python3-dbus</code> <code>python3-gi</code> <code>xdg-desktop-portal-kde</code> <code>pipewire</code> <code>wl-clipboard</code>. İsteğe bağlı: <code>tmux</code> <code>python3-pil</code> <code>python3-xlib</code>, <code>pip install mcp</code>. pip ile kurmak isterseniz: <code>pipx install --system-site-packages .</code> sistemdeki D-Bus ve GObject paketlerini görünür tutar.</p>
+      </div>
+      <div class="panel os-panel" role="tabpanel" id="p-windows" aria-labelledby="tab-windows" tabindex="0">
+        <h3 class="os-h">Windows</h3>
+        <ol class="steps">
+          <li>
+            <h3>İndir ve aç</h3>
+            <div class="copyline"><code id="cmd-w1">Expand-Archive nexremote.zip -DestinationPath .; cd nexremote</code><button class="copy" type="button" data-copy="#cmd-w1" data-done="Kopyalandı"><span class="copy-ico" aria-hidden="true"><svg class="ico i1"><use href="#i-copy"/></svg><svg class="ico i2"><use href="#i-check"/></svg></span><span data-label>Kopyala</span></button></div>
+            <p><a href="/download/nexremote.zip" download>nexremote.zip</a> (174 KB)</p>
+          </li>
+          <li>
+            <h3>pip ile kur</h3>
+            <div class="copyline"><code id="cmd-w2">py -m pip install .[all]</code><button class="copy" type="button" data-copy="#cmd-w2" data-done="Kopyalandı"><span class="copy-ico" aria-hidden="true"><svg class="ico i1"><use href="#i-copy"/></svg><svg class="ico i2"><use href="#i-check"/></svg></span><span data-label>Kopyala</span></button></div>
+            <p><code>nexremote</code>, <code>nexremote-mcp</code>, <code>nexremote-http</code> ve <code>nexremote-agent</code> komutlarını kurar. UI Automation için <code>comtypes</code> da birlikte gelir.</p>
+          </li>
+          <li>
+            <h3>Neyin çalıştığına bak</h3>
+            <div class="copyline"><code id="cmd-w3">nexremote caps</code><button class="copy" type="button" data-copy="#cmd-w3" data-done="Kopyalandı"><span class="copy-ico" aria-hidden="true"><svg class="ico i1"><use href="#i-copy"/></svg><svg class="ico i2"><use href="#i-check"/></svg></span><span data-label>Kopyala</span></button></div>
+            <p>İzin penceresi yok. Yönetici olarak çalışan pencerelere yalnızca NexRemote da yönetici olarak çalışırsa ulaşılır.</p>
+          </li>
+        </ol>
+        <p class="reqs">Gerekli: Python 3.9 ya da daha yenisi, <code>py</code> başlatıcısıyla. <code>[all]</code>, ekran görüntüsünü kırpıp küçültmek için <code>pillow</code> ve MCP sunucusu için <code>mcp</code> ekler. Wine 10 altında test edildi; gerçek Windows 10/11'de henüz değil.</p>
+      </div>
+      <div class="panel os-panel" role="tabpanel" id="p-macos" aria-labelledby="tab-macos" tabindex="0">
+        <h3 class="os-h">macOS <span class="pv">Önizleme</span></h3>
+        <ol class="steps">
+          <li>
+            <h3>İndir ve aç</h3>
+            <div class="copyline"><code id="cmd-m1">unzip nexremote.zip &amp;&amp; cd nexremote</code><button class="copy" type="button" data-copy="#cmd-m1" data-done="Kopyalandı"><span class="copy-ico" aria-hidden="true"><svg class="ico i1"><use href="#i-copy"/></svg><svg class="ico i2"><use href="#i-check"/></svg></span><span data-label>Kopyala</span></button></div>
+            <p><a href="/download/nexremote.zip" download>nexremote.zip</a> (174 KB) · <a href="/download/nexremote.tar.gz" download>nexremote.tar.gz</a> (141 KB)</p>
+          </li>
+          <li>
+            <h3>pip ile kur</h3>
+            <div class="copyline"><code id="cmd-m2">python3 -m pip install '.[all]'</code><button class="copy" type="button" data-copy="#cmd-m2" data-done="Kopyalandı"><span class="copy-ico" aria-hidden="true"><svg class="ico i1"><use href="#i-copy"/></svg><svg class="ico i2"><use href="#i-check"/></svg></span><span data-label>Kopyala</span></button></div>
+            <p>Dört komutu kurar. <code>[all]</code> ekran görüntüsü küçültmeyi ve MCP sunucusunu ekler.</p>
+          </li>
+          <li>
+            <h3>Erişimi bir kez ver</h3>
+            <div class="copyline"><code id="cmd-m3">nexremote setup &amp;&amp; nexremote caps</code><button class="copy" type="button" data-copy="#cmd-m3" data-done="Kopyalandı"><span class="copy-ico" aria-hidden="true"><svg class="ico i1"><use href="#i-copy"/></svg><svg class="ico i2"><use href="#i-check"/></svg></span><span data-label>Kopyala</span></button></div>
+            <p>Erişilebilirlik ve Ekran Kaydı izin istemlerini açar. Sistem Ayarları → Gizlilik ve Güvenlik'te terminalinize izin verin; bir daha sorulmaz.</p>
+          </li>
+        </ol>
+        <p class="reqs">Gerekli: Python 3.9 ya da daha yenisi. İsteğe bağlı: geçmiş satırlar için <code>tmux</code>. Önizleme: sahte Quartz ile test edildi, gerçek bir Mac'te henüz değil.</p>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -929,7 +1036,7 @@ curl -s -H "Authorization: Bearer $SECRET" -X POST localhost:8788/terminals</cod
           <a class="btn btn-invert" href="/download/nexremote.zip" download data-magnet>
             <svg class="ico" aria-hidden="true"><use href="#i-download"/></svg>
             <span>İndir</span>
-            <span class="btn-meta">v0.2.0 · zip · 82 KB</span>
+            <span class="btn-meta">v0.3.0 · zip · 174 KB</span>
           </a>
           <a class="btn btn-ghost" href="mailto:omeralibayrakcii@gmail.com?subject=NexRemote%20hakk%C4%B1nda" data-magnet>
             <svg class="ico" aria-hidden="true"><use href="#i-mail"/></svg>
@@ -940,7 +1047,7 @@ curl -s -H "Authorization: Bearer $SECRET" -X POST localhost:8788/terminals</cod
           <code id="cmd-cta" data-typeline>./install.sh &amp;&amp; nexremote setup</code>
           <button class="copy" type="button" data-copy="#cmd-cta" data-done="Kopyalandı"><span class="copy-ico" aria-hidden="true"><svg class="ico i1"><use href="#i-copy"/></svg><svg class="ico i2"><use href="#i-check"/></svg></span><span data-label>Kopyala</span></button>
         </div>
-        <p class="meta"><a href="/download/nexremote.tar.gz" download>nexremote.tar.gz</a> (63 KB) · MIT · KDE Plasma 6, Wayland · Python 3.10+</p>
+        <p class="meta"><a href="/download/nexremote.tar.gz" download>nexremote.tar.gz</a> (141 KB) · MIT · Linux · Windows · macOS (önizleme) · Python 3.9+</p>
       </div>
     </div>
   </div>
@@ -952,7 +1059,7 @@ curl -s -H "Authorization: Bearer $SECRET" -X POST localhost:8788/terminals</cod
   <div class="wrap foot-row">
     <span class="foot-brand">
       <svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="5.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 1.5v5M12 17.5v5M1.5 12h5M17.5 12h5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/></svg>
-      NexRemote v0.2.0 · MIT
+      NexRemote v0.3.0 · MIT
     </span>
     <a href="#how">Nasıl çalışır</a>
     <a href="#install">Kurulum</a>
@@ -963,6 +1070,6 @@ curl -s -H "Authorization: Bearer $SECRET" -X POST localhost:8788/terminals</cod
 </footer>
 
 <script id="replay-i18n" type="application/json">{"captions": ["Ajan ekranda ne olduğunu sorar: ref'iyle her pencere, içinde çalışan programla her terminal.", "Başka bir ajanın terminalini okur. Konsole görünen metni verir; ekran görüntüsü yok, odak değişmez.", "O terminale, klavyesinden yazılmış gibi cevap verir. Pencerenin öne gelmesi gerekmedi.", "Anahtarı adıyla bulur ve erişilebilirlik üzerinden basar. Fare hiç oynamaz.", "Oynatıcı kontrollerini yayınlamıyor; ajan bakar: o pencerenin ekran görüntüsü, sonra gördüğü piksele tık. İmleciniz yerine döner."], "termMsg": "İkisini düzelt, sonra testleri tekrar çalıştır"}</script>
-<script src="/assets/site.js?v=0.2.0" defer></script>
+<script src="/assets/site.js?v=0.3.0" defer></script>
 </body>
 </html>

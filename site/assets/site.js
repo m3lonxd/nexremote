@@ -64,6 +64,10 @@
   }
 
   // ------------------------------------------------------------- sekmeler
+  function visitorOS() {
+    var p = ((navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || navigator.userAgent || "").toLowerCase();
+    return /win/.test(p) ? "windows" : /mac|iphone|ipad/.test(p) ? "macos" : "linux";
+  }
   $$("[data-tabs]").forEach(function (root) {
     var list = $('[role="tablist"]', root), ind = $(".tab-ind", root);
     var tabs = $$('[role="tab"]', root);
@@ -94,6 +98,16 @@
       });
     });
     var cur = function () { return tabs.filter(function (t) { return t.getAttribute("aria-selected") === "true"; })[0] || tabs[0]; };
+    // Kurulum sekmeleri ziyaretçinin işletim sistemiyle açılır. Paneller HTML'de
+    // gizli değildir (JS yoksa hepsi görünür); gizleme burada yapılır.
+    var first = cur();
+    if (root.hasAttribute("data-os-tabs")) first = tabs.filter(function (t) { return t.dataset.os === visitorOS(); })[0] || first;
+    tabs.forEach(function (t) {
+      var on = t === first;
+      t.setAttribute("aria-selected", on ? "true" : "false");
+      t.tabIndex = on ? 0 : -1;
+      D.getElementById(t.getAttribute("aria-controls")).hidden = !on;
+    });
     place(cur());
     if (D.fonts && D.fonts.ready) D.fonts.ready.then(function () { place(cur()); });
     addEventListener("resize", function () { place(cur()); });
