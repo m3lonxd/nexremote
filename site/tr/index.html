@@ -94,7 +94,7 @@
           <a class="btn btn-invert" href="/download/nexremote.zip" download data-magnet>
             <svg class="ico" aria-hidden="true"><use href="#i-download"/></svg>
             <span>İndir</span>
-            <span class="btn-meta">v0.3.0 · zip · 174 KB</span>
+            <span class="btn-meta">v0.3.0 · zip · 190 KB</span>
           </a>
           <a class="btn btn-ghost" href="#replay" data-magnet>
             <svg class="ico" aria-hidden="true"><use href="#i-play"/></svg>
@@ -114,7 +114,7 @@
     <div class="hero-tilt" data-hero-tilt>
       <figure class="hd s-node s-dark s-hl s-reply s-shot s-play s-agent" data-hero>
         <svg class="hd-scene" viewBox="0 0 1200 720" role="img" aria-labelledby="hd-t">
-          <title id="hd-t">Bir masaüstü çizimi (burada Linux&#x27;ta KDE Plasma): terminaller, bir ayarlar penceresi ve bir video oynatıcı. Ajanın yeşil artı imleci pencereleri listeler, Koyu anahtarını adıyla bulup basar, bir terminali okur ve ekran görüntüsünden oynatıcıya tıklar.</title>
+          <title id="hd-t">Bir masaüstü çizimi (burada Linux&#x27;ta KDE Plasma): terminaller, bir ayarlar penceresi ve bir video oynatıcı. Ajanın imleci pencereleri listeler, Koyu anahtarını adıyla bulup basar, bir terminali okur ve ekran görüntüsünden oynatıcıya tıklar.</title>
           <defs>
             <linearGradient id="hd-wall" x1="0" y1="0" x2="1" y2="1"><stop offset="0" class="hd-wall-a"/><stop offset="1" class="hd-wall-b"/></linearGradient>
           </defs>
@@ -215,7 +215,7 @@
           <g class="hd-agent" data-hd-agent style="transform: translate(805px, 544px)">
             <circle class="hd-ripple" r="16"/>
             <circle class="hd-ripple r2" r="16"/>
-            <g class="hd-cross"><circle r="13" class="hd-ag"/><path d="M0 -27v13M0 14v13M-27 0h13M14 0h13" class="hd-ag"/><circle r="3.4" class="hd-ag-dot"/></g>
+            <path class="hd-arrow" d="M0 0V25.6c0 2.2 2.4 3.2 3.9 1.7l5.6-5.5c.6-.6 1.4-.9 2.2-.9h8.1c2.1 0 3.2-2.6 1.6-4.1L3.9-1.6C2.4-3 0-1.9 0 0Z"/>
           </g>
         </svg>
 
@@ -518,7 +518,7 @@ Should I fix them? (y/n, or tell me)</code></pre>
           <span class="shutter" data-shutter></span>
         </div>
 
-        <svg class="agent" data-agent viewBox="0 0 40 40"><circle cx="20" cy="20" r="9" fill="none" stroke-width="3"/><path d="M20 2v10M20 28v10M2 20h10M28 20h10" stroke-width="3" stroke-linecap="round"/><circle cx="20" cy="20" r="2.6"/><circle class="ring" cx="20" cy="20" r="9" fill="none" stroke-width="2"/></svg>
+        <svg class="agent" data-agent viewBox="0 0 40 40"><circle class="ring" cx="6" cy="6" r="9" fill="none" stroke-width="2"/><path class="arrow" transform="translate(6 6)" d="M0 0V25.6c0 2.2 2.4 3.2 3.9 1.7l5.6-5.5c.6-.6 1.4-.9 2.2-.9h8.1c2.1 0 3.2-2.6 1.6-4.1L3.9-1.6C2.4-3 0-1.9 0 0Z"/></svg>
         <div class="taskbar"><i></i><i></i><i></i><i></i></div>
       </div>
 
@@ -642,7 +642,7 @@ Should I fix them? (y/n, or tell me)</code></pre>
 
     <div class="pm-wrap" data-reveal>
       <p class="pm-dim">7 yüzey × 3 platform</p>
-      <table class="pm"><caption class="sr">Her yeteneğin Linux, Windows ve macOS&#x27;ta kullandığı kanal</caption><thead><tr><td><span class="pm-cap">Yetenek</span></td><th scope="col">Linux</th><th scope="col">Windows</th><th scope="col">macOS <span class="pv">Önizleme</span></th></tr></thead><tbody><tr><th scope="row">Ekrandaki her pencere</th><td data-os="Linux"><span class="pm-ch">KWin · hyprctl · swaymsg · EWMH</span><small>GNOME&#x27;da yalnızca AT-SPI</small></td><td data-os="Windows"><span class="pm-ch">EnumWindows</span></td><td data-os="macOS"><span class="pm-ch">CGWindowList + AX</span></td></tr><tr><th scope="row">Gerçek fare</th><td data-os="Linux"><span class="pm-ch">XTEST · RemoteDesktop portalı</span></td><td data-os="Windows"><span class="pm-ch">SendInput</span></td><td data-os="macOS"><span class="pm-ch">CGEvent</span></td></tr><tr><th scope="row">Gerçek klavye</th><td data-os="Linux"><span class="pm-ch">XTEST · portal + pano</span></td><td data-os="Windows"><span class="pm-ch">SendInput (Unicode)</span></td><td data-os="macOS"><span class="pm-ch">CGEvent (Unicode)</span></td></tr><tr><th scope="row">Butona adıyla basma</th><td data-os="Linux"><span class="pm-ch">AT-SPI</span></td><td data-os="Windows"><span class="pm-ch">UI Automation</span><small>Wine&#x27;da sınanamadı</small></td><td data-os="macOS"><span class="pm-ch">Accessibility (AX)</span></td></tr><tr><th scope="row">Açık terminaller</th><td data-os="Linux"><span class="pm-ch">Konsole D-Bus, tmux</span></td><td data-os="Windows"><span class="pm-ch">konsol tamponu (AttachConsole)</span></td><td data-os="macOS"><span class="pm-ch">Terminal.app, iTerm2, tmux</span></td></tr><tr><th scope="row">Kendi terminali</th><td data-os="Linux"><span class="pm-ch">tmux / PTY</span></td><td data-os="Windows"><span class="pm-ch">cmd.exe</span></td><td data-os="macOS"><span class="pm-ch">tmux / PTY</span></td></tr><tr><th scope="row">Ekran görüntüsü</th><td data-os="Linux"><span class="pm-ch">spectacle · grim · Xlib</span></td><td data-os="Windows"><span class="pm-ch">GDI</span></td><td data-os="macOS"><span class="pm-ch">screencapture</span></td></tr><tr><th scope="row">Görünür ajan imleci</th><td data-os="Linux"><span class="pm-ch">tıklamayı engellemeyen katman</span></td><td data-os="Windows"><span class="pm-plan"><svg class="ico" aria-hidden="true"><use href="#i-planned"/></svg>planlandı</span></td><td data-os="macOS"><span class="pm-plan"><svg class="ico" aria-hidden="true"><use href="#i-planned"/></svg>planlandı</span></td></tr></tbody></table>
+      <table class="pm"><caption class="sr">Her yeteneğin Linux, Windows ve macOS&#x27;ta kullandığı kanal</caption><thead><tr><td><span class="pm-cap">Yetenek</span></td><th scope="col">Linux</th><th scope="col">Windows</th><th scope="col">macOS <span class="pv">Önizleme</span></th></tr></thead><tbody><tr><th scope="row">Ekrandaki her pencere</th><td data-os="Linux"><span class="pm-ch">KWin · hyprctl · swaymsg · EWMH</span><small>GNOME&#x27;da yalnızca AT-SPI</small></td><td data-os="Windows"><span class="pm-ch">EnumWindows</span></td><td data-os="macOS"><span class="pm-ch">CGWindowList + AX</span></td></tr><tr><th scope="row">Gerçek fare</th><td data-os="Linux"><span class="pm-ch">XTEST · RemoteDesktop portalı</span></td><td data-os="Windows"><span class="pm-ch">SendInput</span></td><td data-os="macOS"><span class="pm-ch">CGEvent</span></td></tr><tr><th scope="row">Gerçek klavye</th><td data-os="Linux"><span class="pm-ch">XTEST · portal + pano</span></td><td data-os="Windows"><span class="pm-ch">SendInput (Unicode)</span></td><td data-os="macOS"><span class="pm-ch">CGEvent (Unicode)</span></td></tr><tr><th scope="row">Butona adıyla basma</th><td data-os="Linux"><span class="pm-ch">AT-SPI</span></td><td data-os="Windows"><span class="pm-ch">UI Automation</span><small>Wine&#x27;da sınanamadı</small></td><td data-os="macOS"><span class="pm-ch">Accessibility (AX)</span></td></tr><tr><th scope="row">Açık terminaller</th><td data-os="Linux"><span class="pm-ch">Konsole D-Bus, tmux</span></td><td data-os="Windows"><span class="pm-ch">konsol tamponu (AttachConsole)</span></td><td data-os="macOS"><span class="pm-ch">Terminal.app, iTerm2, tmux</span></td></tr><tr><th scope="row">Kendi terminali</th><td data-os="Linux"><span class="pm-ch">tmux / PTY</span></td><td data-os="Windows"><span class="pm-ch">cmd.exe</span></td><td data-os="macOS"><span class="pm-ch">tmux / PTY</span></td></tr><tr><th scope="row">Ekran görüntüsü</th><td data-os="Linux"><span class="pm-ch">spectacle · grim · Xlib</span></td><td data-os="Windows"><span class="pm-ch">GDI</span></td><td data-os="macOS"><span class="pm-ch">screencapture</span></td></tr><tr><th scope="row">Görünür ajan imleci</th><td data-os="Linux"><span class="pm-ch">kendi imleç teman, tıklamayı engellemez</span></td><td data-os="Windows"><span class="pm-plan"><svg class="ico" aria-hidden="true"><use href="#i-planned"/></svg>planlandı</span></td><td data-os="macOS"><span class="pm-plan"><svg class="ico" aria-hidden="true"><use href="#i-planned"/></svg>planlandı</span></td></tr></tbody></table>
       <p class="pm-src">Kanallar, sayfa her üretildiğinde proje README&#x27;sinden okunur.</p>
     </div>
   </div>
@@ -803,8 +803,8 @@ bash-5.2$</code></pre>
       <div class="stat" data-reveal><dt>bağlanma yolu: kabuk, MCP, HTTP, metin döngüsü</dt><dd data-count="4">4</dd></div>
       <div class="stat" data-reveal><dt>ulaştığı masaüstü yüzeyi</dt><dd data-count="7">7</dd></div>
       <div class="stat" data-reveal><dt>kurulumu belgelenmiş harness</dt><dd data-count="11">11</dd></div>
-      <div class="stat" data-reveal><dt>test paketi; 2 tanesi atılabilir bir masaüstünde</dt><dd data-count="8">8</dd></div>
-      <div class="stat stat-wide" data-reveal><dt>satır Python, çekirdek ve adaptörler</dt><dd data-count="9111">9.111</dd></div>
+      <div class="stat" data-reveal><dt>test paketi; 2 tanesi atılabilir bir masaüstünde</dt><dd data-count="10">10</dd></div>
+      <div class="stat stat-wide" data-reveal><dt>satır Python, çekirdek ve adaptörler</dt><dd data-count="9929">9.929</dd></div>
       <div class="stat stat-zero" data-reveal><dt>gereken root ya da yönetici yetkisi</dt><dd data-count="0">0</dd></div>
     </dl>
   </div>
@@ -864,7 +864,7 @@ bash-5.2$</code></pre>
         <h3 class="track-h"><svg class="ico" aria-hidden="true"><use href="#i-planned"/></svg>Planlanan</h3>
         <ul class="track-list next" data-stagger>
           <li data-reveal><strong>Gerçek Windows ve Mac donanımı.</strong> Testleri Windows 10 ve 11&#x27;de ve bir Mac&#x27;te koşmak, sonra önizleme etiketini kaldırmak.</li>
-          <li data-reveal><strong>Windows ve macOS&#x27;ta ajan imleci.</strong> Ajanın nerede çalıştığını gösteren görünür artı imleci bugün yalnızca Linux&#x27;ta var.</li>
+          <li data-reveal><strong>Windows ve macOS&#x27;ta ajan imleci.</strong> Ajanın nerede çalıştığını gösteren, sizin imleç temanızdan çizilen görünür imleç bugün yalnızca Linux&#x27;ta var.</li>
           <li data-reveal><strong>Electron erişilebilirlik sarmalayıcısı.</strong> Electron uygulamalarını otomatik olarak <code>--force-renderer-accessibility</code> ile başlatmak; böylece düğmelerine pikselle değil adıyla basılabilir.</li>
           <li data-reveal><strong>GNOME ve gerçek Sway, Hyprland.</strong> Portal yolunu ve pencere listesini GNOME&#x27;da test etmek; Sway ve Hyprland&#x27;i sahte IPC yerine gerçek bir compositor&#x27;da çalıştırmak.</li>
           <li data-reveal><strong>Uzak kurulum.</strong> HTTP adaptörünü başka bir makinede çalıştırmak için bir servis birimiyle birlikte sunmak.</li>
@@ -963,7 +963,7 @@ curl -s -H "Authorization: Bearer $SECRET" -X POST localhost:8788/terminals</cod
           <li>
             <h3>İndir ve aç</h3>
             <div class="copyline"><code id="cmd-l1">unzip nexremote.zip &amp;&amp; cd nexremote</code><button class="copy" type="button" data-copy="#cmd-l1" data-done="Kopyalandı"><span class="copy-ico" aria-hidden="true"><svg class="ico i1"><use href="#i-copy"/></svg><svg class="ico i2"><use href="#i-check"/></svg></span><span data-label>Kopyala</span></button></div>
-            <p><a href="/download/nexremote.zip" download>nexremote.zip</a> (174 KB) · <a href="/download/nexremote.tar.gz" download>nexremote.tar.gz</a> (141 KB)</p>
+            <p><a href="/download/nexremote.zip" download>nexremote.zip</a> (190 KB) · <a href="/download/nexremote.tar.gz" download>nexremote.tar.gz</a> (155 KB)</p>
           </li>
           <li>
             <h3>Komutları kur</h3>
@@ -984,7 +984,7 @@ curl -s -H "Authorization: Bearer $SECRET" -X POST localhost:8788/terminals</cod
           <li>
             <h3>İndir ve aç</h3>
             <div class="copyline"><code id="cmd-w1">Expand-Archive nexremote.zip -DestinationPath .; cd nexremote</code><button class="copy" type="button" data-copy="#cmd-w1" data-done="Kopyalandı"><span class="copy-ico" aria-hidden="true"><svg class="ico i1"><use href="#i-copy"/></svg><svg class="ico i2"><use href="#i-check"/></svg></span><span data-label>Kopyala</span></button></div>
-            <p><a href="/download/nexremote.zip" download>nexremote.zip</a> (174 KB)</p>
+            <p><a href="/download/nexremote.zip" download>nexremote.zip</a> (190 KB)</p>
           </li>
           <li>
             <h3>pip ile kur</h3>
@@ -1005,7 +1005,7 @@ curl -s -H "Authorization: Bearer $SECRET" -X POST localhost:8788/terminals</cod
           <li>
             <h3>İndir ve aç</h3>
             <div class="copyline"><code id="cmd-m1">unzip nexremote.zip &amp;&amp; cd nexremote</code><button class="copy" type="button" data-copy="#cmd-m1" data-done="Kopyalandı"><span class="copy-ico" aria-hidden="true"><svg class="ico i1"><use href="#i-copy"/></svg><svg class="ico i2"><use href="#i-check"/></svg></span><span data-label>Kopyala</span></button></div>
-            <p><a href="/download/nexremote.zip" download>nexremote.zip</a> (174 KB) · <a href="/download/nexremote.tar.gz" download>nexremote.tar.gz</a> (141 KB)</p>
+            <p><a href="/download/nexremote.zip" download>nexremote.zip</a> (190 KB) · <a href="/download/nexremote.tar.gz" download>nexremote.tar.gz</a> (155 KB)</p>
           </li>
           <li>
             <h3>pip ile kur</h3>
@@ -1036,7 +1036,7 @@ curl -s -H "Authorization: Bearer $SECRET" -X POST localhost:8788/terminals</cod
           <a class="btn btn-invert" href="/download/nexremote.zip" download data-magnet>
             <svg class="ico" aria-hidden="true"><use href="#i-download"/></svg>
             <span>İndir</span>
-            <span class="btn-meta">v0.3.0 · zip · 174 KB</span>
+            <span class="btn-meta">v0.3.0 · zip · 190 KB</span>
           </a>
           <a class="btn btn-ghost" href="mailto:omeralibayrakcii@gmail.com?subject=NexRemote%20hakk%C4%B1nda" data-magnet>
             <svg class="ico" aria-hidden="true"><use href="#i-mail"/></svg>
@@ -1047,7 +1047,7 @@ curl -s -H "Authorization: Bearer $SECRET" -X POST localhost:8788/terminals</cod
           <code id="cmd-cta" data-typeline>./install.sh &amp;&amp; nexremote setup</code>
           <button class="copy" type="button" data-copy="#cmd-cta" data-done="Kopyalandı"><span class="copy-ico" aria-hidden="true"><svg class="ico i1"><use href="#i-copy"/></svg><svg class="ico i2"><use href="#i-check"/></svg></span><span data-label>Kopyala</span></button>
         </div>
-        <p class="meta"><a href="/download/nexremote.tar.gz" download>nexremote.tar.gz</a> (141 KB) · MIT · Linux · Windows · macOS (önizleme) · Python 3.9+</p>
+        <p class="meta"><a href="/download/nexremote.tar.gz" download>nexremote.tar.gz</a> (155 KB) · MIT · Linux · Windows · macOS (önizleme) · Python 3.9+</p>
       </div>
     </div>
   </div>

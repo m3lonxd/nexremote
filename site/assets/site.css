@@ -263,9 +263,8 @@ body::after {
 .s-hl .hd-hl, .s-reply .hd-reply { opacity: 1; }
 .hd-agent { opacity: 0; transition: opacity .3s; }
 .s-agent .hd-agent { opacity: 1; }
-.hd-ag { fill: none; stroke: #2ee587; stroke-width: 4; stroke-linecap: round; }
-.hd-ag-dot { fill: #2ee587; }
-.hd-cross { filter: drop-shadow(0 1px 2px rgb(0 0 0 / .55)); }
+/* ajan imleci: koyu dolgu + açık kenar, ucu (0,0) — gerçek ok imleci */
+.hd-arrow { fill: #35373c; stroke: #e4e7ee; stroke-width: 2.2; stroke-linejoin: round; transform: scale(1.7); filter: drop-shadow(0 2px 3px rgb(0 0 0 / .45)); }
 .hd-ripple { fill: none; stroke: #2ee587; stroke-width: 3; opacity: 0; transform-box: fill-box; transform-origin: center; }
 .hd.s-click .hd-ripple { animation: ripple .8s var(--ease); }
 .hd.s-click .hd-ripple.r2 { animation-delay: .14s; }
@@ -458,8 +457,10 @@ html:not(.js) .mq-dup { display: none; }
 .tag { position: absolute; left: 1.4cqw; bottom: 1.4cqw; font: 500 max(9px, 1.35cqw) var(--mono); background: #161511; color: #f2f0ea; padding: .25cqw .7cqw; border-radius: 3px; opacity: 0; transform: translateY(4px); transition: opacity .25s, transform .25s; pointer-events: none; }
 .tag-el { left: auto; right: 1.4cqw; background: #0b6e47; color: #fff; }
 .win.tagged .tag:not(.tag-el), .win.tagged-el .tag-el { opacity: 1; transform: none; }
-.agent { position: absolute; left: 0; top: 0; width: 4.4cqw; height: 4.4cqw; margin: -2.2cqw 0 0 -2.2cqw; stroke: #2ee587; fill: #2ee587; opacity: 0; transition: opacity .2s; filter: drop-shadow(0 0 1px rgb(0 0 0 / .6)); z-index: 3; }
-.agent .ring { opacity: 0; transform-origin: 20px 20px; }
+.agent { position: absolute; left: 0; top: 0; width: 4.4cqw; height: 4.4cqw; margin: -.66cqw 0 0 -.66cqw; opacity: 0; transition: opacity .2s; filter: drop-shadow(0 1px 1.5px rgb(0 0 0 / .5)); z-index: 3; overflow: visible; }
+.agent .arrow { fill: #35373c; stroke: #e4e7ee; stroke-width: 2; stroke-linejoin: round; }
+.agent .ring { stroke: #2ee587; }
+.agent .ring { opacity: 0; transform-origin: 6px 6px; }
 .agent.on { opacity: 1; }
 .agent.click .ring { animation: ring .5s ease-out; }
 @keyframes ring { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(2.3); } }

@@ -17,6 +17,16 @@ sözleşmesinden geçer (`core/nexremote/platforms/base.py`).
 - Windows TUI: pipe modu (cmd.exe); CLI ajan döngüsü kabuk kullanmadan çalışır.
 - Testler: `tests/run_all.sh` (Linux + macOS mantık), `tests/wine/run.sh tests/test_windows_wine.py`.
 
+**Gerçek masaüstü denemesi (2026-10-17, KDE Plasma 6, 3 monitör):** kcalc'ta
+düğmelere adıyla basıldı (7×8=56), ekran görüntüsünden koordinatla tık + klavye
+(12*12=144). Sandbox'ın yakalayamadığı üç hata bulundu ve düzeltildi:
+1. KDE portalı yayın konumu göndermiyor → ilk ekran dışına tıklanamıyordu
+   (KWin çıkışlarından + tek seferlik ölçümle konumlanıyor).
+2. Ajan imleci siyah kare içinde çiziliyordu (Shape yalnızca girdi içindi).
+3. İmleç hedefin 36 px sağ altında görünüyordu (hotspot hizası).
+Ajan imleci artık kullanıcının imleç temasından (SVG; yoksa Xcursor) çiziliyor,
+120 fps minimum-jerk hareketle gidiyor.
+
 **Doğrulanmayanlar:** gerçek Windows 10/11 donanımı; Wine'da UIA ağaç gezintisi
 olmadığından Windows'ta isimle tıklama; macOS'un tamamı gerçek donanımda;
 GNOME. Ajan imleci yalnızca Linux'ta.

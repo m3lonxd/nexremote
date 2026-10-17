@@ -202,7 +202,7 @@ S = {
         "cta_download": "Download", "cta_see": "See it work",
         "copy": "Copy", "copied": "Copied",
         "hero_meta": "MIT · Linux · Windows · macOS (preview) · Python 3.9+",
-        "hv_title": "Drawing of a desktop, here KDE Plasma on Linux, with terminals, a settings window and a video player. The agent's green crosshair lists the windows, finds the Dark switch by name and presses it, reads a terminal, and clicks the player from a screenshot.",
+        "hv_title": "Drawing of a desktop, here KDE Plasma on Linux, with terminals, a settings window and a video player. The agent's pointer lists the windows, finds the Dark switch by name and presses it, reads a terminal, and clicks the player from a screenshot.",
         "hv1": "Window manager", "hv2": "Accessibility tree", "hv3": "Terminal text", "hv4": "Pixels, last",
         "mq_label": "Setups documented for",
 
@@ -291,7 +291,7 @@ S = {
         "pm_cap": "Capability",
         "pm_rows": "Every window on screen|Real mouse|Real keyboard|Press a button by name|Open terminals|Its own terminal|Screenshots",
         "pm_cursor": "Visible agent cursor",
-        "pm_cursor_linux": "click-through overlay",
+        "pm_cursor_linux": "your cursor theme, click-through",
         "pm_planned": "planned",
         "pm_note_gnome": "GNOME: AT-SPI only",
         "pm_note_wine": "not exercised under Wine",
@@ -392,7 +392,7 @@ S = {
         "rm5_t": "Real Windows and Mac hardware.",
         "rm5_d": "Run the suites on Windows 10 and 11 and on a Mac, then drop the preview label.",
         "rm6_t": "Agent cursor on Windows and macOS.",
-        "rm6_d": "The visible crosshair that shows where the agent is acting exists only on Linux today.",
+        "rm6_d": "The visible pointer that shows where the agent is acting, drawn from your own cursor theme, exists only on Linux today.",
 
         "connect_kicker": "Connect",
         "connect_h": "Plug it into your agent",
@@ -462,7 +462,7 @@ S = {
         "cta_download": "İndir", "cta_see": "Çalışırken gör",
         "copy": "Kopyala", "copied": "Kopyalandı",
         "hero_meta": "MIT · Linux · Windows · macOS (önizleme) · Python 3.9+",
-        "hv_title": "Bir masaüstü çizimi (burada Linux'ta KDE Plasma): terminaller, bir ayarlar penceresi ve bir video oynatıcı. Ajanın yeşil artı imleci pencereleri listeler, Koyu anahtarını adıyla bulup basar, bir terminali okur ve ekran görüntüsünden oynatıcıya tıklar.",
+        "hv_title": "Bir masaüstü çizimi (burada Linux'ta KDE Plasma): terminaller, bir ayarlar penceresi ve bir video oynatıcı. Ajanın imleci pencereleri listeler, Koyu anahtarını adıyla bulup basar, bir terminali okur ve ekran görüntüsünden oynatıcıya tıklar.",
         "hv1": "Pencere yöneticisi", "hv2": "Erişilebilirlik ağacı", "hv3": "Terminal metni", "hv4": "En son piksel",
         "mq_label": "Kurulumu belgelenmiş ortamlar",
 
@@ -551,7 +551,7 @@ S = {
         "pm_cap": "Yetenek",
         "pm_rows": "Ekrandaki her pencere|Gerçek fare|Gerçek klavye|Butona adıyla basma|Açık terminaller|Kendi terminali|Ekran görüntüsü",
         "pm_cursor": "Görünür ajan imleci",
-        "pm_cursor_linux": "tıklamayı engellemeyen katman",
+        "pm_cursor_linux": "kendi imleç teman, tıklamayı engellemez",
         "pm_planned": "planlandı",
         "pm_note_gnome": "GNOME'da yalnızca AT-SPI",
         "pm_note_wine": "Wine'da sınanamadı",
@@ -652,7 +652,7 @@ S = {
         "rm5_t": "Gerçek Windows ve Mac donanımı.",
         "rm5_d": "Testleri Windows 10 ve 11'de ve bir Mac'te koşmak, sonra önizleme etiketini kaldırmak.",
         "rm6_t": "Windows ve macOS'ta ajan imleci.",
-        "rm6_d": "Ajanın nerede çalıştığını gösteren görünür artı imleci bugün yalnızca Linux'ta var.",
+        "rm6_d": "Ajanın nerede çalıştığını gösteren, sizin imleç temanızdan çizilen görünür imleç bugün yalnızca Linux'ta var.",
 
         "connect_kicker": "Bağlantı",
         "connect_h": "Ajanına bağla",
