@@ -271,26 +271,8 @@ def cmd_term_send(nr, a) -> None:
 
 
 def cmd_setup(nr, a) -> None:
-    """Erişilebilirliği aç + giriş servisini başlat (ilk seferde KDE izin sorar)."""
-    import subprocess
-    from nexremote import portal_input
-    steps = []
-    r = subprocess.run(["busctl", "--user", "set-property", "org.a11y.Bus", "/org/a11y/bus",
-                        "org.a11y.Status", "IsEnabled", "b", "true"], capture_output=True)
-    steps.append(("erişilebilirlik ağacı açıldı (yeni açılan uygulamalar için)",
-                  r.returncode == 0, r.stderr.decode().strip()))
-    ok, msg = portal_input.available()
-    if ok:
-        if not portal_input.running():
-            print("Ekranda KDE 'Uzaktan kontrol' izni açılacak: 'Allow restoring on future "
-                  "sessions' kutusunu işaretleyip Share'e basın (bir kez).", flush=True)
-        try:
-            portal_input.ensure()
-            steps.append(("fare+klavye servisi çalışıyor", True, msg))
-        except Exception as e:
-            steps.append(("fare+klavye servisi", False, str(e)))
-    else:
-        steps.append(("fare+klavye", False, msg))
+    """İlk kurulum: erişilebilirlik + giriş izinleri (platforma göre)."""
+    steps = nr.setup()
     if a.json:
         _out([{"step": s, "ok": o, "detail": d} for s, o, d in steps], True)
     else:
@@ -356,9 +338,7 @@ def cmd_cursor(nr, a) -> None:
 
 def cmd_point(nr, a) -> None:
     """Bir öğeyi (ref) bul, imleci üzerine GÖRÜNÜR şekilde götür ve tıkla."""
-    gui = nr.backends["gui"]
-    node = gui._resolve(a.ref)
-    b = gui._extents(node) if node is not None else None
+    b = nr.bounds(a.ref)
     if not b:
         _out({"ok": False, "error": "öğe konumu bulunamadı"}, a.json,
              "öğe konumu bulunamadı")

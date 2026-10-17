@@ -34,23 +34,7 @@ def _get_nexremote():
     global _nr
     if _nr is None:
         from nexremote import NexRemote
-        try:
-            _nr = NexRemote()
-        except Exception:
-            # Facade default construction can fail if a backend module is
-            # missing; fall back to whatever backends import cleanly.
-            backends: list[Any] = []
-            try:
-                from nexremote.backends.gui import GuiBackend
-                backends.append(GuiBackend())
-            except Exception:
-                pass
-            try:
-                from nexremote.backends.tui import TuiBackend
-                backends.append(TuiBackend())
-            except Exception:
-                pass
-            _nr = NexRemote(backends=backends)
+        _nr = NexRemote()
     return _nr
 
 

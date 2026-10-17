@@ -15,23 +15,11 @@ import os
 import re
 import shutil
 import subprocess
-from dataclasses import asdict, dataclass
 from typing import Optional
 
+from .platforms.base import Terminal, home_short, term_payload
+
 _KONSOLE_SVC = re.compile(r"^org\.kde\.konsole-(\d+)$")
-
-
-@dataclass
-class Terminal:
-    ref: str
-    title: str
-    program: str          # ön plandaki süreç (ör. claude, vim, bash)
-    cwd: str
-    kind: str             # konsole | tmux
-    pid: Optional[int] = None
-
-    def to_dict(self) -> dict:
-        return asdict(self)
 
 
 def _proc_name(pid: int) -> str:
@@ -39,16 +27,20 @@ def _proc_name(pid: int) -> str:
         with open(f"/proc/{pid}/comm") as f:
             return f.read().strip()
     except OSError:
+        pass
+    try:  # /proc olmayan sistemler (macOS, BSD)
+        r = subprocess.run(["ps", "-o", "comm=", "-p", str(int(pid))],
+                           capture_output=True, text=True, timeout=3)
+        return os.path.basename(r.stdout.strip())
+    except (OSError, ValueError, subprocess.SubprocessError):
         return ""
 
 
 def _proc_cwd(pid: int) -> str:
     try:
-        cwd = os.readlink(f"/proc/{pid}/cwd")
+        return home_short(os.readlink(f"/proc/{pid}/cwd"))
     except OSError:
         return ""
-    home = os.path.expanduser("~")
-    return "~" + cwd[len(home):] if cwd.startswith(home) else cwd
 
 
 # ------------------------------------------------------------------ Konsole
@@ -122,23 +114,23 @@ def _tmux(*args: str) -> Optional[str]:
     return r.stdout if r.returncode == 0 else None
 
 
-def _tmux_list() -> list[Terminal]:
+def tmux_list() -> list[Terminal]:
+    """Tüm tmux bölmeleri (kullanıcınınkiler dahil) — her POSIX sistemde."""
     raw = _tmux("list-panes", "-a", "-F",
                 "#{session_name}:#{window_index}.#{pane_index}\t#{pane_title}\t"
                 "#{pane_current_command}\t#{pane_current_path}\t#{pane_pid}")
     out = []
     for line in (raw or "").splitlines():
         target, title, cmd, path, pid = (line.split("\t") + [""] * 5)[:5]
-        home = os.path.expanduser("~")
         out.append(Terminal(ref=f"tmux:{target}", title=title, program=cmd,
-                            cwd="~" + path[len(home):] if path.startswith(home) else path,
-                            kind="tmux", pid=int(pid) if pid.isdigit() else None))
+                            cwd=home_short(path), kind="tmux",
+                            pid=int(pid) if pid.isdigit() else None))
     return out
 
 
 # -------------------------------------------------------------------- genel
 def list_terminals() -> list[Terminal]:
-    return _konsole_list() + _tmux_list()
+    return _konsole_list() + tmux_list()
 
 
 def _parse(ref: str) -> tuple[str, str]:
@@ -164,6 +156,12 @@ def read(ref: str, history: int = 0) -> str:
         kpid, _, sid = rest.partition(":")
         s = _konsole_session(_bus(), f"org.kde.konsole-{kpid}", int(sid))
         return str(s.getAllDisplayedText(True)).rstrip()
+    return tmux_read(rest, history)
+
+
+def tmux_read(target: str, history: int = 0) -> str:
+    """tmux bölmesinin ekranı (+ isteğe bağlı geçmiş). target: OTURUM:P.B"""
+    rest = target
     args = ["capture-pane", "-p", "-J", "-t", rest]
     if history > 0:
         args += ["-S", f"-{int(history)}"]
@@ -173,36 +171,18 @@ def read(ref: str, history: int = 0) -> str:
     return text.rstrip()
 
 
-# send() içinde tanınan özel tuşlar → terminale giden ham bayt
-_KEYS = {
-    "enter": "\r", "return": "\r", "tab": "\t", "esc": "\x1b", "escape": "\x1b",
-    "backspace": "\x7f", "up": "\x1b[A", "down": "\x1b[B", "right": "\x1b[C",
-    "left": "\x1b[D", "home": "\x1b[H", "end": "\x1b[F", "pgup": "\x1b[5~",
-    "pgdn": "\x1b[6~", "delete": "\x1b[3~", "space": " ",
-}
-
-
-def key_bytes(name: str) -> str:
-    low = name.strip().lower()
-    if low in _KEYS:
-        return _KEYS[low]
-    m = re.fullmatch(r"(?:c-|ctrl\+)([a-z\[\\\]^_])", low)
-    if m:
-        return chr(ord(m.group(1).upper()) & 0x1f)
-    raise ValueError(f"bilinmeyen tuş: {name}")
-
-
 def send(ref: str, text: str = "", enter: bool = False, keys: Optional[list[str]] = None) -> None:
     """Terminale metin ve/veya tuş gönder (klavyeden yazılmış gibi)."""
-    payload = text + "".join(key_bytes(k) for k in (keys or []))
-    if enter:
-        payload += "\r"
-    if not payload:
-        raise ValueError("gönderilecek metin veya tuş yok")
+    payload = term_payload(text, enter, keys)
     kind, rest = _parse(ref)
     if kind == "konsole":
         kpid, _, sid = rest.partition(":")
         _konsole_session(_bus(), f"org.kde.konsole-{kpid}", int(sid)).sendText(payload)
         return
-    if _tmux("send-keys", "-t", rest, "-l", payload) is None:
-        raise RuntimeError(f"tmux bölmesine yazılamadı: {rest}")
+    tmux_send(rest, payload)
+
+
+def tmux_send(target: str, payload: str) -> None:
+    """Ham baytları tmux bölmesine yaz (klavyeden yazılmış gibi)."""
+    if _tmux("send-keys", "-t", target, "-l", payload) is None:
+        raise RuntimeError(f"tmux bölmesine yazılamadı: {target}")

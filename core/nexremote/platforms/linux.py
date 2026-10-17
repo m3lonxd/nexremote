@@ -1,22 +1,23 @@
 """Linux masaüstü — oturuma göre en doğrudan kanalı seçer.
 
-    pencereler   KWin betiği (KDE) → AT-SPI (yalnızca erişilebilirlik yayınlayanlar)
-    giriş        RemoteDesktop portalı (Wayland, root'suz) → wtype/ydotool/xdotool
-    ekran        spectacle / grim / gnome-screenshot / scrot
+    pencereler   KWin betiği (KDE) → hyprctl (Hyprland) → swaymsg (Sway) → EWMH (X11)
+    giriş        XTEST (X11, izinsiz) → RemoteDesktop portalı (Wayland: KDE, GNOME,
+                 wlroots) → wtype/ydotool/xdotool
+    ekran        spectacle / grim / gnome-screenshot / scrot → Xlib (X11)
     terminaller  Konsole D-Bus + tmux
 
-Her kanal ayrı bir sağlayıcıdır; ortam değiştikçe (X11, GNOME, Sway, Hyprland)
-yeni sağlayıcı eklenir, facade değişmez.
+Her kanal ayrı bir sağlayıcıdır (kwin.py, wlroots.py, x11.py, portal_input.py);
+facade yalnızca bu sınıfı görür.
 """
 from __future__ import annotations
 
 import os
 import shutil
-import struct
 import subprocess
 from typing import Optional
 
 from ..models import Screenshot
+from ._png import png_size
 from .base import Cap, Desktop, Terminal, Unsupported, WinInfo
 
 
@@ -43,6 +44,58 @@ def session_kind() -> str:
 class LinuxDesktop(Desktop):
     def __init__(self) -> None:
         self.name = session_kind()
+        self._x11 = None
+        self._wm: Optional[str] = None
+        self._input: Optional[str] = None
+
+    # ------------------------------------------------------- kanal seçimi
+    def _x11_ok(self) -> bool:
+        if self.name != "x11":
+            return False  # XWayland yalnızca X uygulamalarını görür; yanıltıcı olur
+        from . import x11
+        return x11.available()[0]
+
+    def _x(self):
+        if self._x11 is None:
+            from .x11 import X11
+            self._x11 = X11()
+        return self._x11
+
+    def _wm_kind(self) -> str:
+        """Pencere listesini veren kanal: kwin | hyprland | sway | x11 | ''."""
+        if self._wm is None:
+            from .. import kwin
+            from .wlroots import Hyprland, Sway
+            if kwin.available():
+                self._wm = "kwin"
+            elif self.name == "hyprland" and Hyprland.available():
+                self._wm = "hyprland"
+            elif self.name == "sway" and Sway.available():
+                self._wm = "sway"
+            elif self._x11_ok():
+                self._wm = "x11"
+            else:
+                self._wm = ""
+        return self._wm
+
+    def _wm_provider(self):
+        from .wlroots import Hyprland, Sway
+        return {"hyprland": Hyprland, "sway": Sway}[self._wm_kind()]()
+
+    def _input_kind(self) -> str:
+        """Giriş kanalı: x11 | portal | tools | ''."""
+        if self._input is None:
+            from .. import input as inp
+            from .. import portal_input
+            if self._x11_ok():
+                self._input = "x11"
+            elif portal_input.available()[0]:
+                self._input = "portal"
+            elif any(inp.available_tools().values()):
+                self._input = "tools"
+            else:
+                self._input = ""
+        return self._input
 
     # ------------------------------------------------------------ yetenekler
     def caps(self) -> dict[str, Cap]:
@@ -54,26 +107,40 @@ class LinuxDesktop(Desktop):
         }
 
     def _windows_cap(self) -> Cap:
-        from .. import kwin
-        if kwin.available():
-            return Cap(True, "KWin: ekrandaki tüm pencereler")
-        return Cap(False, "KWin yok — yalnızca AT-SPI pencereleri")
+        kind = self._wm_kind()
+        if kind:
+            label = {"kwin": "KWin", "hyprland": "Hyprland IPC", "sway": "Sway IPC",
+                     "x11": "X11 EWMH"}[kind]
+            return Cap(True, f"{label}: ekrandaki tüm pencereler")
+        needs = {"hyprland": ["hyprctl"], "sway": ["swaymsg"], "x11": ["python-xlib"]}
+        return Cap(False, f"{self.name}: pencere listesi alınamıyor — yalnızca "
+                          "erişilebilirlik ağacı yayınlayan pencereler",
+                   needs.get(self.name, []))
 
     def _input_cap(self) -> Cap:
-        from .. import portal_input
-        ok, msg = portal_input.available()
-        if ok:
-            return Cap(True, msg)
         from .. import input as inp
-        tools = [t for t, ok_ in inp.available_tools().items() if ok_]
-        if tools:
-            return Cap(True, f"klavye: {', '.join(tools)} (fare tıklaması için portal gerekir)")
-        return Cap(False, msg, ["xdg-desktop-portal (RemoteDesktop)", "python3-dbus", "python3-gi"])
+        from .. import portal_input
+        kind = self._input_kind()
+        if kind == "x11":
+            from . import x11
+            return Cap(True, x11.available()[1])
+        if kind == "portal":
+            return Cap(True, portal_input.available()[1])
+        if kind == "tools":
+            tools = [t for t, ok_ in inp.available_tools().items() if ok_]
+            mouse = any(t in tools for t in ("ydotool", "xdotool"))
+            return Cap(True, f"klavye: {', '.join(tools)}"
+                       + ("" if mouse else " (fare için RemoteDesktop portalı ya da ydotool gerekir)"))
+        return Cap(False, portal_input.available()[1],
+                   ["xdg-desktop-portal (RemoteDesktop)", "python3-dbus", "python3-gi"]
+                   if self.name != "x11" else ["python-xlib"])
 
     def _shot_cap(self) -> Cap:
         tool = next((t for _, t in self._shot_tools("x") if shutil.which(t)), None)
         if tool:
             return Cap(True, tool)
+        if self._x11_ok():
+            return Cap(True, "xlib (kök pencere)")
         return Cap(False, "ekran görüntüsü aracı yok", ["spectacle | grim | gnome-screenshot | scrot"])
 
     def _terminals_cap(self) -> Cap:
@@ -98,82 +165,149 @@ class LinuxDesktop(Desktop):
                           r.returncode == 0, r.stderr.decode().strip()))
         except OSError as e:
             steps.append(("erişilebilirlik ağacı", False, f"busctl yok: {e}"))
-        ok, msg = portal_input.available()
-        if ok:
+        kind = self._input_kind()
+        if kind == "x11":
+            steps.append(("fare+klavye (XTEST, izin gerekmez)", True, ""))
+        elif kind == "portal":
             if not portal_input.running():
                 print("Ekranda 'Uzaktan kontrol' izni açılacak: 'Allow restoring on future "
                       "sessions' kutusunu işaretleyip Share'e basın (bir kez).", flush=True)
             try:
                 portal_input.ensure()
-                steps.append(("fare+klavye servisi çalışıyor", True, msg))
+                steps.append(("fare+klavye servisi çalışıyor", True, portal_input.available()[1]))
             except Exception as e:
                 steps.append(("fare+klavye servisi", False, str(e)))
         else:
-            steps.append(("fare+klavye", False, msg))
+            steps.append(("fare+klavye", kind == "tools", self._input_cap().detail))
         return steps
 
     # --------------------------------------------------------------- pencere
     def windows(self) -> list[WinInfo]:
-        from .. import kwin
-        if not kwin.available():
-            raise Unsupported("pencere yöneticisinden liste alınamıyor (KWin yok)")
-        return [WinInfo(id=w["id"], title=w["title"], app=w["app"], pid=w["pid"],
-                        x=w["x"], y=w["y"], w=w["w"], h=w["h"],
-                        active=bool(w["active"]), minimized=bool(w.get("minimized")))
-                for w in kwin.windows()]
+        kind = self._wm_kind()
+        if kind == "kwin":
+            from .. import kwin
+            return [WinInfo(id=w["id"], title=w["title"], app=w["app"], pid=w["pid"],
+                            x=w["x"], y=w["y"], w=w["w"], h=w["h"],
+                            active=bool(w["active"]), minimized=bool(w.get("minimized")))
+                    for w in kwin.windows()]
+        if kind == "x11":
+            return self._x().windows()
+        if kind:
+            return self._wm_provider().windows()
+        raise Unsupported(self._windows_cap().detail)
 
     def window_action(self, wid: str, action: str) -> bool:
-        from .. import kwin
-        if not kwin.available():
-            raise Unsupported("pencere eylemleri KWin ister")
-        return kwin.act(wid, action)
+        kind = self._wm_kind()
+        if kind == "kwin":
+            from .. import kwin
+            return kwin.act(wid, action)
+        if kind == "x11":
+            return self._x().act(wid, action)
+        if kind:
+            return self._wm_provider().act(wid, action)
+        raise Unsupported(self._windows_cap().detail)
 
     # ------------------------------------------------------- fare + klavye
-    @staticmethod
-    def _portal():
-        from .. import portal_input
-        ok, msg = portal_input.available()
-        if not ok:
-            raise Unsupported(f"fare için RemoteDesktop portalı gerekli: {msg}")
-        return portal_input
+    def _mouse(self) -> str:
+        kind = self._input_kind()
+        if kind in ("x11", "portal"):
+            return kind
+        from .. import input as inp
+        tools = inp.available_tools()
+        if tools.get("ydotool") or tools.get("xdotool"):
+            return "tools"
+        raise Unsupported("fare için RemoteDesktop portalı (xdg-desktop-portal), "
+                          "X11 oturumu ya da ydotool gerekli")
 
     def pointer_pos(self) -> Optional[tuple[int, int]]:
-        from .. import kwin
+        kind = self._wm_kind()
         try:
-            return kwin.cursor_pos() if kwin.available() else None
+            if kind == "kwin":
+                from .. import kwin
+                return kwin.cursor_pos()
+            if kind == "x11":
+                return self._x().pointer_pos()
+            if kind in ("hyprland", "sway"):
+                return self._wm_provider().pointer_pos()
         except Exception:
-            return None
+            return None  # konum isteğe bağlı bilgi (imleci geri koymak için)
+        return None
 
     def move(self, x: float, y: float) -> None:
-        self._portal().call(f"MOVE {x:.1f} {y:.1f}")
+        m = self._mouse()
+        if m == "x11":
+            self._x().move(x, y)
+        elif m == "portal":
+            from .. import portal_input
+            portal_input.call(f"MOVE {x:.1f} {y:.1f}")
+        else:
+            from .. import input as inp
+            if not inp.move_mouse(int(x), int(y)):
+                raise RuntimeError("fare taşınamadı (ydotool/xdotool hata verdi)")
 
     def button(self, button: str, pressed: bool) -> None:
-        self._portal().call(f"{'DOWN' if pressed else 'UP'} {button}")
+        m = self._mouse()
+        if m == "x11":
+            self._x().button(button, pressed)
+        elif m == "portal":
+            from .. import portal_input
+            portal_input.call(f"{'DOWN' if pressed else 'UP'} {button}")
+        else:
+            raise Unsupported("ydotool/xdotool ile ayrı bas/bırak desteklenmiyor — "
+                              "sürükleme için RemoteDesktop portalı gerekli")
 
     def click(self, x: float, y: float, button: str = "left", count: int = 1) -> None:
-        # daemon tek çağrıda taşır+tıklar: olaylar arası zamanlama orada ayarlı
-        self._portal().call(f"CLICK {int(x)} {int(y)} {button} {int(count)}")
+        m = self._mouse()
+        if m == "portal":
+            # daemon tek çağrıda taşır+tıklar: olaylar arası zamanlama orada ayarlı
+            from .. import portal_input
+            portal_input.call(f"CLICK {int(x)} {int(y)} {button} {int(count)}")
+        elif m == "x11":
+            super().click(x, y, button, count)
+        else:
+            from .. import input as inp
+            btn = {"left": 1, "middle": 2, "right": 3}[button]
+            for _ in range(max(1, min(int(count), 3))):
+                if not inp.click_at(int(x), int(y), btn):
+                    raise RuntimeError("tıklanamadı (ydotool/xdotool hata verdi)")
 
     def scroll(self, dy: int, dx: int = 0) -> None:
-        self._portal().call(f"SCROLL {int(dy)} {int(dx)}")
+        m = self._mouse()
+        if m == "x11":
+            self._x().scroll(dy, dx)
+        elif m == "portal":
+            from .. import portal_input
+            portal_input.call(f"SCROLL {int(dy)} {int(dx)}")
+        else:
+            raise Unsupported("kaydırma için RemoteDesktop portalı ya da X11 oturumu gerekli")
 
     def key(self, combo: str) -> None:
-        from .. import portal_input
-        if portal_input.available()[0]:
+        kind = self._input_kind()
+        if kind == "x11":
+            self._x().key(combo)
+        elif kind == "portal":
+            from .. import portal_input
             portal_input.call("KEY " + combo)
-            return
-        from .. import input as inp
-        if not inp.key(combo):
-            raise Unsupported("klavye için RemoteDesktop portalı ya da wtype/ydotool/xdotool gerekli")
+        else:
+            from .. import input as inp
+            if not inp.key(combo):
+                raise Unsupported("klavye için RemoteDesktop portalı ya da wtype/ydotool/xdotool gerekli")
 
     def type_text(self, text: str) -> None:
-        from .. import portal_input
-        if portal_input.available()[0]:
+        kind = self._input_kind()
+        if kind == "x11":
+            self._x().type_text(text)
+        elif kind == "portal":
+            from .. import portal_input
             portal_input.type_text(text, paste_combo=self.paste_combo())
-            return
-        from .. import input as inp
-        if not inp.type_text(text):
-            raise Unsupported("yazmak için RemoteDesktop portalı ya da wtype/ydotool/xdotool gerekli")
+        else:
+            from .. import input as inp
+            if not inp.type_text(text):
+                raise Unsupported("yazmak için RemoteDesktop portalı ya da wtype/ydotool/xdotool gerekli")
+
+    def close(self) -> None:
+        if self._x11 is not None:
+            self._x11.close()
 
     _TERMINAL_APPS = ("konsole", "kitty", "alacritty", "foot", "wezterm", "terminal",
                       "xterm", "ghostty", "yakuake", "tilix", "terminator")
@@ -209,12 +343,14 @@ class LinuxDesktop(Desktop):
                 subprocess.run(cmd, timeout=15, stdout=subprocess.DEVNULL,
                                stderr=subprocess.PIPE, check=True)
                 if os.path.exists(path) and os.path.getsize(path) > 0:
-                    w, h = _png_size(path)
+                    w, h = png_size(path)
                     return Screenshot(path=path, width=w, height=h, backend=tool,
                                       display=os.environ.get("WAYLAND_DISPLAY")
                                       or os.environ.get("DISPLAY"))
             except (OSError, subprocess.SubprocessError) as e:
                 errors.append(f"{tool}: {e}")
+        if self._x11_ok():
+            return self._x().screenshot(path)
         raise Unsupported("ekran görüntüsü alınamadı"
                           + (f" ({'; '.join(errors)})" if errors
                              else " — spectacle, grim, gnome-screenshot ya da scrot gerekli"))
@@ -236,14 +372,3 @@ class LinuxDesktop(Desktop):
     def terminal_history_supported(self, ref: str) -> bool:
         from .. import terminals
         return terminals.history_supported(ref)
-
-
-def _png_size(path: str) -> tuple[int, int]:
-    try:
-        with open(path, "rb") as f:
-            head = f.read(24)
-        if head[:8] == b"\x89PNG\r\n\x1a\n":
-            return struct.unpack(">II", head[16:24])
-    except OSError:
-        pass
-    return (0, 0)

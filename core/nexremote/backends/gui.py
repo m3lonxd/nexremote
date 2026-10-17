@@ -290,6 +290,10 @@ class GuiBackend(Backend):
                     pass
         return False
 
+    def bounds(self, ref: str) -> Optional[tuple[int, int, int, int]]:
+        node = self._resolve(ref)
+        return self._extents(node) if node is not None else None
+
     def key(self, combo: str) -> bool:
         return inp.key(combo)
 

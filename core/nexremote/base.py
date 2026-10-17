@@ -49,6 +49,10 @@ class Backend(ABC):
     def focus(self, ref: str) -> bool:
         raise NotImplementedError
 
+    def bounds(self, ref: str) -> Optional[tuple[int, int, int, int]]:
+        """Öğenin ekran dikdörtgeni (x, y, w, h) — platformun ekran koordinatında."""
+        raise NotImplementedError
+
     # --- TUI yöntemleri ---
     def run(self, command: str, session: str = "default",
             timeout: float = 30.0) -> CommandResult:

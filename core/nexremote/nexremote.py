@@ -2,21 +2,22 @@
 
 Tüm backend'leri toplar, tek bir birleşik API sunar. Adaptörler (MCP/CLI/HTTP)
 bu sınıfı sarar. Hiçbir adaptör backend detayını bilmez.
+
+İşletim sistemine bağlı her şey (pencereler, fare/klavye, ekran görüntüsü,
+masaüstündeki terminaller) `platforms.Desktop` üzerinden gider; erişilebilirlik
+ağacı (öğe bul/tıkla) platformun verdiği GUI backend'idir (AT-SPI / UIA).
 """
 from __future__ import annotations
 
 import json
 import os
+import sys
 from typing import Any, Optional
 
 from .base import Backend
-from .models import Capability, CommandResult, Element, Screenshot, Window
-
-
-def _runtime_dir() -> str:
-    d = os.environ.get("XDG_RUNTIME_DIR") or f"/tmp/nexremote-{os.getuid()}"
-    os.makedirs(d, exist_ok=True)
-    return d
+from .models import CommandResult, Element, Screenshot, Window
+from .platforms import Desktop, Unsupported, detect
+from .platforms.base import runtime_dir as _runtime_dir
 
 
 def _save_shot_meta(shot: Screenshot) -> None:
@@ -25,23 +26,29 @@ def _save_shot_meta(shot: Screenshot) -> None:
 
 
 class NexRemote:
-    def __init__(self, backends: Optional[list[Backend]] = None):
+    def __init__(self, backends: Optional[list[Backend]] = None,
+                 desktop: Optional[Desktop] = None):
+        self.desktop: Desktop = desktop if desktop is not None else detect()
         if backends is None:
-            backends = self._default_backends()
+            backends = self._default_backends(self.desktop)
         self.backends: dict[str, Backend] = {b.name: b for b in backends}
 
     @staticmethod
-    def _default_backends() -> list[Backend]:
+    def _default_backends(desktop: Desktop) -> list[Backend]:
         """Var olan tüm backends'leri yükle. Bir backend eksik/bozuksa
         diğerlerini engellemesin — kısmi ortamlarda da çalışmalı."""
-        import importlib
         out: list[Backend] = []
-        for mod_name, cls_name in (("gui", "GuiBackend"), ("tui", "TuiBackend")):
-            try:
-                mod = importlib.import_module(f".backends.{mod_name}", __package__)
-                out.append(getattr(mod, cls_name)())
-            except Exception:
-                pass
+        try:
+            gui = desktop.gui_backend()
+            if gui is not None:
+                out.append(gui)
+        except Exception:
+            pass
+        try:
+            from .backends.tui import TuiBackend
+            out.append(TuiBackend())
+        except Exception:
+            pass
         return out
 
     def backend(self, name: str) -> Backend:
@@ -50,7 +57,12 @@ class NexRemote:
         return self.backends[name]
 
     def _gui(self) -> Backend:
-        return self.backend("gui")
+        if "gui" not in self.backends:
+            raise Unsupported(
+                f"erişilebilirlik ağacı bu sistemde yok ({self.desktop.name}) — "
+                "`nexremote caps` eksikleri gösterir; ekran görüntüsü + koordinat "
+                "tıklaması her zaman kullanılabilir")
+        return self.backends["gui"]
 
     def _tui(self) -> Backend:
         return self.backend("tui")
@@ -59,14 +71,18 @@ class NexRemote:
     def capabilities(self) -> dict[str, Any]:
         """Ne yapabildiğimi anlat — metin-tabanlı modeller bunu okur."""
         caps = {name: b.capability() for name, b in self.backends.items()}
+        try:
+            dcaps = {k: c.to_dict() for k, c in self.desktop.caps().items()}
+        except Exception as e:
+            dcaps = {k: {"available": False, "detail": f"yoklanamadı: {e}"}
+                     for k in ("windows", "input", "screenshot", "terminals")}
         return {
+            "platform": self.desktop.name,
             "backends": {
                 n: {"available": c.available, "detail": c.detail, "needs": c.needs}
                 for n, c in caps.items()
             },
-            "input": self._input_cap(),
-            "windows": self._windows_cap(),
-            "terminals": self._terminals_cap(),
+            **dcaps,
             "pointer": self._pointer_cap(),
             "actions": [
                 "windows", "window_action", "tree", "find", "click", "click_at",
@@ -76,27 +92,9 @@ class NexRemote:
             ],
         }
 
-    @staticmethod
-    def _input_cap() -> dict[str, Any]:
-        from . import portal_input
-        ok, msg = portal_input.available()
-        return {"available": ok, "detail": msg}
-
-    @staticmethod
-    def _windows_cap() -> dict[str, Any]:
-        from . import kwin
-        if kwin.available():
-            return {"available": True, "detail": "KWin: ekrandaki tüm pencereler"}
-        return {"available": False, "detail": "KWin yok — yalnızca AT-SPI pencereleri"}
-
-    @staticmethod
-    def _terminals_cap() -> dict[str, Any]:
-        from . import terminals
-        try:
-            n = len(terminals.list_terminals())
-        except Exception as e:
-            return {"available": False, "detail": str(e)}
-        return {"available": True, "detail": f"{n} açık terminal (Konsole D-Bus + tmux)"}
+    def setup(self) -> list[tuple[str, bool, str]]:
+        """İlk kurulum (izinler, erişilebilirlik) — platforma özgü."""
+        return self.desktop.setup()
 
     def _pointer_cap(self) -> dict[str, Any]:
         try:
@@ -107,25 +105,25 @@ class NexRemote:
 
     # ---------------------------------------------------------------- GUI
     def windows(self) -> list[Window]:
-        """Ekrandaki pencereler. KWin her pencereyi bilir; AT-SPI yalnızca
-        erişilebilirlik yayınlayanları — KWin yoksa ona düşülür."""
-        from . import kwin
-        if kwin.available():
-            try:
-                return [Window(ref=f"win:{w['id']}", title=w["title"], app=w["app"],
-                               pid=w["pid"], focused=w["active"],
-                               bounds=(w["x"], w["y"], w["w"], w["h"]))
-                        for w in kwin.windows()]
-            except Exception:
-                pass
-        return self._gui().windows()
+        """Ekrandaki pencereler. Pencere yöneticisi her pencereyi bilir;
+        erişilebilirlik ağacı yalnızca yayınlayanları — ona yalnızca
+        pencere yöneticisine erişilemezse düşülür."""
+        try:
+            return [Window(ref=f"win:{w.id}", title=w.title, app=w.app, pid=w.pid,
+                           focused=w.active, bounds=(w.x, w.y, w.w, w.h))
+                    for w in self.desktop.windows()]
+        except Unsupported:
+            if "gui" not in self.backends:
+                raise
+            return self._gui().windows()
 
     def window_action(self, ref: str, action: str) -> bool:
         """activate | close | minimize — ref: windows() çıktısındaki win:{...}"""
-        from . import kwin
         if not ref.startswith("win:"):
-            raise ValueError("pencere eylemi KWin ref'i ister (win:{...}); `windows` ile alın")
-        return kwin.act(ref[4:], action)
+            raise ValueError("pencere eylemi win:... ref'i ister; `windows` ile alın")
+        if action not in ("activate", "close", "minimize"):
+            raise ValueError(f"bilinmeyen pencere eylemi: {action}")
+        return self.desktop.window_action(ref[4:], action)
 
     def tree(self, window_ref: Optional[str] = None) -> str:
         """Pencere ağacını LLM dostu metin olarak döndür."""
@@ -152,62 +150,54 @@ class NexRemote:
         return self._gui().find(query, self._atspi_ref(window_ref) if window_ref else None)
 
     def click(self, ref: str) -> bool:
-        return self._gui().click(ref)
+        """Öğeye isimle tıkla. Öğe eylem sunmuyorsa ortasına gerçek tık."""
+        gui = self._gui()
+        if gui.click(ref):
+            return True
+        b = gui.bounds(ref)
+        if not b or b[2] <= 0 or b[3] <= 0:
+            return False
+        self.desktop.click(b[0] + b[2] // 2, b[1] + b[3] // 2)
+        return True
 
     def bounds(self, ref: str) -> Optional[tuple[int, int, int, int]]:
-        """Öğenin ekran dikdörtgeni (x, y, w, h) — AT-SPI ref."""
-        gui = self._gui()
-        node = gui._resolve(ref)
-        return gui._extents(node) if node is not None else None
+        """Öğenin ekran dikdörtgeni (x, y, w, h)."""
+        return self._gui().bounds(ref)
 
     def set_text(self, ref: str, text: str) -> bool:
         return self._gui().set_text(ref, text)
 
     def key(self, combo: str) -> bool:
-        from . import portal_input
-        if portal_input.available()[0]:
-            portal_input.call("KEY " + combo)
-            return True
-        return self._gui().key(combo)
+        self.desktop.key(combo)
+        return True
 
     def type_text(self, text: str) -> bool:
-        from . import portal_input
-        if portal_input.available()[0]:
-            portal_input.type_text(text, paste_combo=self._paste_combo())
-            return True
-        return self._gui().type_text(text)
+        self.desktop.type_text(text)
+        return True
 
-    @staticmethod
-    def _paste_combo() -> str:
-        """Terminaller ctrl+v'yi yapıştırma olarak değil ^V olarak alır."""
-        from . import kwin
-        terminals = ("konsole", "kitty", "alacritty", "foot", "wezterm", "terminal",
-                     "xterm", "ghostty", "yakuake", "tilix", "terminator")
-        try:
-            w = kwin.active() if kwin.available() else None
-        except Exception:
-            w = None
-        app = (w or {}).get("app", "").lower()
-        return "ctrl+shift+v" if any(t in app for t in terminals) else "ctrl+v"
-
-    # ------------------------------------------------ fare (gerçek, portal)
+    # --------------------------------------------------------- gerçek fare
     def click_at(self, x: float, y: float, button: str = "left", count: int = 1,
                  restore_pointer: bool = True, show_cursor: bool = True,
                  from_shot: bool = False) -> bool:
-        """Ekran koordinatına gerçek tıklama. Wayland'de tek imleç vardır;
+        """Ekran koordinatına gerçek tıklama. Sistemde tek imleç vardır;
         kullanıcının imleci tıklamadan sonra eski yerine geri konur.
 
         from_shot=True: (x, y) son ekran görüntüsü üzerindeki pikseldir.
         """
-        from . import portal_input
+        self._check_button(button)
         x, y = self.screen_point(x, y, from_shot)
         back = self._user_pointer() if restore_pointer else None
         if show_cursor:
             self._agent_cursor(x, y)
-        portal_input.call(f"CLICK {int(x)} {int(y)} {button} {int(count)}")
+        self.desktop.click(x, y, button, int(count))
         if back is not None:
-            portal_input.call(f"MOVE {back[0]} {back[1]}")
+            self.desktop.move(*back)
         return True
+
+    @staticmethod
+    def _check_button(button: str) -> None:
+        if button not in ("left", "right", "middle"):
+            raise ValueError(f"bilinmeyen fare düğmesi: {button}")
 
     def screen_point(self, x: float, y: float, from_shot: bool) -> tuple[int, int]:
         if not from_shot:
@@ -218,46 +208,42 @@ class NexRemote:
         return shot.to_screen(x, y)
 
     def move(self, x: int, y: int) -> bool:
-        from . import portal_input
-        portal_input.call(f"MOVE {int(x)} {int(y)}")
+        self.desktop.move(int(x), int(y))
         return True
 
     def scroll(self, dy: int, dx: int = 0, at: Optional[tuple[int, int]] = None,
                restore_pointer: bool = True) -> bool:
-        from . import portal_input
         back = self._user_pointer() if (at and restore_pointer) else None
         if at:
-            portal_input.call(f"MOVE {int(at[0])} {int(at[1])}")
-        portal_input.call(f"SCROLL {int(dy)} {int(dx)}")
+            self.desktop.move(int(at[0]), int(at[1]))
+        self.desktop.scroll(int(dy), int(dx))
         if back is not None:
-            portal_input.call(f"MOVE {back[0]} {back[1]}")
+            self.desktop.move(*back)
         return True
 
     def drag(self, x1: int, y1: int, x2: int, y2: int, button: str = "left",
              steps: int = 12) -> bool:
         import time
-        from . import portal_input
+        self._check_button(button)
+        steps = max(1, int(steps))
         back = self._user_pointer()
-        portal_input.call(f"MOVE {int(x1)} {int(y1)}")
-        portal_input.call(f"DOWN {button}")
+        self.desktop.move(int(x1), int(y1))
+        self.desktop.button(button, True)
         try:
             for i in range(1, steps + 1):
-                portal_input.call(f"MOVE {x1 + (x2 - x1) * i / steps:.1f} "
-                                  f"{y1 + (y2 - y1) * i / steps:.1f}")
+                self.desktop.move(x1 + (x2 - x1) * i / steps, y1 + (y2 - y1) * i / steps)
                 time.sleep(0.01)
         finally:
-            portal_input.call(f"UP {button}")
+            self.desktop.button(button, False)
         if back is not None:
-            portal_input.call(f"MOVE {back[0]} {back[1]}")
+            self.desktop.move(*back)
         return True
 
-    @staticmethod
-    def _user_pointer() -> Optional[tuple[int, int]]:
-        from . import kwin
+    def _user_pointer(self) -> Optional[tuple[int, int]]:
         try:
-            return kwin.cursor_pos() if kwin.available() else None
+            return self.desktop.pointer_pos()
         except Exception:
-            return None
+            return None  # imleci geri koymak isteğe bağlı; konum bilinmiyorsa atla
 
     def _agent_cursor(self, x: int, y: int) -> None:
         """Görsel geri bildirim: ajan imleci hedefe gider (varsa; hata yutulur
@@ -277,17 +263,17 @@ class NexRemote:
 
     # -------------------------------------------- masaüstündeki terminaller
     def terminals(self) -> list[dict]:
-        from . import terminals
-        return [t.to_dict() for t in terminals.list_terminals()]
+        return [t.to_dict() for t in self.desktop.terminals()]
 
     def terminal_read(self, ref: str, history: int = 0) -> str:
-        from . import terminals
-        return terminals.read(ref, history)
+        return self.desktop.terminal_read(ref, history)
+
+    def terminal_history_supported(self, ref: str) -> bool:
+        return self.desktop.terminal_history_supported(ref)
 
     def terminal_send(self, ref: str, text: str = "", enter: bool = False,
                       keys: Optional[list[str]] = None) -> bool:
-        from . import terminals
-        terminals.send(ref, text, enter=enter, keys=keys)
+        self.desktop.terminal_send(ref, text, enter=enter, keys=keys)
         return True
 
     def screenshot(self, path: Optional[str] = None, window_ref: Optional[str] = None,
@@ -298,28 +284,35 @@ class NexRemote:
         üzerindeki koordinatı ekran koordinatına kendisi çevirir.
         """
         path = os.path.abspath(path or os.path.join(_runtime_dir(), "nexremote-shot.png"))
-        shot = self._gui().screenshot(path)
-        if not shot.backend:
-            raise RuntimeError("ekran görüntüsü alınamadı (spectacle/grim yok veya reddedildi)")
+        shot = self.desktop.screenshot(path)
         crop = None
         if window_ref:
             w = next((w for w in self.windows() if w.ref == window_ref), None)
             if w is None or not w.bounds:
                 raise ValueError(f"pencere bulunamadı: {window_ref}")
+            # ekran koordinatı → görüntü pikseli (orijin ve ölçek platformdan gelir)
             x, y, ww, hh = w.bounds
-            crop = (max(0, x), max(0, y), min(shot.width, x + ww), min(shot.height, y + hh))
+            ox, oy, sc = shot.origin[0], shot.origin[1], shot.scale
+            crop = (max(0, round((x - ox) * sc)), max(0, round((y - oy) * sc)),
+                    min(shot.width, round((x + ww - ox) * sc)),
+                    min(shot.height, round((y + hh - oy) * sc)))
+            if crop[2] <= crop[0] or crop[3] <= crop[1]:
+                raise ValueError(f"pencere ekranın dışında: {window_ref}")
         if crop or (max_width and shot.width > max_width):
             try:
                 from PIL import Image
             except ImportError as e:
-                raise RuntimeError("kırpma/küçültme için python3-pil gerekli") from e
+                raise RuntimeError("kırpma/küçültme için Pillow gerekli "
+                                   "(pip install pillow)") from e
             img = Image.open(path)
             if crop:
                 img = img.crop(crop)
-                shot.origin = (crop[0], crop[1])
+                shot.origin = (round(shot.origin[0] + crop[0] / shot.scale),
+                               round(shot.origin[1] + crop[1] / shot.scale))
             if max_width and img.width > max_width:
-                shot.scale = max_width / img.width
-                img = img.resize((max_width, round(img.height * shot.scale)), Image.LANCZOS)
+                factor = max_width / img.width
+                shot.scale *= factor
+                img = img.resize((max_width, round(img.height * factor)), Image.LANCZOS)
             img.save(path)
             shot.width, shot.height = img.size
         _save_shot_meta(shot)
@@ -378,6 +371,9 @@ class NexRemote:
 
     def pointer_available(self) -> tuple[bool, str]:
         """Ajan imleci kullanılabilir mi? (X11/XWayland + python-xlib)"""
+        if not sys.platform.startswith("linux"):
+            return (False, f"ajan imleci şimdilik yalnızca Linux'ta (X11/XWayland); "
+                           f"{self.desktop.name} üzerinde tıklamalar imleçsiz yapılır")
         try:
             import Xlib  # noqa
             from Xlib.ext import shape  # noqa
