@@ -12,6 +12,7 @@ requires-python = ">=3.9"
 classifiers = [
     "Operating System :: POSIX :: Linux",
     "Operating System :: Microsoft :: Windows",
+    "Operating System :: MacOS",
     "Programming Language :: Python :: 3",
 ]
 dependencies = [
