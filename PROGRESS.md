@@ -1,6 +1,30 @@
 # NexRemote — Geliştirme Raporu
 
-**Tarih:** 2026-10-13
+## v0.3.0 — çok platform (2026-10-17)
+
+Facade artık işletim sisteminden bağımsız; her şey `platforms.Desktop`
+sözleşmesinden geçer (`core/nexremote/platforms/base.py`).
+
+| Platform | Katman | Doğrulama |
+|---|---|---|
+| KDE Plasma 6 Wayland | KWin + RemoteDesktop portalı + Konsole | gerçek masaüstü (salt okuma) + izole sandbox: giriş 13/13, CLI 21/21 |
+| X11 | XTEST, EWMH, Xlib ekran | Xvfb sandbox 22/22 |
+| Sway / Hyprland | swaymsg / hyprctl IPC | sahte IPC 15/15 |
+| Windows | Win32 EnumWindows, SendInput, GDI, UI Automation, AttachConsole | Wine 10 + gerçek Windows Python: 22/22 (Notepad + cmd.exe) |
+| macOS (önizleme) | Quartz CGEvent, CGWindowList, AX, screencapture, Terminal/iTerm2 | sahte Quartz ile 94/94 — gerçek Mac'te çalıştırılmadı |
+
+- `pyproject.toml`: `pip install .[all]` ile dört giriş komutu (Windows/macOS kurulum yolu).
+- Windows TUI: pipe modu (cmd.exe); CLI ajan döngüsü kabuk kullanmadan çalışır.
+- Testler: `tests/run_all.sh` (Linux + macOS mantık), `tests/wine/run.sh tests/test_windows_wine.py`.
+
+**Doğrulanmayanlar:** gerçek Windows 10/11 donanımı; Wine'da UIA ağaç gezintisi
+olmadığından Windows'ta isimle tıklama; macOS'un tamamı gerçek donanımda;
+GNOME. Ajan imleci yalnızca Linux'ta.
+
+---
+
+## v0.1 — ilk sürüm (2026-10-13)
+
 **Hedef:** Her harness'a, her modele kurulup çalışabilen; GUI + terminal (TUI)
 ortamlarını görebilen ve kontrol edebilen, proxy'lenmiş CLI'lar dahil her
 ortamda çalışan AI ajanı köprüsü.

@@ -1,7 +1,8 @@
 # NexRemote
 
-Bir AI ajanına bu Linux masaüstünü ve üzerinde açık terminalleri **görme ve
-kullanma** yetkisi verir. Ajan kabuk komutu çalıştırabiliyorsa yeter: Claude
+Bir AI ajanına masaüstünü ve üzerinde açık terminalleri **görme ve
+kullanma** yetkisi verir — Linux (KDE, GNOME, X11, Sway, Hyprland), Windows ve
+macOS'ta aynı komutlarla. Ajan kabuk komutu çalıştırabiliyorsa yeter: Claude
 Code, Codex, Aider, opencode, kendi betiğin ya da tool-calling'i olmayan bir
 yerel model.
 
@@ -24,27 +25,50 @@ $ nexremote type "Merhaba dünya — ğüşıöç"
 
 ## Ne yapabilir
 
-| | Nasıl |
-|---|---|
-| **Ekrandaki her pencere** — başlık, uygulama, konum; öne getir, küçült, kapat | KWin scripting |
-| **Gerçek fare** — tık, sağ/çift tık, kaydırma, sürükleme; kullanıcının imleci tıklamadan sonra yerine döner | RemoteDesktop portalı |
-| **Gerçek klavye** — kısayollar, her dilde metin | portal + pano (Latin-1 dışı karakterler) |
-| **Butona adıyla basma** — fare hiç oynamaz | AT-SPI erişilebilirlik ağacı |
-| **Açık terminaller** — başka bir CLI ajanının, ssh'ın, build'in ekranını oku; ona yaz | Konsole D-Bus, tmux |
-| **Kendi terminali** — komut çalıştır, çıktıyı al, oturum çağrılar arasında yaşar | tmux / PTY |
-| **Ekran görüntüsü** — pencereye kırp, küçült; görüntü koordinatıyla tıkla | spectacle / grim |
+| | Linux | Windows | macOS |
+|---|---|---|---|
+| **Ekrandaki her pencere** — başlık, uygulama, konum; öne getir, küçült, kapat | KWin · hyprctl · swaymsg · EWMH | EnumWindows | CGWindowList + AX |
+| **Gerçek fare** — tık, sağ/çift tık, kaydırma, sürükleme; imleç yerine döner | XTEST · RemoteDesktop portalı | SendInput | CGEvent |
+| **Gerçek klavye** — kısayollar, her dilde metin | XTEST · portal + pano | SendInput (Unicode) | CGEvent (Unicode) |
+| **Butona adıyla basma** — fare hiç oynamaz | AT-SPI | UI Automation | Accessibility (AX) |
+| **Açık terminaller** — başka bir ajanın, ssh'ın, build'in ekranını oku; ona yaz | Konsole D-Bus, tmux | konsol tamponu (AttachConsole) | Terminal.app, iTerm2, tmux |
+| **Kendi terminali** — komut çalıştır, çıktıyı al | tmux / PTY | cmd.exe | tmux / PTY |
+| **Ekran görüntüsü** — pencereye kırp, küçült; görüntü koordinatıyla tıkla | spectacle · grim · Xlib | GDI | screencapture |
 
-Root gerekmez. Fare ve klavye için KDE **bir kez** izin sorar; sonraki
-oturumlar sormadan başlar.
+Root / yönetici gerekmez. Wayland'de fare ve klavye için masaüstü **bir kez**
+izin sorar; macOS'ta Erişilebilirlik ve Ekran Kaydı izni bir kez verilir.
+Windows ve X11 ayrıca izin istemez.
 
 ## Kurulum
 
+**Linux**
+
 ```bash
-git clone … nexremote && cd nexremote
+cd nexremote
 ./install.sh          # ~/bin altına komutları koyar, eksik paketleri listeler
-nexremote setup       # erişilebilirliği açar; KDE izin penceresinde
+nexremote setup       # erişilebilirliği açar; Wayland izin penceresinde
                       # "Allow restoring…" işaretle → Share
 nexremote caps        # neyin çalıştığını gösterir
+```
+
+`pip` ile kurmak isterseniz sistem paketlerini (python3-dbus, python3-gi)
+görebilmesi için: `pipx install --system-site-packages .`
+
+**Windows** (Python 3.9+)
+
+```powershell
+cd nexremote
+py -m pip install .[all]   # comtypes (UI Automation) otomatik gelir
+nexremote caps
+```
+
+**macOS** (Python 3.9+)
+
+```bash
+cd nexremote
+python3 -m pip install '.[all]'
+nexremote setup       # Erişilebilirlik + Ekran Kaydı izin istemlerini açar
+nexremote caps
 ```
 
 ## Ajanına bağla
@@ -63,10 +87,17 @@ Komutların tamamı: `nexremote --help`. Ajan talimatı: [`adapters/skill/nexrem
 ```
 core/nexremote/
   nexremote.py      tek giriş noktası (facade); adaptörler yalnızca bunu bilir
+  platforms/        işletim sistemi katmanı (Desktop sözleşmesi, base.py)
+    linux.py          KWin / Hyprland / Sway / X11 seçimi
+    x11.py wlroots.py X11 (XTEST, EWMH) · Sway, Hyprland IPC
+    windows.py        Win32 + SendInput + GDI; _wincon.py konsol yardımcısı
+    macos.py          Quartz CGEvent + CGWindowList + Terminal/iTerm2
   kwin.py           pencereler + imleç konumu (KWin betiği → callDBus ile yanıt)
   portal_input.py   fare/klavye daemon'ı (RemoteDesktop + ScreenCast oturumu)
   terminals.py      masaüstündeki Konsole sekmeleri ve tmux bölmeleri
-  backends/gui.py   AT-SPI ağacı, isimle bulma/tıklama
+  backends/gui.py   AT-SPI ağacı (Linux), isimle bulma/tıklama
+  backends/uia.py   UI Automation ağacı (Windows)
+  backends/ax.py    Accessibility ağacı (macOS)
   backends/tui.py   NexRemote'un kendi tmux/PTY oturumları
   xcursor.py        görünür ajan imleci (click-through, kullanıcıyı engellemez)
 adapters/  cli · mcp · http · skill
@@ -83,12 +114,26 @@ masaüstünde koşar: ayrı D-Bus, sanal KWin, ayrı portal ve PipeWire. Gerçek
 ekrana, fareye ve izinlere dokunmaz. İzin diyaloğunu da NexRemote'un kendi
 erişilebilirlik okuması onaylar.
 
+- X11: başsız `Xvfb` içinde (`tests/x11_sandbox.sh`).
+- Sway / Hyprland: sahte `swaymsg` / `hyprctl` IPC ile.
+- Windows: Wine içinde gerçek Windows Python'u, ayrı prefix ve başsız ekranla
+  (`tests/wine/setup.sh` bir kez, sonra `tests/wine/run.sh tests/test_windows_wine.py`):
+  gerçek Notepad penceresi ve cmd.exe konsolu açılır.
+- macOS: Quartz/AX çağrıları sahte kütüphaneyle sınanır (`tests/test_macos_logic.py`).
+
 ## Sınırlar
 
-- Hedef KDE Plasma 6 Wayland. GNOME'da portal yolu çalışmalı ama pencere
-  listesi (KWin) yalnızca AT-SPI'ye düşer. wlroots tabanlı ortamlar test edilmedi.
+- Linux: KDE Plasma 6 Wayland gerçek masaüstünde, X11 Xvfb içinde, Sway/Hyprland sahte IPC
+  ile test edildi. GNOME'da pencere listesi yalnızca AT-SPI'ye düşer.
+- Windows: Wine 10 üzerinde test edildi; gerçek Windows 10/11'de doğrulanmadı.
+  Wine'ın UI Automation'ı denetim ağacını gezemediği için isimle tıklama
+  Wine'da sınanamadı. Yönetici olarak çalışan pencerelere yalnızca yönetici
+  olarak çalışan NexRemote ulaşır (UIPI).
+- macOS: kod yazıldı ve mantığı sahte Quartz ile test edildi, **gerçek bir
+  Mac'te henüz doğrulanmadı** — önizleme sürümü.
 - Konsole D-Bus yalnızca görünen ekranı verir; geçmiş satırlar için tmux gerekir.
 - Tarayıcılar ve Electron uygulamaları çoğunlukla ağaç yayınlamaz; bunlarda
   ekran görüntüsü + koordinat tıklaması kullanılır.
+- Görünür ajan imleci şimdilik yalnızca Linux'ta.
 
 MIT

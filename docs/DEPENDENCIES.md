@@ -1,7 +1,11 @@
 # Bağımlılıklar
 
-Hedef ortam: Linux + KDE Plasma 6 (Wayland). Ölçüldüğü sistem: Debian 13,
-KWin 6.3.6, xdg-desktop-portal-kde 6.3.5 (2026-10-16).
+## Linux
+
+Birincil ortam: KDE Plasma 6 (Wayland). Ölçüldüğü sistem: Debian 13,
+KWin 6.3.6, xdg-desktop-portal-kde 6.3.5 (2026-10-16). X11 oturumunda
+`python3-xlib` ile XTEST + EWMH kullanılır (izin istemez); Sway ve Hyprland'de
+pencereler `swaymsg` / `hyprctl` ile, giriş portal ya da wtype ile.
 
 | Yetenek | Ne kullanılır | Paket (Debian / Arch) | Yoksa |
 |---|---|---|---|
@@ -36,3 +40,28 @@ ayarı açar; o andan sonra başlatılan uygulamalar ağaç yayınlar. Firefox
 tabanlı tarayıcılar ve Electron uygulamaları ağaç yerine ekran görüntüsü ve
 koordinat tıklamasıyla kullanılır. Electron için diğer yol, uygulamayı
 `--force-renderer-accessibility` ile başlatmaktır.
+
+## Windows
+
+| Yetenek | Ne kullanılır | Kurulum | Yoksa |
+|---|---|---|---|
+| Pencereler, fare, klavye, ekran görüntüsü | Win32 (ctypes, stdlib) | — | — |
+| Öğe ağacı, isimle tıklama | UI Automation | `comtypes` (pip ile otomatik) | `tree`/`find`/`click REF` çalışmaz |
+| Açık konsollar | AttachConsole yardımcı süreci | python.exe (paketlenmiş exe'de yok) | `terms` çalışmaz |
+| Kırpma / küçültme, MCP | Pillow, mcp | `pip install .[all]` | Yalnızca tam boy görüntü / CLI-HTTP |
+
+Yönetici olarak çalışan pencerelere UIPI nedeniyle yalnızca yönetici olarak
+başlatılmış NexRemote giriş gönderebilir.
+
+## macOS (önizleme)
+
+| Yetenek | Ne kullanılır | İzin | Yoksa |
+|---|---|---|---|
+| Fare, klavye | Quartz CGEvent (ctypes) | Erişilebilirlik | `click`/`key`/`type` çalışmaz |
+| Pencereler | CGWindowList + AX | Ekran Kaydı (başlıklar için), Erişilebilirlik (eylemler) | Başlıklar boş gelir |
+| Öğe ağacı | Accessibility (AXUIElement) | Erişilebilirlik | `tree`/`find` çalışmaz |
+| Ekran görüntüsü | `screencapture` | Ekran Kaydı | `screenshot` çalışmaz |
+| Açık terminaller | Terminal.app / iTerm2 (AppleScript), tmux | Otomasyon (ilk kullanımda sorulur) | Yalnızca tmux |
+
+`nexremote setup` izin istemlerini açar. İzinler Sistem Ayarları → Gizlilik ve
+Güvenlik altından geri alınır.

@@ -1,7 +1,7 @@
 ---
 name: nexremote
 description: >
-  See and control this Linux desktop and the terminals open on it: list every
+  See and control this desktop (Linux, Windows or macOS) and the terminals open on it: list every
   window, read a window's UI tree and press buttons by name, take a screenshot
   and click/scroll/drag on it, type text, press shortcuts, and read or type
   into terminals that are already running (other CLI agents, ssh, builds).
@@ -19,16 +19,19 @@ Every command is `nexremote ...`. Add `--json` anywhere for machine output.
 nexremote observe          # every window (ref win:{...}) + every open terminal
 nexremote caps             # what works on this machine (input, windows, terminals)
 ```
-If `caps` says mouse/keyboard needs approval, run `nexremote setup` once and
-tell the user to press **Share** (with "Allow restoring" ticked) on the KDE
-dialog. After that it never asks again.
+If `caps` says something needs approval, run `nexremote setup` once:
+- Linux Wayland: tell the user to press **Share** (with "Allow restoring"
+  ticked) on the remote-control dialog. After that it never asks again.
+- macOS: tell the user to allow the terminal/Python under System Settings →
+  Privacy & Security → **Accessibility** and **Screen Recording**.
+- Windows and X11 need no approval.
 
 ## 2. Act on GUI apps — structure first, pixels second
 ```bash
-nexremote find "Save" --window win:{...}   # → atspi:... refs of matching controls
-nexremote click atspi:3:0/0/12             # press it; the user's mouse does not move
+nexremote find "Save" --window win:{...}   # → element refs (atspi:… / uia:… / ax:…)
+nexremote click <ref from find>            # press it; the user's mouse does not move
 nexremote tree --window win:{...}          # whole UI tree when you need context
-nexremote set-text atspi:... "text"        # replace a field's content
+nexremote set-text <ref> "text"           # replace a field's content
 ```
 When `find`/`tree` says the app publishes no tree (browsers, Electron, games):
 ```bash
@@ -46,10 +49,11 @@ nexremote window win:{...} activate        # focus the target window first
 nexremote type "Merhaba dünya"             # any language, newlines ok
 nexremote key ctrl+s | Return | alt+F4 | ctrl+shift+t
 ```
+On macOS use `cmd` for the Command key (`cmd+s`, `cmd+v`); `ctrl` is Control.
 
 ## 4. Terminals already open on the desktop
 ```bash
-nexremote terms                            # konsole:PID:N / tmux:S:W.P + program + cwd
+nexremote terms                            # refs: konsole:… tmux:… wincon:PID terminal:… iterm:…
 nexremote term-read konsole:7891:2         # what that terminal shows right now
 nexremote term-send konsole:7891:2 "git status" --enter
 nexremote term-send konsole:7891:2 --key C-c          # Enter, C-c, C-d, Esc, Up, Tab...
