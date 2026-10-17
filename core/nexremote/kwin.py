@@ -48,6 +48,16 @@ callDBus("%(service)s", "/", "org.nexremote.Reply", "reply",
          JSON.stringify({x: Math.round(p.x), y: Math.round(p.y)}));
 """
 
+_SCREENS_JS = r"""
+const out = [];
+for (const o of workspace.screens) {
+    const g = o.geometry;
+    out.push({name: o.name, x: Math.round(g.x), y: Math.round(g.y),
+              w: Math.round(g.width), h: Math.round(g.height)});
+}
+callDBus("%(service)s", "/", "org.nexremote.Reply", "reply", JSON.stringify(out));
+"""
+
 _ACTIONS = {
     "activate": "if (w.minimized) w.minimized = false; workspace.activeWindow = w;",
     "close": "w.closeWindow();",
@@ -140,3 +150,8 @@ def cursor_pos() -> tuple[int, int]:
     """Kullanıcının gerçek imleç konumu (Wayland'de istemciler bunu bilemez)."""
     p = _run_script(_CURSOR_JS)
     return int(p["x"]), int(p["y"])
+
+
+def screens() -> list[dict]:
+    """Ekranlar (çıkışlar): {name, x, y, w, h} — mantıksal piksel, masaüstü koordinatı."""
+    return _run_script(_SCREENS_JS)

@@ -175,12 +175,81 @@ class PortalSession:
                                  "w": int(size[0]), "h": int(size[1])})
         if not self.streams:
             raise RuntimeError("portal ekran yayını vermedi; mutlak tıklama yapılamaz")
+        for st in self.streams:
+            st["sx"] = st["sy"] = 1.0   # masaüstü pikseli → yayın pikseli
+        if len(self.streams) > 1 and not any("position" in props
+                                              for _, props in res.get("streams", [])):
+            self._place_streams()
+
+    # ------------------------------------------- çoklu ekran yerleşimi
+    def _place_streams(self) -> None:
+        """KDE portalı yayın konumu (position) göndermez: hepsi +0+0 görünür ve
+        ilk ekran dışındaki ekranlara tıklanamaz. Konumları KWin'in çıkış
+        listesinden tamamla. Boyutu tek olan yayın doğrudan eşlenir; aynı boyutta
+        birden çok ekran varsa imleç yayının ortasına bir kez götürülüp KWin'in
+        bildirdiği konumla hangi ekran olduğu ölçülür, sonra imleç geri konur."""
+        try:
+            from . import kwin  # type: ignore[attr-defined]
+        except ImportError:   # daemon dosya yoluyla çalışır (paket bağlamı yok)
+            sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            from nexremote import kwin
+        try:
+            outs = kwin.screens()
+        except Exception as e:
+            sys.stderr.write(f"nexremote: ekran yerleşimi okunamadı ({e}); "
+                             "yalnızca ilk ekrana tıklanabilir\n")
+            return
+        free = list(outs)
+        pending = []
+        for st in self.streams:
+            same = [o for o in free if (o["w"], o["h"]) == (st["w"], st["h"])]
+            others = [t for t in self.streams if t is not st
+                      and (t["w"], t["h"]) == (st["w"], st["h"])]
+            if len(same) == 1 and not others:
+                self._assign(st, same[0])
+                free.remove(same[0])
+            else:
+                pending.append(st)
+        if not pending:
+            return
+        home = None
+        try:
+            home = kwin.cursor_pos()
+        except Exception:
+            pass
+        try:
+            for st in pending:
+                self.rd.NotifyPointerMotionAbsolute(
+                    self.dbus.ObjectPath(self.session), {}, self.dbus.UInt32(st["node"]),
+                    float(st["w"] // 2), float(st["h"] // 2))
+                time.sleep(0.05)
+                cx, cy = kwin.cursor_pos()
+                hit = next((o for o in free if o["x"] <= cx < o["x"] + o["w"]
+                            and o["y"] <= cy < o["y"] + o["h"]), None)
+                if hit is not None:
+                    self._assign(st, hit)
+                    free.remove(hit)
+        except Exception as e:
+            sys.stderr.write(f"nexremote: ekran kalibrasyonu yarım kaldı ({e})\n")
+        finally:
+            if home is not None:
+                try:
+                    self.move(*home)
+                except ValueError:
+                    pass
+
+    @staticmethod
+    def _assign(st: dict, out: dict) -> None:
+        # yayın pikseli ölçekli ekranlarda mantıksal pikselden büyük olabilir
+        st["sx"] = st["w"] / out["w"] if out["w"] else 1.0
+        st["sy"] = st["h"] / out["h"] if out["h"] else 1.0
+        st.update(x=out["x"], y=out["y"], w=out["w"], h=out["h"], output=out.get("name", ""))
 
     # --------------------------------------------------------- olaylar
     def _stream_for(self, x: float, y: float) -> tuple[dict, float, float]:
         for s in self.streams:
             if s["x"] <= x < s["x"] + s["w"] and s["y"] <= y < s["y"] + s["h"]:
-                return s, x - s["x"], y - s["y"]
+                return s, (x - s["x"]) * s.get("sx", 1.0), (y - s["y"]) * s.get("sy", 1.0)
         raise ValueError(f"({x:.0f},{y:.0f}) hiçbir ekranın içinde değil; "
                          f"ekranlar: {self.screens_text()}")
 
