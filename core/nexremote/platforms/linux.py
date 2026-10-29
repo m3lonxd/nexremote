@@ -126,11 +126,16 @@ class LinuxDesktop(Desktop):
             return Cap(True, x11.available()[1])
         if kind == "portal":
             return Cap(True, portal_input.available()[1])
+        sway = self._wm_kind() == "sway"
         if kind == "tools":
             tools = [t for t, ok_ in inp.available_tools().items() if ok_]
+            if sway:
+                return Cap(True, f"fare: Sway IPC; klavye: {', '.join(tools)}")
             mouse = any(t in tools for t in ("ydotool", "xdotool"))
             return Cap(True, f"klavye: {', '.join(tools)}"
                        + ("" if mouse else " (fare için RemoteDesktop portalı ya da ydotool gerekir)"))
+        if sway:
+            return Cap(True, "fare: Sway IPC (klavye için wtype gerekir)", ["wtype"])
         return Cap(False, portal_input.available()[1],
                    ["xdg-desktop-portal (RemoteDesktop)", "python3-dbus", "python3-gi"]
                    if self.name != "x11" else ["python-xlib"])
@@ -212,6 +217,8 @@ class LinuxDesktop(Desktop):
         kind = self._input_kind()
         if kind in ("x11", "portal"):
             return kind
+        if self._wm_kind() == "sway":
+            return "sway"
         from .. import input as inp
         tools = inp.available_tools()
         if tools.get("ydotool") or tools.get("xdotool"):
@@ -240,6 +247,8 @@ class LinuxDesktop(Desktop):
         elif m == "portal":
             from .. import portal_input
             portal_input.call(f"MOVE {x:.1f} {y:.1f}")
+        elif m == "sway":
+            self._wm_provider().move(x, y)
         else:
             from .. import input as inp
             if not inp.move_mouse(int(x), int(y)):
@@ -252,6 +261,8 @@ class LinuxDesktop(Desktop):
         elif m == "portal":
             from .. import portal_input
             portal_input.call(f"{'DOWN' if pressed else 'UP'} {button}")
+        elif m == "sway":
+            self._wm_provider().button(button, pressed)
         else:
             raise Unsupported("ydotool/xdotool ile ayrı bas/bırak desteklenmiyor — "
                               "sürükleme için RemoteDesktop portalı gerekli")
@@ -262,7 +273,7 @@ class LinuxDesktop(Desktop):
             # daemon tek çağrıda taşır+tıklar: olaylar arası zamanlama orada ayarlı
             from .. import portal_input
             portal_input.call(f"CLICK {int(x)} {int(y)} {button} {int(count)}")
-        elif m == "x11":
+        elif m in ("x11", "sway"):
             super().click(x, y, button, count)
         else:
             from .. import input as inp
@@ -278,6 +289,8 @@ class LinuxDesktop(Desktop):
         elif m == "portal":
             from .. import portal_input
             portal_input.call(f"SCROLL {int(dy)} {int(dx)}")
+        elif m == "sway":
+            self._wm_provider().scroll(dy, dx)
         else:
             raise Unsupported("kaydırma için RemoteDesktop portalı ya da X11 oturumu gerekli")
 
@@ -322,14 +335,18 @@ class LinuxDesktop(Desktop):
         return "ctrl+shift+v" if any(t in app for t in self._TERMINAL_APPS) else "ctrl+v"
 
     # ----------------------------------------------------------- ekran
-    @staticmethod
-    def _shot_tools(path: str) -> list[tuple[list[str], str]]:
-        return [
+    def _shot_tools(self, path: str) -> list[tuple[list[str], str]]:
+        tools = [
             (["spectacle", "-b", "-n", "-o", path], "spectacle"),   # KDE
             (["grim", path], "grim"),                               # wlroots
             (["gnome-screenshot", "-f", path], "gnome-screenshot"),
             (["scrot", "-o", path], "scrot"),                       # X11
         ]
+        # Masaüstünün kendi aracı önce: Sway'de spectacle portal diyaloğuna
+        # düşer, KDE'de grim hiç çalışmaz.
+        first = {"sway": "grim", "hyprland": "grim", "wayland": "grim",
+                 "gnome-wayland": "gnome-screenshot", "x11": "scrot"}.get(self.name)
+        return sorted(tools, key=lambda t: t[1] != first) if first else tools
 
     def screenshot(self, path: str) -> Screenshot:
         path = os.path.abspath(path)

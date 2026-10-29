@@ -84,6 +84,26 @@ class Sway:
     def pointer_pos() -> Optional[tuple[int, int]]:
         return None  # Sway IPC imleç konumu vermez
 
+    # Fare: Sway'in kendi `seat cursor` komutu — portal ya da ydotool gerekmez.
+    _BUTTONS = {"left": "button1", "middle": "button2", "right": "button3"}
+
+    @staticmethod
+    def move(x: float, y: float) -> None:
+        _run(["swaymsg", f"seat - cursor set {int(round(x))} {int(round(y))}"])
+
+    def button(self, button: str, pressed: bool) -> None:
+        name = self._BUTTONS.get(button)
+        if name is None:
+            raise ValueError(f"bilinmeyen düğme: {button}")
+        _run(["swaymsg", f"seat - cursor {'press' if pressed else 'release'} {name}"])
+
+    @staticmethod
+    def scroll(dy: int, dx: int = 0) -> None:
+        # `seat cursor press button4/5` Sway 1.10'da axis üretmiyor; wlroots
+        # sanal faresi imlecin altındaki yüzeye gerçek tekerlek olayı yollar.
+        from .. import wl_vpointer
+        wl_vpointer.scroll(dy, dx)
+
 
 # ------------------------------------------------------------- Hyprland
 class Hyprland:

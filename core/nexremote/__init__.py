@@ -8,7 +8,7 @@ from .models import (
 )
 from .nexremote import NexRemote
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 __all__ = [
     "NexRemote", "Element", "Window", "Screenshot", "CommandResult",
     "Capability", "Role", "Action", "__version__",

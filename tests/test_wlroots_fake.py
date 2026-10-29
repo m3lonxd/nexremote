@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Sway / Hyprland sağlayıcıları — sahte `swaymsg` / `hyprctl` ile.
 
-Bu makinede iki bileşimci de yok; gerçek IPC JSON biçimindeki örnek çıktılarla
-ayrıştırma ve eylem komutları sınanır. Gerçek bileşimcide çalıştırılmadı.
+Gerçek IPC JSON biçimindeki örnek çıktılarla ayrıştırma ve eylem komutları
+sınanır. Sway ayrıca gerçek başsız bileşimcide de sınanır
+(tests/test_sway_sandbox.py); Hyprland gerçek bileşimcide çalıştırılmadı.
 """
 import json
 import os

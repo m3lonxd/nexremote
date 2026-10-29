@@ -134,7 +134,8 @@ ekrana, fareye ve izinlere dokunmaz. İzin diyaloğunu da NexRemote'un kendi
 erişilebilirlik okuması onaylar.
 
 - X11: başsız `Xvfb` içinde (`tests/x11_sandbox.sh`).
-- Sway / Hyprland: sahte `swaymsg` / `hyprctl` IPC ile.
+- Sway: başsız gerçek Sway içinde (`tests/sway_sandbox.sh`): Sway IPC faresi,
+  wtype ile Türkçe yazı, grim, pencere eylemleri. Hyprland sahte `hyprctl` ile.
 - Windows: Wine içinde gerçek Windows Python'u, ayrı prefix ve başsız ekranla
   (`tests/wine/setup.sh` bir kez, sonra `tests/wine/run.sh tests/test_windows_wine.py`):
   gerçek Notepad penceresi ve cmd.exe konsolu açılır.
@@ -144,8 +145,8 @@ erişilebilirlik okuması onaylar.
 
 ## Sınırlar
 
-- Linux: KDE Plasma 6 Wayland gerçek masaüstünde, X11 Xvfb içinde, Sway/Hyprland sahte IPC
-  ile test edildi. GNOME'da pencere listesi yalnızca AT-SPI'ye düşer.
+- Linux: KDE Plasma 6 Wayland gerçek masaüstünde, X11 Xvfb içinde, Sway 1.10 başsız
+  gerçek bileşimcide, Hyprland sahte IPC ile test edildi. GNOME'da pencere listesi yalnızca AT-SPI'ye düşer.
 - Windows: Wine 10 üzerinde test edildi; gerçek Windows 10/11'de doğrulanmadı.
   Wine'ın UI Automation'ı denetim ağacını gezemediği için isimle tıklama
   Wine'da sınanamadı. Yönetici olarak çalışan pencerelere yalnızca yönetici

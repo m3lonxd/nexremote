@@ -5,7 +5,9 @@
 Birincil ortam: KDE Plasma 6 (Wayland). Ölçüldüğü sistem: Debian 13,
 KWin 6.3.6, xdg-desktop-portal-kde 6.3.5 (2026-10-16). X11 oturumunda
 `python3-xlib` ile XTEST + EWMH kullanılır (izin istemez); Sway ve Hyprland'de
-pencereler `swaymsg` / `hyprctl` ile, giriş portal ya da wtype ile.
+pencereler `swaymsg` / `hyprctl` ile, klavye wtype ile. Sway'de fare ek paket
+istemez: Sway IPC (`seat cursor`) taşır ve tıklar, tekerlek wlroots sanal
+fare protokolüyle gönderilir. Ekran görüntüsü wlroots'ta grim ile alınır.
 
 | Yetenek | Ne kullanılır | Paket (Debian / Arch) | Yoksa |
 |---|---|---|---|

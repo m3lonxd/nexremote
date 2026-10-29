@@ -49,13 +49,18 @@ def _run(cmd: list[str], timeout: float = 5.0) -> bool:
         return False
 
 
+# wtype her çağrıda yeni sanal klavye + keymap yükler; uygulama keymap'i
+# işlemeden gelen ilk tuş düşer (Sway'de "Merhaba" → "erhaba" görüldü).
+_WTYPE = ["wtype", "-s", "60"]
+
+
 def type_text(text: str) -> bool:
     """Aktif pencereye metin yaz (Wayland)."""
     if not text:
         return False
     t = available_tools()
     if t.get("wtype"):
-        return _run(["wtype", "--", text])
+        return _run([*_WTYPE, "--", text])
     if t.get("ydotool"):
         return _run(["ydotool", "type", "--", text])
     if t.get("dotool"):
@@ -86,7 +91,7 @@ def key(combo: str) -> bool:
     t = available_tools()
 
     if t.get("wtype"):
-        cmd = ["wtype"]
+        cmd = list(_WTYPE)
         for m in mods:
             cmd += ["-M", _KEY_ALIASES.get(m, m)]
         cmd += ["-k", _KEY_ALIASES.get(main, main)]

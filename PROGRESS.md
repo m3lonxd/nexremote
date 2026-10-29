@@ -1,5 +1,29 @@
 # NexRemote — Geliştirme Raporu
 
+## v0.4.0 — günlük kullanım (2026-10-29)
+
+Gerçek kullanımda takılınan yerler kapatıldı:
+
+- **Electron/Chromium isimle kontrol:** `nexremote launch <program>` uygulamayı
+  `--force-renderer-accessibility` ile başlatır ve pencere ref'ini döndürür. Ağacı
+  boş Chromium penceresinde `tree` neden boş olduğunu ve ne yapılacağını yazar.
+  Sandbox'ta gerçek Electron 11/11.
+- **Sade ağaç:** gizli (SHOWING olmayan) öğeler atlanır, isimsiz kaplar katlanır,
+  eylemli satırlar `ref=` taşır (model `find` çağırmadan tıklar). Zen'de 550 → 21 satır.
+- **MCP kaynakları:** `nexremote://windows`, `nexremote://terminals`,
+  `nexremote://tree/{ref}`; 22 araç.
+- **HTTP adaptörü:** sabit zamanlı token karşılaştırma, token dosyası
+  (`ps`'te görünmez), gövde sınırı + bozuk JSON → 400, bağlantı zaman aşımı,
+  TLS; ağa açılırken ≥24 karakter token zorunlu. `deploy/install-service.sh`
+  systemd kullanıcı servisi kurar. HTTP 21/21.
+- **Sway gerçek bileşimcide:** fare Sway IPC ile (ek paket yok), tekerlek wlroots
+  sanal fare protokolüyle (Sway 1.10'da `seat cursor press button4` axis
+  üretmiyor), ekran görüntüsü masaüstüne göre araç seçer (wlroots'ta grim).
+  Başsız gerçek Sway'de 11/11.
+
+**Doğrulanmayanlar:** gerçek Windows/macOS donanımı, GNOME, gerçek Hyprland.
+Ajan imleci X11/XWayland ister; XWayland'siz Sway'de görünmez.
+
 ## v0.3.0 — çok platform (2026-10-17)
 
 Facade artık işletim sisteminden bağımsız; her şey `platforms.Desktop`
@@ -9,7 +33,7 @@ sözleşmesinden geçer (`core/nexremote/platforms/base.py`).
 |---|---|---|
 | KDE Plasma 6 Wayland | KWin + RemoteDesktop portalı + Konsole | gerçek masaüstü (salt okuma) + izole sandbox: giriş 13/13, CLI 21/21 |
 | X11 | XTEST, EWMH, Xlib ekran | Xvfb sandbox 22/22 |
-| Sway / Hyprland | swaymsg / hyprctl IPC | sahte IPC 15/15 |
+| Sway / Hyprland | swaymsg / hyprctl IPC | sahte IPC 15/15 (v0.4.0: Sway gerçek başsız bileşimcide 11/11) |
 | Windows | Win32 EnumWindows, SendInput, GDI, UI Automation, AttachConsole | Wine 10 + gerçek Windows Python: 22/22 (Notepad + cmd.exe) |
 | macOS (önizleme) | Quartz CGEvent, CGWindowList, AX, screencapture, Terminal/iTerm2 | sahte Quartz ile 94/94 — gerçek Mac'te çalıştırılmadı |
 
