@@ -142,6 +142,20 @@ time.sleep(0.2)
 tip = px(641, 362)
 check("daemon'ın imleci ekranda, ucu hedefte", tip != (255, 255, 255), str(tip))
 check("cursor_hide", nr.cursor_hide() and (time.sleep(0.2) or px(641, 362) == (255, 255, 255)))
+
+# HTTP adaptörü aynı daemon'ı sürer
+import importlib.util  # noqa: E402
+spec = importlib.util.spec_from_file_location(
+    "nexr_http", os.path.join(HERE, "..", "adapters", "http", "server.py"))
+http_srv = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(http_srv)
+http_srv._NR = nr
+r = http_srv._dispatch("cursor", {"x": 300, "y": 200, "click": True})
+time.sleep(0.2)
+check("HTTP /cursor imleci gösterip taşıdı", r.get("ok") and r["at"] == [300, 200]
+      and px(301, 202) != (255, 255, 255), str(r))
+check("HTTP /cursor_hide", http_srv._dispatch("cursor_hide", {}).get("ok")
+      and (time.sleep(0.2) or px(301, 202) == (255, 255, 255)))
 check("QUIT", ac.send("QUIT") == "BYE")
 
 ok = sum(1 for _, o in results if o)

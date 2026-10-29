@@ -349,6 +349,11 @@ def cmd_cursor(nr, a) -> None:
              f"imleç ({a.x},{a.y}) → taşındı")
 
 
+def cmd_cursor_hide(nr, a) -> None:
+    ok = nr.cursor_hide()
+    _out({"ok": bool(ok)}, a.json, "imleç gizlendi" if ok else "(görünür imleç yok)")
+
+
 def cmd_point(nr, a) -> None:
     """Bir öğeyi (ref) bul, imleci üzerine GÖRÜNÜR şekilde götür ve tıkla."""
     b = nr.bounds(a.ref)
@@ -466,6 +471,7 @@ def build_parser() -> argparse.ArgumentParser:
     cur.add_argument("--steps", type=int, default=24)
     cur.add_argument("--duration", type=float, default=0.4)
     cur.set_defaults(fn=cmd_cursor)
+    sub.add_parser("cursor-hide", help="görünür ajan imlecini gizle").set_defaults(fn=cmd_cursor_hide)
     pt = sub.add_parser("point", help="öğeyi bul, imleci üzerine götür, tıkla")
     pt.add_argument("ref")
     pt.add_argument("--button", type=int, default=1)

@@ -22,6 +22,7 @@ API (hepsi POST, JSON gövde; GET /health ve GET /caps de var):
   POST /window_action {ref, action}         activate | close | minimize
   POST /click_at {x, y, button, double, from_screenshot}
   POST /scroll  {steps, x, y}   POST /drag {x1, y1, x2, y2}
+  POST /cursor  {x, y, click, from_screenshot}   POST /cursor_hide   ajanın görünür imleci
   POST /terminals               POST /terminal_read {ref, history}
   POST /terminal_send {ref, text, enter, keys}
   POST /run     {command, session, timeout}
@@ -124,6 +125,12 @@ def _dispatch(method: str, body: dict):
         nr.click_at(x, y, button=body.get("button", "left"),
                     count=2 if body.get("double") else 1)
         return {"ok": True, "clicked": [x, y]}
+    if method == "cursor":
+        x, y = nr.screen_point(float(body["x"]), float(body["y"]),
+                               bool(body.get("from_screenshot", False)))
+        return {"ok": nr.cursor(x, y, click=bool(body.get("click"))), "at": [x, y]}
+    if method == "cursor_hide":
+        return {"ok": nr.cursor_hide()}
     if method == "scroll":
         at = None
         if "x" in body and "y" in body:

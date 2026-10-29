@@ -194,6 +194,27 @@ def nexremote_click_at(x: float, y: float, button: str = "left", double: bool = 
 
 @mcp.tool()
 @_tool_errors
+def nexremote_cursor(x: float = -1, y: float = -1, click: bool = False, hide: bool = False,
+                     from_screenshot: bool = True) -> dict:
+    """Move the agent's OWN visible pointer so the user can see where you act.
+
+    This is a separate on-screen arrow, not the user's mouse: it never moves
+    their pointer, steals focus or blocks clicks. click=True shows a click
+    ring (no real click — use nexremote_click_at for that). hide=True hides it.
+    Coordinates work like nexremote_click_at. Linux (X11/XWayland), Windows
+    and macOS (preview).
+    """
+    nr = _get_nexremote()
+    if hide:
+        return {"hidden": bool(nr.cursor_hide())}
+    if x < 0 or y < 0:
+        raise ValueError("x and y are required unless hide=True")
+    sx, sy = nr.screen_point(x, y, from_screenshot)
+    return {"ok": bool(nr.cursor(sx, sy, click=click)), "at": [sx, sy]}
+
+
+@mcp.tool()
+@_tool_errors
 def nexremote_scroll(steps: int, x: float = -1, y: float = -1,
                      from_screenshot: bool = True) -> bool:
     """Scroll the mouse wheel: positive steps scroll down, negative up.

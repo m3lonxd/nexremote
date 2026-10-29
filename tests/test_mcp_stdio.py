@@ -14,7 +14,7 @@ EXPECTED = {"nexremote_observe", "nexremote_windows", "nexremote_window_action",
             "nexremote_click", "nexremote_click_at", "nexremote_scroll", "nexremote_drag",
             "nexremote_key", "nexremote_type", "nexremote_screenshot", "nexremote_terminals",
             "nexremote_terminal_read", "nexremote_terminal_send", "nexremote_run",
-            "nexremote_launch", "nexremote_tree"}
+            "nexremote_launch", "nexremote_tree", "nexremote_cursor"}
 
 
 def main() -> int:
@@ -90,6 +90,12 @@ def main() -> int:
         bad = rpc("tools/call", {"name": "nexremote_terminal_read", "arguments": {"ref": "x"}})
         check("geçersiz ref → okunur araç hatası", bad.get("isError") is True,
               bad["content"][0]["text"][:80])
+        nox = rpc("tools/call", {"name": "nexremote_cursor", "arguments": {}})
+        check("nexremote_cursor koordinatsız → okunur hata", nox.get("isError") is True
+              and "x and y" in nox["content"][0]["text"], nox["content"][0]["text"][:80])
+        hid = rpc("tools/call", {"name": "nexremote_cursor", "arguments": {"hide": True}})
+        check("nexremote_cursor hide=True çağrılabilir", not hid.get("isError"),
+              hid["content"][0]["text"][:80])
     finally:
         p.terminate()
     print(f"MCP: {'TAMAM' if not fails else f'{fails} başarısız'}")

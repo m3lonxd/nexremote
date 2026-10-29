@@ -56,6 +56,14 @@ nexremote drag 100 200 400 200             # screen coords
 ```
 The user's pointer is moved back where it was right after each click.
 
+Show the user where you are working with your OWN visible pointer (a second
+arrow; it never moves their mouse or takes clicks):
+```bash
+nexremote point <ref>                      # glide to the element, ring, then press it
+nexremote cursor 412 230 [--click]         # screen coords; --click only shows a ring
+nexremote cursor-hide
+```
+
 ## 3. Keyboard
 ```bash
 nexremote window win:{...} activate        # focus the target window first
