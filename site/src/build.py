@@ -458,8 +458,8 @@ S = {
         "nav_platforms": "Platformlar",
         "theme_label": "Açık / koyu tema",
         "eyebrow": "AI ajanları için masaüstü kontrolü · Linux · Windows · macOS",
-        "h1a": "Ajanın komut çalıştırabiliyor.",
-        "h1b": "Artık ekranı da kullanabilir.",
+        "h1a": "",
+        "h1b": "Ajanına eller ver.",
         "lede": "NexRemote masaüstünü kabuk komutlarına çevirir; Linux'ta, Windows'ta ve macOS'ta aynı komutlarla: her pencere, gerçek fare ve klavye, adıyla basılan düğmeler ve zaten açık olan terminallerin, diğer ajanlar dahil. Root yok, SDK yok; görsel model ancak uygulama okunacak başka bir şey vermediğinde devreye girer.",
         "cta_download": "İndir", "cta_see": "Çalışırken gör",
         "copy": "Kopyala", "copied": "Kopyalandı",
@@ -726,6 +726,8 @@ def h1_html(t: dict) -> str:
     """Başlık kelimeleri maskeli satırlara bölünür; JS yoksa düz metin gibi görünür."""
     out, i = [], 0
     for cls, line in (("l1", t["h1a"]), ("l2", t["h1b"])):
+        if not line.strip():
+            continue
         words = []
         for w in line.split():
             words.append(f'<span class="w"><span style="--wi:{i}">{esc(w)}</span></span>')
