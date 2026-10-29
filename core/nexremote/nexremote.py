@@ -264,13 +264,21 @@ class NexRemote:
         if os.environ.get("NEXREMOTE_CURSOR", "1") == "0" or not self.pointer_available()[0]:
             return
         try:
-            from . import xcursor as xc
-            if not xc.daemon_running():
-                xc.start_daemon(os.environ.get("DISPLAY", ":1"))
-            xc.send(f"MOVE {int(x)} {int(y)}")   # yanıt hareket bitince gelir
-            xc.send("CLICK")
+            ac = self._cursor_daemon()
+            ac.send(f"MOVE {int(x)} {int(y)}")   # yanıt hareket bitince gelir
+            ac.send("CLICK")
         except Exception:
             pass
+
+    @staticmethod
+    def _cursor_daemon():
+        """Ajan imleci daemon'ı (gerekirse başlatılır); agent_cursor modülü döner."""
+        from . import agent_cursor as ac
+        if not ac.daemon_running():
+            ac.start_daemon(os.environ.get("DISPLAY", "") if sys.platform.startswith("linux") else "")
+        if not ac.daemon_running():
+            raise RuntimeError("ajan imleci daemon'ı başlatılamadı")
+        return ac
 
     # -------------------------------------------- masaüstündeki terminaller
     def terminals(self) -> list[dict]:
@@ -345,52 +353,37 @@ class NexRemote:
     # ------------------------------------------------- görünür fare imleci
     def cursor(self, x: int, y: int, click: bool = False,
                button: int = 1, visible: bool = True) -> bool:
-        """AJANIN KENDİ imlecini (x,y)'ye götür; istenirse tıkla.
+        """AJANIN KENDİ imlecini (x,y)'ye götür; istenirse tık halkası göster.
 
-        Kullanıcının faresine DOKUNMAZ. Saf Xlib ile override-redirect küçük
-        bir pencere kullanır (imleç boyutunda, click-through): arkasındaki her
-        şey normal tıklanabilir kalır. Tıklama AT-SPI ile yapılır.
+        Kullanıcının faresine DOKUNMAZ: imleç boyutunda, her şeyin üstünde,
+        tıklamaları arkaya geçiren küçük bir penceredir (Linux: X11/XWayland
+        override-redirect, Windows: katmanlı WS_EX_TRANSPARENT, macOS:
+        ignoresMouseEvents NSWindow). Gerçek tıklamayı click/press yapar.
         """
-        from . import xcursor as xc
-        if not xc.daemon_running():
-            xc.start_daemon(os.environ.get("DISPLAY", ":1"))
-        if not xc.daemon_running():
-            raise RuntimeError("ajan imleci daemon'ı başlatılamadı")
-        xc.send(f"MOVE {int(x)} {int(y)}")   # yanıt hareket bitince gelir
+        ac = self._cursor_daemon()
+        if visible:
+            ac.send("SHOW")
+        ac.send(f"MOVE {int(x)} {int(y)}")   # yanıt hareket bitince gelir
         if click:
-            xc.send("CLICK")
+            ac.send("CLICK")
         return True
 
     def cursor_move(self, x: int, y: int, steps: int = 24,
                     duration: float = 0.5) -> bool:
-        """Ajan imlecini yumuşak adımlarla (x,y)'ye taşı."""
-        from . import xcursor as xc
-        if not xc.daemon_running():
-            xc.start_daemon(os.environ.get("DISPLAY", ":1"))
-        if not xc.daemon_running():
-            raise RuntimeError("ajan imleci daemon'ı başlatılamadı")
-        return xc.send(f"MOVE {int(x)} {int(y)} {duration}") == "OK"
+        """Ajan imlecini yumuşak hareketle (x,y)'ye taşı (duration sn)."""
+        return self._cursor_daemon().send(f"MOVE {int(x)} {int(y)} {duration}") == "OK"
 
     def cursor_hide(self) -> bool:
-        from . import xcursor as xc
-        if xc.daemon_running():
-            xc.send("HIDE")
+        from . import agent_cursor as ac
+        if ac.daemon_running():
+            ac.send("HIDE")
             return True
         return False
 
     def pointer_available(self) -> tuple[bool, str]:
-        """Ajan imleci kullanılabilir mi? (X11/XWayland + python-xlib)"""
-        if not sys.platform.startswith("linux"):
-            return (False, f"ajan imleci şimdilik yalnızca Linux'ta (X11/XWayland); "
-                           f"{self.desktop.name} üzerinde tıklamalar imleçsiz yapılır")
-        try:
-            import Xlib  # noqa
-            from Xlib.ext import shape  # noqa
-        except Exception as e:
-            return (False, f"python-xlib + SHAPE gerekli: {e}")
-        if not os.environ.get("DISPLAY"):
-            return (False, "DISPLAY yok (X11/XWayland gerekir)")
-        return (True, "hazır (ajan imleci: küçük, click-through, kullanıcıyı engellemez)")
+        """Ajan imleci kullanılabilir mi? (Linux X11/XWayland, Windows, macOS)"""
+        from . import agent_cursor as ac
+        return ac.available()
 
     # ---------------------------------------------------------------- TUI
     def run(self, command: str, session: str = "default",

@@ -124,6 +124,26 @@ else:
     check("tık halkası sonrası imleç yerinde", px(500 - theme.hot_x + ox, 400 - theme.hot_y + oy) == inside)
     cur.close()
 
+# ------------------------------------- daemon + facade (ayrı süreç, Unix soketi)
+import tempfile  # noqa: E402
+os.environ["NEXREMOTE_CURSOR_SOCK"] = os.path.join(tempfile.mkdtemp(), "c.sock")
+from nexremote import agent_cursor as ac  # noqa: E402
+from nexremote.nexremote import NexRemote  # noqa: E402
+nr = NexRemote()
+check("facade.pointer_available X11'de", nr.pointer_available()[0], nr.pointer_available()[1])
+try:
+    moved = nr.cursor(640, 360, click=True)
+except Exception as e:
+    moved = False
+    print(f"    {type(e).__name__}: {e}")
+check("facade.cursor daemon'ı başlattı (python -m nexremote.agent_cursor)",
+      moved and ac.daemon_running())
+time.sleep(0.2)
+tip = px(641, 362)
+check("daemon'ın imleci ekranda, ucu hedefte", tip != (255, 255, 255), str(tip))
+check("cursor_hide", nr.cursor_hide() and (time.sleep(0.2) or px(641, 362) == (255, 255, 255)))
+check("QUIT", ac.send("QUIT") == "BYE")
+
 ok = sum(1 for _, o in results if o)
 print(f"İMLEÇ: {ok} geçti, {len(results) - ok} başarısız")
 sys.exit(0 if ok == len(results) else 1)

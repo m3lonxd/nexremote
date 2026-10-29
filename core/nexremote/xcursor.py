@@ -1,173 +1,41 @@
 #!/usr/bin/env python3
-"""Ajan imleci — saf Xlib, override-redirect pencere.
+"""Ajan imleci, Linux arka ucu — saf Xlib, override-redirect pencere.
 
 Neden Xlib: KDE Wayland'de XWayland üzerinden konumlanan TEK güvenilir yol
 override-redirect penceredir. WM ona dokunmaz, konum tam kontrolümüzdedir.
 Pencere yalnızca İMLEÇ BOYUTUNDA (küçük) ve arkasından tıklanabilir —
 kullanıcıyı hiç engellemez.
 
-Soket protokolü: MOVE x y [sn — yoksa mesafeye göre] | CLICK | SHOW | HIDE | PING | QUIT
+Hareket, kare çizimi ve daemon platformdan bağımsızdır: agent_cursor.py.
+Buradaki adlar (min_jerk, serve, send…) geriye uyum için yeniden dışa verilir.
 """
 from __future__ import annotations
 
 import math
 import os
-import socket
 import sys
-import threading
-import time
 
-SOCK = os.environ.get("NEXREMOTE_CURSOR_SOCK",
-                      f"/tmp/nexremote-cursor-{os.getuid()}.sock")
-BOX = 56                       # pencere kenarı (px) — ok + tık halkası sığsın
-HOT = 16                       # okun ucunun pencere içindeki yeri (x = y); hedef nokta
-COLOR = (0x6e, 0xe7, 0xa8)     # dolgu #6ee7a8 — kullanıcının imleciyle karışmasın
-EDGE = (0x10, 0x14, 0x12)      # kenar çizgisi
-PULSE = (0x6e, 0xe7, 0xa8)
-
-# Standart ok imleci (ucu 0,0'da; birim = piksel). Breeze/Adwaita oranları.
-ARROW = [(0, 0), (0, 22), (5.2, 17), (9.2, 26.5), (13.6, 24.6), (9.6, 15.8), (16.5, 15.8)]
-
-
-FPS = 120                      # hareket kare hızı
-
-
-def move_duration(dist: float) -> float:
-    """Fitts benzeri: kısa mesafe hızlı, uzun mesafe biraz daha uzun (sn)."""
-    return min(0.7, 0.14 + 0.08 * math.log2(1 + dist / 24))
-
-
-def min_jerk(t: float) -> float:
-    """Minimum-jerk konum profili: 10t³ − 15t⁴ + 6t⁵ (uçlarda hız ve ivme 0)."""
-    t = max(0.0, min(1.0, t))
-    return t * t * t * (10 + t * (-15 + 6 * t))
-
-
-def arc_control(sx: float, sy: float, x: float, y: float) -> tuple[float, float]:
-    """Kavis için ikinci derece Bezier kontrol noktası: orta noktadan, yola dik,
-    mesafenin %8'i kadar (en çok 48 px). Yön hep aynı tarafa: el bileği gibi."""
-    dx, dy = x - sx, y - sy
-    dist = math.hypot(dx, dy) or 1.0
-    off = min(48.0, dist * 0.08)
-    nx, ny = -dy / dist, dx / dist
-    if ny > 0:                  # kavis yukarı doğru bükülsün
-        nx, ny = -nx, -ny
-    return (sx + x) / 2 + nx * off, (sy + y) / 2 + ny * off
-
-
-def bezier(sx, sy, cx, cy, x, y, s: float) -> tuple[float, float]:
-    u = 1 - s
-    return (u * u * sx + 2 * u * s * cx + s * s * x,
-            u * u * sy + 2 * u * s * cy + s * s * y)
-
-
-def _inside(px: float, py: float, poly: list[tuple[float, float]]) -> bool:
-    """Çift-tek kuralı ile nokta çokgen içinde mi."""
-    hit = False
-    j = len(poly) - 1
-    for i, (xi, yi) in enumerate(poly):
-        xj, yj = poly[j]
-        if (yi > py) != (yj > py) and px < (xj - xi) * (py - yi) / (yj - yi) + xi:
-            hit = not hit
-        j = i
-    return hit
-
-
-def arrow_spans(poly=ARROW) -> tuple[list[tuple[int, int, int]], list[tuple[int, int, int]]]:
-    """Oku satır aralıklarına çevir: (kenar, dolgu) — her öğe (x, y, genişlik).
-
-    Kenar = çokgenin içinde olup 1 px komşusu dışarıda kalan pikseller."""
-    w = int(max(x for x, _ in poly)) + 3
-    h = int(max(y for _, y in poly)) + 3
-    inside = [[_inside(x + 0.5, y + 0.5, poly) for x in range(w)] for y in range(h)]
-
-    def at(x, y):
-        return 0 <= y < h and 0 <= x < w and inside[y][x]
-
-    edge = [[False] * w for _ in range(h)]
-    fill = [[False] * w for _ in range(h)]
-    for y in range(h):
-        for x in range(w):
-            if at(x, y):
-                ring = all(at(x + dx, y + dy) for dx, dy in ((-1, 0), (1, 0), (0, -1), (0, 1)))
-                (fill if ring else edge)[y][x] = True
-
-    def spans(grid):
-        out = []
-        for y, row in enumerate(grid):
-            x = 0
-            while x < w:
-                if row[x]:
-                    x0 = x
-                    while x < w and row[x]:
-                        x += 1
-                    out.append((x0, y, x - x0))
-                else:
-                    x += 1
-        return out
-    return spans(edge), spans(fill)
-
-
-def theme_cursor():
-    """Kullanıcının imleç temasından ok (cursor_theme.load); olmazsa None."""
-    try:
-        try:
-            from . import cursor_theme  # type: ignore[attr-defined]
-        except ImportError:  # daemon dosya yoluyla çalışır (paket bağlamı yok)
-            sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-            from nexremote import cursor_theme
-        return cursor_theme.load()
-    except Exception as e:
-        print(f"[cursor] tema imleci yüklenemedi: {e}", file=sys.stderr)
-        return None
-
-
-def compose_frame(img, box: int, ring: int = 0) -> bytes:
-    """box×box BGRA (ön-çarpılmış) kare: uçta halka + tema imleci (ucu HOT,HOT)."""
-    import cairo
-    surf = cairo.ImageSurface(cairo.FORMAT_ARGB32, box, box)
-    ctx = cairo.Context(surf)
-    if ring:
-        r, g, b = (c / 255 for c in PULSE)
-        fade = max(0.0, 1.0 - (ring - 5) / 12)
-        ctx.set_source_rgba(r, g, b, 0.85 * fade)
-        ctx.set_line_width(2.0)
-        ctx.arc(HOT + 0.5, HOT + 0.5, ring, 0, 2 * math.pi)
-        ctx.stroke()
-    src = cairo.ImageSurface.create_for_data(bytearray(img.argb), cairo.FORMAT_ARGB32,
-                                             img.w, img.h, img.w * 4)
-    ctx.set_source_surface(src, HOT - img.hot_x, HOT - img.hot_y)
-    ctx.paint()
-    surf.flush()
-    stride = surf.get_stride()
-    data = bytes(surf.get_data())
-    if stride != box * 4:
-        data = b"".join(data[r * stride:r * stride + box * 4] for r in range(box))
-    return data
-
-
-def alpha_spans(frame: bytes, box: int, thr: int) -> list[tuple[int, int, int, int]]:
-    """Alfası thr ve üstü olan pikselleri satır aralıklarına çevir (Shape için)."""
-    out = []
-    for y in range(box):
-        row = frame[y * box * 4 + 3:(y + 1) * box * 4:4]
-        x = 0
-        while x < box:
-            if row[x] >= thr:
-                x0 = x
-                while x < box and row[x] >= thr:
-                    x += 1
-                out.append((x0, y, x - x0, 1))
-            else:
-                x += 1
-    return out
+try:
+    from .agent_cursor import (ARROW, BOX, COLOR, EDGE, FPS, HOT, PULSE, AgentCursorBase,  # noqa: F401
+                               alpha_spans, arc_control, arrow_spans, bezier, compose_frame,
+                               daemon_running, frame_box, min_jerk, move_duration, send,
+                               serve, start_daemon, theme_cursor, _inside)
+except ImportError:  # dosya yoluyla çalıştırıldı (paket bağlamı yok)
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from nexremote.agent_cursor import (ARROW, BOX, COLOR, EDGE, FPS, HOT, PULSE,  # noqa: F401
+                                        AgentCursorBase, alpha_spans, arc_control, arrow_spans,
+                                        bezier, compose_frame, daemon_running, frame_box,
+                                        min_jerk, move_duration, send, serve, start_daemon,
+                                        theme_cursor, _inside)
 
 
 def _to16(v: int) -> int:
     return v * 257  # 8-bit -> 16-bit
 
 
-class XAgentCursor:
+class XAgentCursor(AgentCursorBase):
+    name = "X11"
+
     def __init__(self, display: str = ":1", screen: int = 0) -> None:
         from Xlib import display as xd, X
         self.X = X
@@ -357,37 +225,7 @@ class XAgentCursor:
         self.d.sync()
 
     # ---------------------------------------------------------------- hareket
-    def move_to(self, x, y, duration=None):
-        """Hedefe insan eli gibi git: minimum-jerk hız profili (yumuşak kalkış ve
-        duruş), hafif kavisli yol, süre mesafeye göre (Fitts). Zamana bağlıdır:
-        kare çizimi gecikse de hareket hızlanıp yavaşlamaz, tam zamanında biter."""
-        sx, sy = self.x, self.y
-        x, y = int(round(x)), int(round(y))
-        dist = math.hypot(x - sx, y - sy)
-        if dist < 1:
-            return
-        if not duration or duration <= 0:
-            duration = move_duration(dist)
-        cx, cy = arc_control(sx, sy, x, y)
-        t0 = time.monotonic()
-        last = (sx, sy)
-        frame = 1.0 / FPS
-        n = 1
-        while True:
-            t = (time.monotonic() - t0) / duration
-            if t >= 1.0:
-                break
-            px, py = bezier(sx, sy, cx, cy, x, y, min_jerk(t))
-            pos = (int(round(px)), int(round(py)))
-            if pos != last:
-                self._place(*pos)
-                last = pos
-            # bir sonraki karenin mutlak zamanına uyu (gecikme birikmez)
-            wait = t0 + n * frame - time.monotonic()
-            n += 1
-            if wait > 0:
-                time.sleep(wait)
-        self._place(x, y)
+    def _end_move(self) -> None:
         self.d.sync()
 
     def _place(self, x: int, y: int) -> None:
@@ -397,13 +235,6 @@ class XAgentCursor:
         except Exception:
             return
         self.d.flush()          # sync değil: kare başına gidiş-dönüş beklemesi yok
-
-    def pulse(self):
-        """Tık geri bildirimi: uçtan genişleyen halka."""
-        for r in (5, 7, 9, 11, 13, 15):
-            self._draw(ring=r)
-            time.sleep(0.035)
-        self._draw()
 
     def set_visible(self, v):
         self._visible = v
@@ -421,103 +252,13 @@ class XAgentCursor:
             pass
 
 
-# -------------------------------------------------------------------- daemon
-def serve(cursor: XAgentCursor) -> None:
-    if os.path.exists(SOCK):
-        try:
-            os.unlink(SOCK)
-        except OSError:
-            pass
-    srv = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-    srv.bind(SOCK)
-    os.chmod(SOCK, 0o600)
-    srv.listen(8)
-    print(f"[cursor] hazır: {SOCK}", flush=True)
-
-    lock = threading.Lock()
-
-    def handle(conn):
-        try:
-            for line in conn.makefile("r"):
-                p = line.strip().split()
-                if not p:
-                    continue
-                c = p[0].upper()
-                with lock:
-                    if c == "MOVE":
-                        cursor.move_to(float(p[1]), float(p[2]),
-                                       float(p[3]) if len(p) > 3 else None)
-                    elif c == "CLICK":
-                        cursor.pulse()
-                    elif c == "SHOW":
-                        cursor.set_visible(True)
-                    elif c == "HIDE":
-                        cursor.set_visible(False)
-                    elif c == "PING":
-                        conn.sendall(b"PONG\n"); continue
-                    elif c == "QUIT":
-                        conn.sendall(b"BYE\n")
-                        os._exit(0)
-                    else:
-                        conn.sendall(b"ERR\n"); continue
-                conn.sendall(b"OK\n")
-        except Exception:
-            pass
-        finally:
-            try:
-                conn.close()
-            except Exception:
-                pass
-
-    while True:
-        try:
-            conn, _ = srv.accept()
-        except OSError:
-            break
-        threading.Thread(target=handle, args=(conn,), daemon=True).start()
-
-
-def daemon_running() -> bool:
-    if not os.path.exists(SOCK):
-        return False
-    try:
-        s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-        s.settimeout(1.5); s.connect(SOCK); s.sendall(b"PING\n")
-        ok = s.recv(16).strip() == b"PONG"; s.close(); return ok
-    except Exception:
-        return False
-
-
-def send(cmd: str, timeout: float = 5.0) -> str:
-    s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-    s.settimeout(timeout); s.connect(SOCK)
-    s.sendall((cmd + "\n").encode())
-    r = s.recv(64).decode().strip(); s.close(); return r
-
-
-def start_daemon(display: str = ":1") -> bool:
-    if daemon_running():
-        return True
-    import subprocess
-    env = dict(os.environ); env["DISPLAY"] = display
-    subprocess.Popen([sys.executable, os.path.abspath(__file__), "--display", display],
-                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-                     start_new_session=True, env=env)
-    for _ in range(40):
-        if daemon_running():
-            return True
-        time.sleep(0.15)
-    return False
-
-
 def main(argv=None) -> int:
     argv = argv if argv is not None else sys.argv[1:]
-    display = ":1"
+    display = os.environ.get("DISPLAY", ":0")
     for i, a in enumerate(argv):
         if a == "--display" and i + 1 < len(argv):
             display = argv[i + 1]
-    cur = XAgentCursor(display=display)
-    serve(cur)
+    serve(XAgentCursor(display=display))
     return 0
 
 
