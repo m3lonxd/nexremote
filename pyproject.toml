@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "nexremote"
-version = "0.4.0"
+version = "0.5.0"
 description = "AI ajanlarına masaüstü görme + kontrol: pencereler, gerçek fare/klavye, erişilebilirlik ağacı, terminaller"
 readme = "README.md"
 license = "MIT"

@@ -5,7 +5,7 @@ Hiçbiri diğerine bağımlı değildir — biri çalışmıyorsa diğeri devred
 
 | Harness / İstemci | Adaptör | Kurulum | Not |
 |---|---|---|---|
-| **Claude Desktop** | MCP | `claude_desktop_config.json`'a `mcpServers.nexremote` ekle | 22 araç + kaynaklar |
+| **Claude Desktop** | MCP | `claude_desktop_config.json`'a `mcpServers.nexremote` ekle | 23 araç + kaynaklar |
 | **Claude Code** | Skill + CLI | bu repoyu `~/.claude/skills/`e bağla, `nexremote` PATH'te | `/nexremote` skill'i |
 | **Cursor** | MCP | `.cursor/mcp.json` | stdio |
 | **Continue / Roo** | MCP | MCP yapılandırması | stdio |

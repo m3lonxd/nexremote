@@ -34,6 +34,7 @@ $ nexremote type "Merhaba dünya — ğüşıöç"
 | **Electron/Chromium'u ağacı açık başlatma** — `nexremote launch` | bayrak + ortam | bayrak | bayrak |
 | **Açık terminaller** — başka bir ajanın, ssh'ın, build'in ekranını oku; ona yaz | Konsole D-Bus, tmux | konsol tamponu (AttachConsole) | Terminal.app, iTerm2, tmux |
 | **Kendi terminali** — komut çalıştır, çıktıyı al | tmux / PTY | cmd.exe | tmux / PTY |
+| **Görünür ajan imleci** — ajan nerede çalışıyor gör; senin farene dokunmaz, tıklamayı engellemez | X11/XWayland pencere · imleç teman | katmanlı pencere · sistem oku | NSWindow · sistem oku |
 | **Ekran görüntüsü** — pencereye kırp, küçült; görüntü koordinatıyla tıkla | spectacle · grim · Xlib | GDI | screencapture |
 
 Root / yönetici gerekmez. Wayland'de fare ve klavye için masaüstü **bir kez**
@@ -77,7 +78,7 @@ nexremote caps
 | Ajan | Bağlantı |
 |---|---|
 | Kabuk çalıştıran her harness | `nexremote skill` çıktısını sistem talimatına ekle |
-| MCP istemcisi (Claude Code, Claude Desktop, Cursor) | `claude mcp add nexremote -- ~/bin/nexremote-mcp` — 22 araç + canlı kaynaklar (`nexremote://windows`, `nexremote://terminals`, `nexremote://tree/{ref}`), ekran görüntüsü görsel olarak döner |
+| MCP istemcisi (Claude Code, Claude Desktop, Cursor) | `claude mcp add nexremote -- ~/bin/nexremote-mcp` — 23 araç + canlı kaynaklar (`nexremote://windows`, `nexremote://terminals`, `nexremote://tree/{ref}`), ekran görüntüsü görsel olarak döner |
 | HTTP konuşan uzak ajan | `NEXREMOTE_TOKEN=… nexremote-http --port 8788` ya da servis olarak: `deploy/install-service.sh` |
 | Tool-calling'i olmayan model | `nexremote-agent --model-cmd "ollama run qwen2.5" --goal "…"` |
 
@@ -118,7 +119,10 @@ core/nexremote/
   backends/uia.py   UI Automation ağacı (Windows)
   backends/ax.py    Accessibility ağacı (macOS)
   backends/tui.py   NexRemote'un kendi tmux/PTY oturumları
-  xcursor.py        görünür ajan imleci (click-through, kullanıcıyı engellemez)
+  agent_cursor.py   görünür ajan imleci: hareket, kare çizimi, daemon (Unix soketi / belirteçli TCP)
+  xcursor.py        imleç arka ucu, Linux (X11/XWayland, click-through)
+  wincursor.py      imleç arka ucu, Windows (katmanlı pencere, WS_EX_TRANSPARENT)
+  maccursor.py      imleç arka ucu, macOS (ctypes objc, ignoresMouseEvents)
 adapters/  cli · mcp · http · skill
 ```
 
@@ -159,6 +163,6 @@ erişilebilirlik okuması onaylar.
   Çalışan bir uygulamada sonradan açılamaz, uygulamanın yeniden başlatılması gerekir.
   Firefox tabanlı tarayıcılar ağacı kendiliğinden yayınlar. Oyunlar ve canvas
   uygulamaları için ekran görüntüsü + koordinat tıklaması kullanılır.
-- Görünür ajan imleci şimdilik yalnızca Linux'ta.
+- Görünür ajan imleci Linux'ta X11/XWayland ister (XWayland'siz saf Wayland'de görünmez, tıklama yine çalışır). Windows arka ucu Wine'da sınandı; macOS arka ucu önizleme, gerçek Mac'te denenmedi.
 
 MIT

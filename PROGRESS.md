@@ -1,5 +1,24 @@
 # NexRemote — Geliştirme Raporu
 
+## v0.5.0 — ajan imleci her yerde (2026-10-29)
+
+Görünür ajan imleci artık üç işletim sisteminde ve tüm adaptörlerde.
+
+- **Ortak çekirdek** `agent_cursor.py`: minimum-jerk hareket, saf Python kare
+  çizimi (cairo gerekmez), tek iş parçacıklı pencere kuyruğu olan daemon.
+  POSIX'te 0600 Unix soketi; Windows'ta 127.0.0.1 TCP + rastgele belirteç
+  (uç dosyası 0600, sabit zamanlı karşılaştırma). Daemon 31/31.
+- **Windows** `wincursor.py`: WS_EX_LAYERED | TRANSPARENT | NOACTIVATE pencere,
+  sistem oku, UpdateLayeredWindow. Wine'da gerçek Win32: tıklama alttaki pencereye
+  geçiyor, odak çalınmıyor, daemon TCP üzerinden. 25/25.
+- **macOS** `maccursor.py`: ctypes ile Objective-C (pyobjc yok), her imzaya ayrı
+  prototip (arm64). Sahte objc katmanıyla çağrı dizisi 25/25.
+- **Adaptörler:** MCP `nexremote_cursor` (23 araç), HTTP `/cursor` ve
+  `/cursor_hide`, CLI `cursor` / `point` / `cursor-hide`, skill talimatı. X11 28/28.
+
+**Doğrulanmayanlar:** macOS imleci gerçek Mac'te hiç çalıştırılmadı; Windows
+imleci gerçek Windows 10/11'de (yüksek DPI, çoklu ekran) denenmedi.
+
 ## v0.4.0 — günlük kullanım (2026-10-29)
 
 Gerçek kullanımda takılınan yerler kapatıldı:
@@ -53,7 +72,7 @@ Ajan imleci artık kullanıcının imleç temasından (SVG; yoksa Xcursor) çizi
 
 **Doğrulanmayanlar:** gerçek Windows 10/11 donanımı; Wine'da UIA ağaç gezintisi
 olmadığından Windows'ta isimle tıklama; macOS'un tamamı gerçek donanımda;
-GNOME. Ajan imleci yalnızca Linux'ta.
+GNOME. Ajan imleci yalnızca Linux'ta (v0.5.0'da Windows ve macOS eklendi).
 
 ---
 

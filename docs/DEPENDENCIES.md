@@ -54,6 +54,7 @@ ekleyip uygulamayı başlatır, açılan pencerenin ref'ini döndürür.
 | Öğe ağacı, isimle tıklama | UI Automation | `comtypes` (pip ile otomatik) | `tree`/`find`/`click REF` çalışmaz |
 | Açık konsollar | AttachConsole yardımcı süreci | python.exe (paketlenmiş exe'de yok) | `terms` çalışmaz |
 | Kırpma / küçültme, MCP | Pillow, mcp | `pip install .[all]` | Yalnızca tam boy görüntü / CLI-HTTP |
+| Görünür ajan imleci | katmanlı pencere (ctypes, stdlib); daemon belirteçli 127.0.0.1 TCP | — | — |
 
 Yönetici olarak çalışan pencerelere UIPI nedeniyle yalnızca yönetici olarak
 başlatılmış NexRemote giriş gönderebilir.
@@ -67,6 +68,7 @@ başlatılmış NexRemote giriş gönderebilir.
 | Öğe ağacı | Accessibility (AXUIElement) | Erişilebilirlik | `tree`/`find` çalışmaz |
 | Ekran görüntüsü | `screencapture` | Ekran Kaydı | `screenshot` çalışmaz |
 | Açık terminaller | Terminal.app / iTerm2 (AppleScript), tmux | Otomasyon (ilk kullanımda sorulur) | Yalnızca tmux |
+| Görünür ajan imleci | NSWindow (ctypes objc, pyobjc gerekmez) | — | İmleç gösterilmez |
 
 `nexremote setup` izin istemlerini açar. İzinler Sistem Ayarları → Gizlilik ve
 Güvenlik altından geri alınır.
