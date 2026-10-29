@@ -28,8 +28,8 @@ $ nexremote type "Merhaba dünya — ğüşıöç"
 | | Linux | Windows | macOS |
 |---|---|---|---|
 | **Ekrandaki her pencere** — başlık, uygulama, konum; öne getir, küçült, kapat | KWin · hyprctl · swaymsg · EWMH | EnumWindows | CGWindowList + AX |
-| **Gerçek fare** — tık, sağ/çift tık, kaydırma, sürükleme; imleç yerine döner | XTEST · RemoteDesktop portalı | SendInput | CGEvent |
-| **Gerçek klavye** — kısayollar, her dilde metin | XTEST · portal + pano | SendInput (Unicode) | CGEvent (Unicode) |
+| **Gerçek fare** — tık, sağ/çift tık, kaydırma, sürükleme; imleç yerine döner | XTEST · RemoteDesktop portalı · Sway IPC | SendInput | CGEvent |
+| **Gerçek klavye** — kısayollar, her dilde metin | XTEST · portal + pano · wtype | SendInput (Unicode) | CGEvent (Unicode) |
 | **Butona adıyla basma** — fare hiç oynamaz | AT-SPI | UI Automation | Accessibility (AX) |
 | **Electron/Chromium'u ağacı açık başlatma** — `nexremote launch` | bayrak + ortam | bayrak | bayrak |
 | **Açık terminaller** — başka bir ajanın, ssh'ın, build'in ekranını oku; ona yaz | Konsole D-Bus, tmux | konsol tamponu (AttachConsole) | Terminal.app, iTerm2, tmux |

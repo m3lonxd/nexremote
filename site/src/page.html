@@ -40,6 +40,7 @@
   <symbol id="i-viewfinder" viewBox="0 0 24 24"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3"/></symbol>
   <symbol id="i-checklist" viewBox="0 0 24 24"><path d="M10 6.5h10M10 12h10M10 17.5h10"/><path d="m3.8 6.5 1.3 1.3 2.2-2.4M3.8 12l1.3 1.3 2.2-2.4M3.8 17.5l1.3 1.3 2.2-2.4"/></symbol>
   <symbol id="i-camera" viewBox="0 0 24 24"><path d="M3.5 8.5A2.5 2.5 0 0 1 6 6h1.8l1.5-2h5.4l1.5 2H18a2.5 2.5 0 0 1 2.5 2.5v8A2.5 2.5 0 0 1 18 19H6a2.5 2.5 0 0 1-2.5-2.5z"/><circle cx="12" cy="12.5" r="3.5"/></symbol>
+  <symbol id="i-launch" viewBox="0 0 24 24"><path d="M10 4.5H7A2.5 2.5 0 0 0 4.5 7v10A2.5 2.5 0 0 0 7 19.5h10a2.5 2.5 0 0 0 2.5-2.5v-3"/><path d="M14 4.5h5.5V10M19.5 4.5 11 13"/></symbol>
   <symbol id="i-plug" viewBox="0 0 24 24"><path d="M9 3v4M15 3v4"/><path d="M6.5 7h11v3.5a5.5 5.5 0 0 1-11 0z"/><path d="M12 16v5"/></symbol>
   <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/><path d="M12 14.5v2"/></symbol>
   <symbol id="i-monitor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2.5"/><path d="M9 20h6M12 16v4"/></symbol>
@@ -576,6 +577,12 @@ Should I fix them? (y/n, or tell me)</code></pre>
         <dl><dt>{{th_cmd}}</dt><dd><code>find</code> <code>click REF</code></dd></dl>
       </li>
       <li class="surface" data-surface data-reveal data-tilt>
+        <svg class="ico ico-lg" aria-hidden="true"><use href="#i-launch"/></svg>
+        <h3>{{r_launch}}</h3>
+        <p>{{r_launch_n}}</p>
+        <dl><dt>{{th_cmd}}</dt><dd><code>launch vesktop</code></dd></dl>
+      </li>
+      <li class="surface" data-surface data-reveal data-tilt>
         <svg class="ico ico-lg" aria-hidden="true"><use href="#i-terminal"/></svg>
         <h3>{{r_terms}}</h3>
         <p>{{r_terms_n}}</p>
@@ -619,7 +626,8 @@ Should I fix them? (y/n, or tell me)</code></pre>
         <ul class="envs">
           <li><span class="env-n">KDE Plasma 6 · Wayland</span><span class="tb tb-real">{{tb_real}}</span><p>{{env_kde}}</p></li>
           <li><span class="env-n">X11</span><span class="tb tb-virt">{{tb_xvfb}}</span><p>{{env_x11}}</p></li>
-          <li><span class="env-n">Sway · Hyprland</span><span class="tb tb-mock">{{tb_fake}}</span><p>{{env_wl}}</p></li>
+          <li><span class="env-n">Sway</span><span class="tb tb-virt">{{tb_sway}}</span><p>{{env_sway}}</p></li>
+          <li><span class="env-n">Hyprland</span><span class="tb tb-mock">{{tb_fake}}</span><p>{{env_wl}}</p></li>
           <li><span class="env-n">GNOME</span><span class="tb tb-none">{{tb_none}}</span><p>{{env_gnome}}</p></li>
         </ul>
       </li>
@@ -856,6 +864,10 @@ bash-5.2$</code></pre>
           <li data-reveal>{{sh4}}</li>
           <li data-reveal>{{sh6}}</li>
           <li data-reveal>{{sh7}}</li>
+          <li data-reveal>{{sh9}}</li>
+          <li data-reveal>{{sh10}}</li>
+          <li data-reveal>{{sh11}}</li>
+          <li data-reveal>{{sh12}}</li>
           <li data-reveal>{{sh8}}</li>
           <li data-reveal>{{sh5}}</li>
         </ul>
@@ -865,10 +877,7 @@ bash-5.2$</code></pre>
         <ul class="track-list next" data-stagger>
           <li data-reveal><strong>{{rm5_t}}</strong> {{rm5_d}}</li>
           <li data-reveal><strong>{{rm6_t}}</strong> {{rm6_d}}</li>
-          <li data-reveal><strong>{{rm1_t}}</strong> {{rm1_d}}</li>
           <li data-reveal><strong>{{rm2_t}}</strong> {{rm2_d}}</li>
-          <li data-reveal><strong>{{rm3_t}}</strong> {{rm3_d}}</li>
-          <li data-reveal><strong>{{rm4_t}}</strong> {{rm4_d}}</li>
         </ul>
       </div>
     </div>
