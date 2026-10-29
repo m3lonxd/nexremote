@@ -28,12 +28,25 @@ If `caps` says something needs approval, run `nexremote setup` once:
 
 ## 2. Act on GUI apps — structure first, pixels second
 ```bash
-nexremote find "Save" --window win:{...}   # → element refs (atspi:… / uia:… / ax:…)
-nexremote click <ref from find>            # press it; the user's mouse does not move
-nexremote tree --window win:{...}          # whole UI tree when you need context
+nexremote tree --window win:{...}          # visible UI; actionable lines end in ref=…
+nexremote click <ref>                      # press it; the user's mouse does not move
+nexremote find "Save" --window win:{...}   # search by name/value → refs
 nexremote set-text <ref> "text"           # replace a field's content
 ```
-When `find`/`tree` says the app publishes no tree (browsers, Electron, games):
+`tree` leaves out closed menus and folds unnamed layout boxes, so what you
+read is what is on screen. Content scrolled out of view may be missing:
+scroll, then read again.
+
+Electron/Chromium apps (Discord, Vesktop, VS Code, Slack, Chrome) publish an
+empty tree unless started with a flag; `tree` then ends with a `#` hint line.
+```bash
+nexremote launch vesktop                   # starts it with the flag → win:{...}
+nexremote launch code ~/project            # arguments pass through
+```
+A running single-instance app ignores the flag. Ask the user before closing
+their app to relaunch it.
+
+When the app still publishes no tree (games, canvas apps):
 ```bash
 nexremote screenshot --window win:{...} --max-width 1568   # then look at the image
 nexremote click 412 230 --from-shot        # pixel coords from THAT image

@@ -125,12 +125,29 @@ def nexremote_window_action(ref: str, action: str) -> bool:
 
 @mcp.tool()
 @_tool_errors
+def nexremote_launch(argv: list[str], wait: float = 15.0) -> dict:
+    """Start a program with accessibility switched on and return its new window.
+
+    argv is the program and its arguments, e.g. ["vesktop"] or ["code", "."].
+    Electron/Chromium apps (Discord, VS Code, Slack, Chrome) only expose their
+    buttons when started with --force-renderer-accessibility; this adds it.
+    Returns {"window": "win:{...}" or null, "electron": bool, "note": str}.
+    A single-instance app that is already running ignores the flag: close it
+    fully first. Never close the user's apps without asking.
+    """
+    return _get_nexremote().launch(list(argv), wait)
+
+
+@mcp.tool()
+@_tool_errors
 def nexremote_tree(window_ref: str = "") -> str:
     """Dump the accessibility tree of a window as indented readable text.
 
-    Each line shows [role] name and available actions like <click,set_text>.
-    Pass window_ref from nexremote_windows; empty string uses the first window.
-    This is the primary way to "see" the GUI structure before acting.
+    Each line shows [role] name, actions like <click,set_text> and, for
+    actionable elements, ref=... that nexremote_click accepts directly.
+    Unnamed layout containers are folded away and hidden elements (closed
+    menus) are left out. Pass window_ref from nexremote_windows; empty string
+    uses the first window. An empty Electron tree ends with a hint line.
     """
     return _get_nexremote().tree(window_ref or None)
 

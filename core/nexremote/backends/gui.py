@@ -167,9 +167,14 @@ class GuiBackend(Backend):
             node = node.get_child_at_index(idx) if node else None
         if node is None:
             return Element(ref=window_ref, role=Role.FRAME, name="pencere bulunamadı")
-        return self._walk(node, path, 0)
+        # Kapalı menüler, gizli sekmeler ağaçta durur ama ekranda yoktur; onları
+        # göstermek modeli görünmeyen öğeye tıklamaya iter. Pencerenin kendisi
+        # SHOWING değilse (simge durumu) süzgeç kapatılır, yoksa ağaç boşalır.
+        only_showing = self._state(node, "SHOWING") is True
+        return self._walk(node, path, 0, only_showing)
 
-    def _walk(self, node, path: list[int], depth: int) -> Element:
+    def _walk(self, node, path: list[int], depth: int,
+              only_showing: bool = False) -> Element:
         role = self._role(node)
         el = Element(
             ref=self._make_ref(path),
@@ -191,7 +196,9 @@ class GuiBackend(Backend):
                 ch = node.get_child_at_index(i)
                 if ch is None:
                     continue
-                child = self._walk(ch, path + [i], depth + 1)
+                if only_showing and self._state(ch, "SHOWING") is False:
+                    continue
+                child = self._walk(ch, path + [i], depth + 1, only_showing)
                 # boş dekoratif düğümleri atla
                 if child.name or child.actions or child.children:
                     el.children.append(child)

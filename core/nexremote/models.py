@@ -96,8 +96,26 @@ class Element:
             d["children"] = [c.to_dict(True) for c in self.children]
         return d
 
+    def is_wrapper(self) -> bool:
+        """İsimsiz, değersiz yerleşim kabı mı? (Electron/web her <div>'i panel
+        yapar ve hepsine 'click' verir — modele hiçbir şey anlatmaz.)"""
+        return (self.role in (Role.PANEL, Role.UNKNOWN) and not self.name.strip()
+                and not self.value and not self.focused
+                and set(self.actions) <= {"click", "focus"})
+
     def render(self, indent: int = 0, max_name: int = 60) -> str:
-        """LLM dostu metin satırı: `  [button] Kaydet  <click>`"""
+        """LLM dostu metin satırı: `  [button] Kaydet  <click>  ref=atspi:1:0/3`
+
+        İsimsiz kaplar yazılmaz, çocukları bir üst girintiye çıkar; tıklanabilir
+        öğeler ref'iyle yazılır ki model ayrıca `find` çağırmadan tıklayabilsin."""
+        return "\n".join(self._lines(indent, max_name, root=True))
+
+    def _lines(self, indent: int, max_name: int, root: bool = False) -> list[str]:
+        if not root and self.is_wrapper():
+            out: list[str] = []
+            for c in self.children:
+                out.extend(c._lines(indent, max_name))
+            return out
         pad = "  " * indent
         nm = self.name[:max_name].replace("\n", " ")
         extra = ""
@@ -107,11 +125,12 @@ class Element:
             extra += f"  = {self.value[:40]!r}"
         if self.focused:
             extra += "  (*)"
-        line = f"{pad}[{self.role.value}] {nm}{extra}"
-        out = [line]
+        if not root and (self.actions or self.value):
+            extra += f"  ref={self.ref}"
+        out = [f"{pad}[{self.role.value}] {nm}{extra}"]
         for c in self.children:
-            out.append(c.render(indent + 1, max_name))
-        return "\n".join(out)
+            out.extend(c._lines(indent + 1, max_name))
+        return out
 
 
 @dataclass

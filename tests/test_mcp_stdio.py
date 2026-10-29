@@ -12,7 +12,8 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 EXPECTED = {"nexremote_observe", "nexremote_windows", "nexremote_window_action",
             "nexremote_click", "nexremote_click_at", "nexremote_scroll", "nexremote_drag",
             "nexremote_key", "nexremote_type", "nexremote_screenshot", "nexremote_terminals",
-            "nexremote_terminal_read", "nexremote_terminal_send", "nexremote_run"}
+            "nexremote_terminal_read", "nexremote_terminal_send", "nexremote_run",
+            "nexremote_launch", "nexremote_tree"}
 
 
 def main() -> int:

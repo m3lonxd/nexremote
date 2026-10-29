@@ -37,9 +37,12 @@ pencereler `swaymsg` / `hyprctl` ile, giriş portal ya da wtype ile.
 KDE varsayılan olarak `org.a11y.Status.IsEnabled=false` ile gelir. Bu durumda
 Qt uygulamaları (Konsole, Dolphin...) ağaç yayınlamaz. `nexremote setup` bu
 ayarı açar; o andan sonra başlatılan uygulamalar ağaç yayınlar. Firefox
-tabanlı tarayıcılar ve Electron uygulamaları ağaç yerine ekran görüntüsü ve
-koordinat tıklamasıyla kullanılır. Electron için diğer yol, uygulamayı
-`--force-renderer-accessibility` ile başlatmaktır.
+tabanlı tarayıcılar ağacı kendiliğinden yayınlar. Electron/Chromium
+uygulamaları (Discord, VS Code, Slack, Chrome) yalnızca
+`--force-renderer-accessibility` ile başlatılırsa yayınlar; çalışırken
+açılamaz (`ScreenReaderEnabled` ve `ACCESSIBILITY_ENABLED` canlı etki etmez).
+`nexremote launch <program>` bayrağı ve Qt/GTK erişilebilirlik ortamını
+ekleyip uygulamayı başlatır, açılan pencerenin ref'ini döndürür.
 
 ## Windows
 

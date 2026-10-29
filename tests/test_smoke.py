@@ -47,6 +47,14 @@ def main() -> int:
         "[button] Kaydet" in Element(ref="x", role=Role.BUTTON, name="Kaydet",
                                      actions=["click"]).render()
         or (_ for _ in ()).throw(AssertionError("render hatalı"))))
+    def _folded():
+        btn = Element(ref="a:1:0/0/0", role=Role.BUTTON, name="Kaydet", actions=["click"])
+        div = Element(ref="a:1:0/0", role=Role.PANEL, actions=["click"],
+                      children=[Element(ref="a:1:0/0/1", role=Role.PANEL), btn])
+        txt = Element(ref="a:1:0", role=Role.FRAME, name="P", children=[div]).render()
+        assert txt.splitlines() == ["[frame] P", "  [button] Kaydet  <click>  ref=a:1:0/0/0"], txt
+        return True
+    check("render isimsiz kapları katlar, ref yazar", _folded)
     check("Element.to_dict()", lambda: (
         Element(ref="x", role=Role.BUTTON, name="A").to_dict().get("role") == "button"
         or (_ for _ in ()).throw(AssertionError("rol yanlış"))))

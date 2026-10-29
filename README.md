@@ -31,6 +31,7 @@ $ nexremote type "Merhaba dünya — ğüşıöç"
 | **Gerçek fare** — tık, sağ/çift tık, kaydırma, sürükleme; imleç yerine döner | XTEST · RemoteDesktop portalı | SendInput | CGEvent |
 | **Gerçek klavye** — kısayollar, her dilde metin | XTEST · portal + pano | SendInput (Unicode) | CGEvent (Unicode) |
 | **Butona adıyla basma** — fare hiç oynamaz | AT-SPI | UI Automation | Accessibility (AX) |
+| **Electron/Chromium'u ağacı açık başlatma** — `nexremote launch` | bayrak + ortam | bayrak | bayrak |
 | **Açık terminaller** — başka bir ajanın, ssh'ın, build'in ekranını oku; ona yaz | Konsole D-Bus, tmux | konsol tamponu (AttachConsole) | Terminal.app, iTerm2, tmux |
 | **Kendi terminali** — komut çalıştır, çıktıyı al | tmux / PTY | cmd.exe | tmux / PTY |
 | **Ekran görüntüsü** — pencereye kırp, küçült; görüntü koordinatıyla tıkla | spectacle · grim · Xlib | GDI | screencapture |
@@ -120,6 +121,8 @@ erişilebilirlik okuması onaylar.
   (`tests/wine/setup.sh` bir kez, sonra `tests/wine/run.sh tests/test_windows_wine.py`):
   gerçek Notepad penceresi ve cmd.exe konsolu açılır.
 - macOS: Quartz/AX çağrıları sahte kütüphaneyle sınanır (`tests/test_macos_logic.py`).
+- Electron: sandbox'ta gerçek bir Electron penceresi açılır, butonu ağaçtaki
+  ref'iyle tıklanır (`NEXR_ELECTRON=/yol/electron`; yoksa test atlanır).
 
 ## Sınırlar
 
@@ -132,8 +135,11 @@ erişilebilirlik okuması onaylar.
 - macOS: kod yazıldı ve mantığı sahte Quartz ile test edildi, **gerçek bir
   Mac'te henüz doğrulanmadı** — önizleme sürümü.
 - Konsole D-Bus yalnızca görünen ekranı verir; geçmiş satırlar için tmux gerekir.
-- Tarayıcılar ve Electron uygulamaları çoğunlukla ağaç yayınlamaz; bunlarda
-  ekran görüntüsü + koordinat tıklaması kullanılır.
+- Electron/Chromium uygulamaları ağacı ancak `--force-renderer-accessibility`
+  ile başlatılınca yayınlar; `nexremote launch <program>` bayrağı ekler.
+  Çalışan bir uygulamada sonradan açılamaz, uygulamanın yeniden başlatılması gerekir.
+  Firefox tabanlı tarayıcılar ağacı kendiliğinden yayınlar. Oyunlar ve canvas
+  uygulamaları için ekran görüntüsü + koordinat tıklaması kullanılır.
 - Görünür ajan imleci şimdilik yalnızca Linux'ta.
 
 MIT

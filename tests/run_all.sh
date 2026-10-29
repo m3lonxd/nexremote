@@ -4,7 +4,7 @@
 set -u
 cd "$(dirname "$0")/.."
 fail=0
-run() { echo; echo "▶ $1"; shift; "$@" 2>&1 | grep -E '✓|✗|⊘|SONUÇ|KABUL|SANDBOX|MCP:|WLROOTS|WINDOWS|MACOS|PLATFORM|İMLEÇ' ; [[ ${PIPESTATUS[0]} -eq 0 ]] || fail=1; }
+run() { echo; echo "▶ $1"; shift; "$@" 2>&1 | grep -E '✓|✗|⊘|SONUÇ|KABUL|SANDBOX|MCP:|WLROOTS|WINDOWS|MACOS|PLATFORM|İMLEÇ|ELECTRON' ; [[ ${PIPESTATUS[0]} -eq 0 ]] || fail=1; }
 run "duman (salt okuma)"        python3 tests/test_smoke.py
 run "kabul (salt okuma)"        python3 tests/test_acceptance.py
 run "MCP stdio (salt okuma)"    python3 tests/test_mcp_stdio.py
@@ -15,5 +15,6 @@ run "imleç teması (sahte tema)"    python3 tests/test_cursor_theme.py
 run "ajan imleci — Xvfb"         tests/x11_sandbox.sh python3 tests/test_cursor_x11.py
 run "giriş — sandbox"           tests/sandbox.sh python3 tests/test_input_sandbox.py
 run "CLI uçtan uca — sandbox"   tests/sandbox.sh bash -c 'cd tests && python3 test_cli_sandbox.py'
+run "Electron — sandbox"        tests/sandbox.sh bash -c 'cd tests && python3 test_electron_sandbox.py'
 echo; [[ $fail -eq 0 ]] && echo "TÜMÜ GEÇTİ" || echo "BAŞARISIZ TEST VAR"
 exit $fail

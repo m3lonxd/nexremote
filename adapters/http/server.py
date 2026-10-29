@@ -80,6 +80,11 @@ def _dispatch(method: str, body: dict):
         return snap
     if method == "windows":
         return [w.to_dict() for w in nr.windows()]
+    if method == "launch":
+        argv = body.get("argv")
+        if not isinstance(argv, list) or not argv or not all(isinstance(x, str) for x in argv):
+            raise ValueError("launch: 'argv' boş olmayan metin listesi olmalı")
+        return nr.launch(argv, float(body.get("wait", 15.0)))
     if method == "tree":
         return {"tree": nr.tree(body.get("window_ref") or "")}
     if method == "find":

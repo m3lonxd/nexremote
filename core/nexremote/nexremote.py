@@ -14,6 +14,7 @@ import os
 import sys
 from typing import Any, Optional
 
+from . import launch as launcher
 from .base import Backend
 from .models import CommandResult, Element, Screenshot, Window
 from .platforms import Desktop, Unsupported, detect
@@ -128,7 +129,19 @@ class NexRemote:
     def tree(self, window_ref: Optional[str] = None) -> str:
         """Pencere ağacını LLM dostu metin olarak döndür."""
         ref = self._atspi_ref(window_ref) if window_ref else ""
-        return self._gui().tree(ref).render()
+        root = self._gui().tree(ref)
+        text = root.render()
+        if not root.children:
+            win = next((w for w in self._gui().windows() if w.ref == root.ref), None)
+            exe = launcher.pid_exe(win.pid) if win is not None else None
+            if launcher.is_chromium(exe):
+                text += "\n# " + launcher.electron_hint(win.title or win.app, exe)
+        return text
+
+    def launch(self, argv: list[str], wait: float = 15.0) -> dict:
+        """Programı erişilebilirlik açık başlat (Electron'a bayrağı ekler) ve
+        açılan pencerenin win: ref'ini döndür."""
+        return launcher.launch(argv, self.windows, wait)
 
     def _atspi_ref(self, ref: str) -> str:
         """win:{id} (KWin) → aynı pencerenin atspi: ref'i (pid + başlık eşleşmesi)."""

@@ -81,6 +81,6 @@ durur. Böylece **tool-calling desteği olmayan modeller bile ajan olur.**
 |---|---|
 | `nexremote caps` → GUI kapalı | `sudo apt install python3-gi gir1.2-atspi-2.0` |
 | `type`/`key`/`click X Y` çalışmıyor | `nexremote setup` → KDE izninde Share; `nexremote caps` portal durumunu gösterir |
-| Electron iç butonları görünmüyor | uygulamayı `--force-renderer-accessibility` ile başlat |
+| Electron iç butonları görünmüyor | uygulamayı kapatıp `nexremote launch <program>` ile başlat |
 | MCP'de araç yok | `pip install mcp`; wrapper `nexremote-mcp` kullan |
 | `nexremote: command not found` | `export PATH="$HOME/bin:$PATH"` |

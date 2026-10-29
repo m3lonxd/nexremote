@@ -47,7 +47,8 @@ ELİNDEKİ TEK ARAÇ: `nexremote` kabuk komutu. Kullanılabilir alt komutlar:
   nexremote observe                  # İLK BUNU YAP: pencereler (win:{..}) + açık terminaller
   nexremote find "Ad" --window REF   # öğe ara -> atspi ref döner
   nexremote click REF                # öğeye isimle tıkla
-  nexremote tree --window REF        # pencerenin erişilebilirlik ağacı
+  nexremote tree --window REF        # görünen arayüz; tıklanabilir satırlar ref=... ile biter
+  nexremote launch PROGRAM           # Electron'u ağacı açık başlat (ağaç boş + ipucu çıkarsa)
   nexremote set-text REF "metin"     # alanın içeriğini değiştir
   nexremote window REF activate      # pencereyi öne getir (yazmadan önce)
   nexremote type "metin"             # odaktaki pencereye yaz

@@ -12,7 +12,8 @@ Kullanım:
 
   nexremote windows                    ekrandaki tüm pencereler (win:{...} ref)
   nexremote window REF activate|close|minimize
-  nexremote tree [--window REF]        erişilebilirlik ağacı (LLM dostu metin)
+  nexremote launch [--wait N] PROG ... programı ağacı açık başlatır (Electron'a bayrak ekler)
+  nexremote tree [--window REF]        erişilebilirlik ağacı (LLM dostu metin, ref'li)
   nexremote find "Kaydet" [--window R] öğe arar → atspi ref
   nexremote click REF                  öğeye isimle tıklar (imleç oynamaz)
   nexremote click X Y [--right|--middle] [--double]   koordinata gerçek tık
@@ -159,11 +160,23 @@ def cmd_tree(nr, a) -> None:
         txt = nr.tree(ref)
     except Exception as e:
         _out({"error": str(e)}, a.json, f"hata: {e}")
-        return
+        raise SystemExit(1)
     if a.json:
         print(json.dumps({"window": ref, "tree": txt}, ensure_ascii=False, indent=2))
     else:
         print(txt)
+
+
+def cmd_launch(nr, a) -> None:
+    argv = a.argv[1:] if a.argv[:1] == ["--"] else a.argv
+    r = nr.launch(argv, a.wait)
+    if r["window"]:
+        txt = f"açıldı: {r['window']}\t{r['title']}" + ("  (Electron: ağaç açık)" if r["electron"] else "")
+    else:
+        txt = f"pid {r['pid']}: {r['note']}"
+    _out(r, a.json, txt)
+    if not r["window"]:
+        raise SystemExit(1)
 
 
 def cmd_find(nr, a) -> None:
@@ -377,6 +390,10 @@ def build_parser() -> argparse.ArgumentParser:
     wa = sub.add_parser("window", help="pencere eylemi")
     wa.add_argument("ref"); wa.add_argument("action", choices=["activate", "close", "minimize"])
     wa.set_defaults(fn=cmd_window)
+    la = sub.add_parser("launch", help="programı erişilebilirlik açık başlat (Electron dahil)")
+    la.add_argument("--wait", type=float, default=15.0, help="pencere bekleme süresi (sn)")
+    la.add_argument("argv", nargs=argparse.REMAINDER, help="program ve argümanları")
+    la.set_defaults(fn=cmd_launch)
     t = sub.add_parser("tree", help="erişilebilirlik ağacı")
     t.add_argument("--window", default=None)
     t.set_defaults(fn=cmd_tree)
