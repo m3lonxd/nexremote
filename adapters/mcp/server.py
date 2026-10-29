@@ -351,6 +351,36 @@ def nexremote_sessions() -> list[str]:
     return [str(s) for s in _get_nexremote().sessions()]
 
 
+# ----------------------------------------------------------------- resources
+# Read-only views a client can attach as context without spending a tool call.
+# Each read is live: it queries the desktop at the moment of the read.
+@mcp.resource("nexremote://windows", name="windows", mime_type="application/json",
+              description="Every window on screen: ref, title, app, pid, bounds, focused.")
+def resource_windows() -> list[dict]:
+    return [w.to_dict() for w in _get_nexremote().windows()]
+
+
+@mcp.resource("nexremote://terminals", name="terminals", mime_type="application/json",
+              description="Terminals open on the desktop (Konsole tabs, tmux panes, consoles).")
+def resource_terminals() -> list[dict]:
+    return _get_nexremote().terminals()
+
+
+@mcp.resource("nexremote://tree/{ref}", name="tree", mime_type="text/plain",
+              description="Accessibility tree of one window, as nexremote_tree renders it. "
+                          "ref is a window ref from nexremote://windows, percent-encoded "
+                          "(win:{id} → win%3A%7Bid%7D); 'focused' means the active window.")
+def resource_tree(ref: str) -> str:
+    nr = _get_nexremote()
+    if ref == "focused":
+        ws = nr.windows()
+        target = next((w for w in ws if w.focused), ws[0] if ws else None)
+        if target is None:
+            raise ValueError("no window on screen")
+        ref = target.ref
+    return nr.tree(ref)
+
+
 def main() -> None:
     mcp.run(transport="stdio")
 

@@ -1,0 +1,22 @@
+# NexRemote HTTP adaptörü — systemd KULLANICI servisi.
+# Masaüstüne erişmesi için kullanıcının grafik oturumuyla başlar ve onunla
+# kapanır. deploy/install-service.sh @ROOT@/@PYTHON@ yerlerini doldurup
+# ~/.config/systemd/user/ altına kurar; ayarlar http.env dosyasındadır.
+[Unit]
+Description=NexRemote HTTP adapter (desktop control for AI agents)
+After=graphical-session.target
+PartOf=graphical-session.target
+
+[Service]
+Type=simple
+EnvironmentFile=%h/.config/nexremote/http.env
+Environment=PYTHONPATH=@ROOT@/core NEXREMOTE_CURSOR=1
+ExecStart=@PYTHON@ @ROOT@/adapters/http/server.py --host ${NEXREMOTE_HOST} --port ${NEXREMOTE_PORT}
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=yes
+# PrivateTmp kullanılmaz: tmux soketleri /tmp altında, kullanıcının
+# oturumlarıyla aynı yerde kalmalı.
+
+[Install]
+WantedBy=graphical-session.target

@@ -5,14 +5,14 @@ Hiçbiri diğerine bağımlı değildir — biri çalışmıyorsa diğeri devred
 
 | Harness / İstemci | Adaptör | Kurulum | Not |
 |---|---|---|---|
-| **Claude Desktop** | MCP | `claude_desktop_config.json`'a `mcpServers.nexremote` ekle | 21 araç |
+| **Claude Desktop** | MCP | `claude_desktop_config.json`'a `mcpServers.nexremote` ekle | 22 araç + kaynaklar |
 | **Claude Code** | Skill + CLI | bu repoyu `~/.claude/skills/`e bağla, `nexremote` PATH'te | `/nexremote` skill'i |
 | **Cursor** | MCP | `.cursor/mcp.json` | stdio |
 | **Continue / Roo** | MCP | MCP yapılandırması | stdio |
 | **Aider** | CLI | `nexremote` PATH'te; ajan komutu çalıştırır | metin |
 | **Codex CLI / Gemini CLI** | CLI | shell erişimi yeterli | metin |
 | **Özel / proxy'lenmiş CLI** | CLI | `nexremote ...` komutlarını kabukta çalıştır | evrensel |
-| **HTTP-tabanlı uzak ajan** | HTTP | `nexremote-http --port 8788 --token X` | stdlib |
+| **HTTP-tabanlı uzak ajan** | HTTP | `NEXREMOTE_TOKEN=X nexremote-http --port 8788` veya `deploy/install-service.sh` | stdlib |
 | **Tool-calling'siz model** | Metin protokolü | `nexremote-agent --model-cmd "..." --goal "..."` | ajan döngüsü |
 | **Görsel model** | CLI + screenshot | `nexremote screenshot /tmp/s.png` | piksel |
 | **Başsız sunucu (GUI yok)** | CLI/HTTP (TUI) | sadece `run`/`screen`/`keys` | otomatik |
@@ -72,7 +72,7 @@ durur. Böylece **tool-calling desteği olmayan modeller bile ajan olur.**
 | Değişken | Etki |
 |---|---|
 | `NEXREMOTE_BIN` | `install.sh` wrapper dizini (varsayılan `~/bin`) |
-| `NEXREMOTE_TOKEN` | HTTP adaptörü için Bearer token |
+| `NEXREMOTE_TOKEN` / `NEXREMOTE_TOKEN_FILE` | HTTP adaptörü için Bearer token (veya onu içeren dosya) |
 | `PYTHONPATH` | wrapper'lar otomatik ayarlar; elle kullanımda `core/` ekle |
 
 ## Sorun giderme

@@ -28,16 +28,24 @@ API (hepsi POST, JSON gövde; GET /health ve GET /caps de var):
   POST /screen  {session}
   POST /send_keys {keys, session}
   POST /sessions
+  POST /launch  {argv, wait}   programı ağacı açık başlat (Electron'a bayrak)
 
 Güvenlik: varsayılan olarak yalnızca localhost'a bağlanır. Başka bir arayüze
-token'sız bağlanmayı REDDEDER (masaüstü kontrolü ağa açılmış olurdu).
---token verilince Authorization: Bearer <token> zorunludur.
+token'sız (veya 24 karakterden kısa token'la) bağlanmayı REDDEDER — masaüstü
+kontrolü ağa açılmış olurdu. Token verilince Authorization: Bearer <token>
+zorunludur; sabit zamanlı karşılaştırılır. Token'ı komut satırına değil
+NEXREMOTE_TOKEN'a ya da --token-file'a koyun (ps çıktısında görünmesin).
+--tls-cert/--tls-key ile HTTPS; ağ üzerinden düz HTTP'de token okunabilir,
+TLS yoksa SSH tüneli kullanın. Kurulum: deploy/install-service.sh.
 """
 from __future__ import annotations
 
 import argparse
+import hmac
 import json
 import os
+import secrets
+import ssl
 import sys
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse
@@ -51,6 +59,12 @@ for cand in (os.path.join(_HERE, "..", "..", "core"),
 
 TOKEN = None
 _NR = None
+MAX_BODY = 4 * 1024 * 1024   # type/set_text için bol; daha büyüğü hata
+MIN_REMOTE_TOKEN = 24
+
+
+class BadRequest(Exception):
+    """İstemci hatası (400) — gövde okunamadı veya çok büyük."""
 
 
 def get_nr():
@@ -141,7 +155,8 @@ def _dispatch(method: str, body: dict):
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "NexRemote/0.1"
+    server_version = "NexRemote"
+    timeout = 60   # sessiz bağlantı bir iş parçacığını sonsuza dek tutmasın
 
     def _send(self, code: int, obj) -> None:
         data = json.dumps(obj, ensure_ascii=False).encode()
@@ -155,19 +170,27 @@ class Handler(BaseHTTPRequestHandler):
         if not TOKEN:
             return True
         h = self.headers.get("Authorization", "")
-        return h == f"Bearer {TOKEN}"
+        return hmac.compare_digest(h.encode(), f"Bearer {TOKEN}".encode())
 
     def log_message(self, *a):  # sessiz
         pass
 
     def _body(self) -> dict:
-        n = int(self.headers.get("Content-Length") or 0)
-        if not n:
+        try:
+            n = int(self.headers.get("Content-Length") or 0)
+        except ValueError:
+            raise BadRequest("Content-Length sayı değil")
+        if n > MAX_BODY:
+            raise BadRequest(f"gövde çok büyük ({n} bayt, sınır {MAX_BODY})")
+        if n <= 0:
             return {}
         try:
-            return json.loads(self.rfile.read(n) or b"{}")
-        except Exception:
-            return {}
+            body = json.loads(self.rfile.read(n))
+        except (ValueError, UnicodeDecodeError) as e:
+            raise BadRequest(f"gövde geçerli JSON değil: {e}")
+        if not isinstance(body, dict):
+            raise BadRequest("gövde bir JSON nesnesi olmalı")
+        return body
 
     def do_GET(self):
         path = urlparse(self.path).path.rstrip("/")
@@ -200,6 +223,8 @@ class Handler(BaseHTTPRequestHandler):
         method = urlparse(self.path).path.rstrip("/").lstrip("/")
         try:
             return self._send(200, _dispatch(method, self._body()))
+        except BadRequest as e:
+            return self._send(400, {"error": str(e)})
         except KeyError as e:
             return self._send(400, {"error": f"eksik alan: {e.args[0]}"})
         except LookupError as e:
@@ -217,15 +242,59 @@ def main(argv=None) -> int:
     p = argparse.ArgumentParser(description="NexRemote HTTP adaptörü")
     p.add_argument("--host", default="127.0.0.1")
     p.add_argument("--port", type=int, default=8788)
-    p.add_argument("--token", default=os.environ.get("NEXREMOTE_TOKEN"))
+    p.add_argument("--token", default=os.environ.get("NEXREMOTE_TOKEN"),
+                   help="Bearer token (tercihen NEXREMOTE_TOKEN ya da --token-file)")
+    p.add_argument("--token-file", default=os.environ.get("NEXREMOTE_TOKEN_FILE"),
+                   help="token'ı bu dosyadan oku (ilk satır)")
+    p.add_argument("--tls-cert", default=os.environ.get("NEXREMOTE_TLS_CERT"))
+    p.add_argument("--tls-key", default=os.environ.get("NEXREMOTE_TLS_KEY"))
+    p.add_argument("--gen-token", action="store_true", help="rastgele token yaz ve çık")
     a = p.parse_args(argv)
+    if a.gen_token:
+        print(secrets.token_urlsafe(32))
+        return 0
     TOKEN = a.token
-    if a.host not in ("127.0.0.1", "localhost", "::1") and not TOKEN:
-        print("HATA: localhost dışına token'sız açmak masaüstünü ağa açar. "
-              "--token GİZLİ (veya NEXREMOTE_TOKEN) verin.", file=sys.stderr)
+    if a.token_file:
+        try:
+            with open(a.token_file) as f:
+                TOKEN = f.readline().strip()
+        except OSError as e:
+            print(f"HATA: token dosyası okunamadı: {e}", file=sys.stderr)
+            return 2
+    TOKEN = TOKEN or None
+    if a.host not in ("127.0.0.1", "localhost", "::1"):
+        if not TOKEN or len(TOKEN) < MIN_REMOTE_TOKEN:
+            print("HATA: localhost dışına açmak masaüstünü ağa açar; en az "
+                  f"{MIN_REMOTE_TOKEN} karakterlik token gerekir "
+                  "(üretmek için: nexremote-http --gen-token).", file=sys.stderr)
+            return 2
+        if not a.tls_cert:
+            print("UYARI: TLS yok — token ağda düz metin gider. --tls-cert/--tls-key "
+                  "verin ya da SSH tüneli kullanın.", file=sys.stderr)
+    if bool(a.tls_cert) != bool(a.tls_key):
+        print("HATA: --tls-cert ve --tls-key birlikte verilmeli.", file=sys.stderr)
         return 2
-    srv = ThreadingHTTPServer((a.host, a.port), Handler)
-    print(f"NexRemote HTTP: http://{a.host}:{a.port}  (token: {'var' if TOKEN else 'yok'})")
+    try:
+        srv = ThreadingHTTPServer((a.host, a.port), Handler)
+    except OSError as e:
+        print(f"HATA: {a.host}:{a.port} dinlenemiyor: {e}", file=sys.stderr)
+        return 2
+    scheme = "http"
+    if a.tls_cert:
+        try:
+            ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+            ctx.minimum_version = ssl.TLSVersion.TLSv1_2
+            ctx.load_cert_chain(a.tls_cert, a.tls_key)
+        except (OSError, ssl.SSLError) as e:
+            print(f"HATA: TLS sertifikası yüklenemedi: {e}", file=sys.stderr)
+            return 2
+        # El sıkışma accept'te değil istek iş parçacığında olsun: yavaş/bozuk
+        # bir istemci diğer bağlantıları bekletmesin.
+        srv.socket = ctx.wrap_socket(srv.socket, server_side=True,
+                                     do_handshake_on_connect=False)
+        scheme = "https"
+    print(f"NexRemote HTTP: {scheme}://{a.host}:{a.port}  (token: {'var' if TOKEN else 'yok'})",
+          flush=True)
     try:
         srv.serve_forever()
     except KeyboardInterrupt:

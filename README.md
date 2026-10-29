@@ -77,9 +77,27 @@ nexremote caps
 | Ajan | Bağlantı |
 |---|---|
 | Kabuk çalıştıran her harness | `nexremote skill` çıktısını sistem talimatına ekle |
-| MCP istemcisi (Claude Code, Claude Desktop, Cursor) | `claude mcp add nexremote -- ~/bin/nexremote-mcp` — 21 araç, ekran görüntüsü görsel olarak döner |
-| HTTP konuşan uzak ajan | `nexremote-http --port 8788 --token GİZLİ` |
+| MCP istemcisi (Claude Code, Claude Desktop, Cursor) | `claude mcp add nexremote -- ~/bin/nexremote-mcp` — 22 araç + canlı kaynaklar (`nexremote://windows`, `nexremote://terminals`, `nexremote://tree/{ref}`), ekran görüntüsü görsel olarak döner |
+| HTTP konuşan uzak ajan | `NEXREMOTE_TOKEN=… nexremote-http --port 8788` ya da servis olarak: `deploy/install-service.sh` |
 | Tool-calling'i olmayan model | `nexremote-agent --model-cmd "ollama run qwen2.5" --goal "…"` |
+
+### Başka makineden bağlanma
+
+`deploy/install-service.sh` HTTP adaptörünü systemd kullanıcı servisi olarak
+kurar: grafik oturumla başlar, onunla kapanır. Token
+`~/.config/nexremote/http.token` içinde 600 izniyle üretilir, komut satırında
+görünmez. Varsayılan olarak yalnızca `127.0.0.1` dinlenir; uzaktan en güvenli
+yol SSH tünelidir:
+
+```bash
+deploy/install-service.sh                         # bu makinede 127.0.0.1:8788
+ssh -N -L 8788:127.0.0.1:8788 kullanici@masaustu  # uzak ajanın makinesinde
+deploy/install-service.sh --host 0.0.0.0 --tls-cert cert.pem --tls-key key.pem   # doğrudan ağa (HTTPS)
+deploy/install-service.sh --uninstall
+```
+
+Ağa açarken en az 24 karakterlik token zorunludur. Token sabit zamanlı
+karşılaştırılır, 4 MB'tan büyük ya da bozuk gövdeler 400 döner.
 
 Komutların tamamı: `nexremote --help`. Ajan talimatı: [`adapters/skill/nexremote.md`](adapters/skill/nexremote.md).
 

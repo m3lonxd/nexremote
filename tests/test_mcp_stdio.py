@@ -6,6 +6,7 @@
 import json
 import os
 import subprocess
+import urllib.parse
 import sys
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -65,6 +66,27 @@ def main() -> int:
         shot = rpc("tools/call", {"name": "nexremote_screenshot", "arguments": {"max_width": 640}})
         kinds = [c["type"] for c in shot["content"]]
         check("screenshot görüntü + açıklama döndü", kinds == ["image", "text"], str(kinds))
+        res = {r["uri"] for r in rpc("resources/list")["resources"]}
+        check("resources/list", {"nexremote://windows", "nexremote://terminals"} <= res, str(res))
+        tpl = {t["uriTemplate"] for t in rpc("resources/templates/list")["resourceTemplates"]}
+        check("resources/templates/list", "nexremote://tree/{ref}" in tpl, str(tpl))
+        wins = json.loads(rpc("resources/read", {"uri": "nexremote://windows"})["contents"][0]["text"])
+        check("windows kaynağı canlı liste", bool(wins) and all("ref" in w for w in wins),
+              f"{len(wins)} pencere")
+        terms = json.loads(rpc("resources/read", {"uri": "nexremote://terminals"})["contents"][0]["text"])
+        check("terminals kaynağı liste", isinstance(terms, list), f"{len(terms)} terminal")
+        if wins:
+            enc = urllib.parse.quote(wins[0]["ref"], safe="")
+            tree = rpc("resources/read", {"uri": f"nexremote://tree/{enc}"})["contents"][0]
+            check("tree kaynağı (yüzde kodlu win ref)", tree["text"].startswith("["),
+                  tree["text"].splitlines()[0][:60])
+            foc = rpc("resources/read", {"uri": "nexremote://tree/focused"})["contents"][0]
+            check("tree/focused etkin pencereyi verir", foc["text"].startswith("["))
+        try:
+            rpc("resources/read", {"uri": "nexremote://tree/win%3A%7Byok%7D"})
+            check("olmayan pencere → hata", False)
+        except RuntimeError as e:
+            check("olmayan pencere → hata", True, str(e)[:70])
         bad = rpc("tools/call", {"name": "nexremote_terminal_read", "arguments": {"ref": "x"}})
         check("geçersiz ref → okunur araç hatası", bad.get("isError") is True,
               bad["content"][0]["text"][:80])
