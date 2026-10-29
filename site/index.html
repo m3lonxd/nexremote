@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Schibsted+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/assets/site.css?v=0.4.0">
+<link rel="stylesheet" href="/assets/site.css?v=0.5.0">
 <script>
   // JS varsa "js" sınıfı: yalnızca o zaman, görünmeden önce gizlenecek öğeler gizlenir.
   // Tema, boyamadan önce uygulanır (yanıp sönme olmasın).
@@ -50,6 +50,7 @@
   <symbol id="i-yes" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.75"/><path d="m8.2 12.3 2.6 2.6 5-5.4"/></symbol>
   <symbol id="i-no" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.75"/><path d="m9.2 9.2 5.6 5.6M14.8 9.2l-5.6 5.6"/></symbol>
   <symbol id="i-part" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.75"/><path d="M12 3.25a8.75 8.75 0 0 1 0 17.5z" fill="currentColor"/></symbol>
+  <symbol id="i-agentcursor" viewBox="0 0 24 24"><path d="M11 9.5 20 14.4l-4 1.2-1.9 3.9z"/><path d="M3.5 18.5c0-6 3-10.5 8.5-13" stroke-dasharray="1.6 2.6"/><circle cx="11" cy="9.5" r="3.4" opacity=".55"/></symbol>
   <symbol id="i-planned" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.75" stroke-dasharray="2.6 3.2"/><path d="M12 8v4.2l2.6 1.6"/></symbol>
 </svg>
 
@@ -95,7 +96,7 @@
           <a class="btn btn-invert" href="/download/nexremote.zip" download data-magnet>
             <svg class="ico" aria-hidden="true"><use href="#i-download"/></svg>
             <span>Download</span>
-            <span class="btn-meta">v0.4.0 · zip · 213 KB</span>
+            <span class="btn-meta">v0.5.0 · zip · 237 KB</span>
           </a>
           <a class="btn btn-ghost" href="#replay" data-magnet>
             <svg class="ico" aria-hidden="true"><use href="#i-play"/></svg>
@@ -600,6 +601,12 @@ Should I fix them? (y/n, or tell me)</code></pre>
         <p>Crop and scale are remembered, so <code>click X Y --from-shot</code> lands on the right pixel.</p>
         <dl><dt>Commands</dt><dd><code>screenshot --window --max-width</code></dd></dl>
       </li>
+      <li class="surface surface-wide2" data-surface data-reveal data-tilt>
+        <svg class="ico ico-lg" aria-hidden="true"><use href="#i-agentcursor"/></svg>
+        <h3>Agent cursor</h3>
+        <p>A second, visible arrow glides to where the agent works. Your mouse stays yours: clicks pass through it and focus never moves.</p>
+        <dl><dt>Commands</dt><dd><code>point</code> <code>cursor</code> <code>cursor-hide</code></dd></dl>
+      </li>
       <li class="surface surface-caps" data-reveal data-tilt>
         <svg class="ico ico-lg" aria-hidden="true"><use href="#i-checklist"/></svg>
         <h3>Something missing?</h3>
@@ -635,7 +642,7 @@ Should I fix them? (y/n, or tell me)</code></pre>
         <div class="os-top"><h3>Windows</h3><p>Built for Windows 10 and 11</p></div>
         <p class="os-k">Tested</p>
         <ul class="envs">
-          <li><span class="env-n">Wine 10</span><span class="tb tb-virt">22/22 passed</span><p>Real Windows Python under Wine, against a real Notepad window and a cmd.exe console. Not yet run on Windows 10 or 11 hardware.</p><p>Click by name is untested: Wine&#x27;s UI Automation has no control tree to walk.</p></li>
+          <li><span class="env-n">Wine 10</span><span class="tb tb-virt">47/47 passed</span><p>Real Windows Python under Wine, against a real Notepad window and a cmd.exe console. Not yet run on Windows 10 or 11 hardware.</p><p>Click by name is untested: Wine&#x27;s UI Automation has no control tree to walk.</p></li>
         </ul>
       </li>
       <li class="os os-pv" data-reveal>
@@ -649,8 +656,8 @@ Should I fix them? (y/n, or tell me)</code></pre>
     <p class="tb-legend" data-reveal>Solid: a real desktop. Outline: a real display server, run headless or under Wine. Amber: logic checked against fakes. Dashed: not tested.</p>
 
     <div class="pm-wrap" data-reveal>
-      <p class="pm-dim">8 surfaces × 3 platforms</p>
-      <table class="pm"><caption class="sr">The channel each capability uses on Linux, Windows and macOS</caption><thead><tr><td><span class="pm-cap">Capability</span></td><th scope="col">Linux</th><th scope="col">Windows</th><th scope="col">macOS <span class="pv">Preview</span></th></tr></thead><tbody><tr><th scope="row">Every window on screen</th><td data-os="Linux"><span class="pm-ch">KWin · hyprctl · swaymsg · EWMH</span><small>GNOME: AT-SPI only</small></td><td data-os="Windows"><span class="pm-ch">EnumWindows</span></td><td data-os="macOS"><span class="pm-ch">CGWindowList + AX</span></td></tr><tr><th scope="row">Real mouse</th><td data-os="Linux"><span class="pm-ch">XTEST · RemoteDesktop portal · Sway IPC</span></td><td data-os="Windows"><span class="pm-ch">SendInput</span></td><td data-os="macOS"><span class="pm-ch">CGEvent</span></td></tr><tr><th scope="row">Real keyboard</th><td data-os="Linux"><span class="pm-ch">XTEST · portal + clipboard · wtype</span></td><td data-os="Windows"><span class="pm-ch">SendInput (Unicode)</span></td><td data-os="macOS"><span class="pm-ch">CGEvent (Unicode)</span></td></tr><tr><th scope="row">Press a button by name</th><td data-os="Linux"><span class="pm-ch">AT-SPI</span></td><td data-os="Windows"><span class="pm-ch">UI Automation</span><small>not exercised under Wine</small></td><td data-os="macOS"><span class="pm-ch">Accessibility (AX)</span></td></tr><tr><th scope="row">Electron and Chromium with their tree on</th><td data-os="Linux"><span class="pm-ch">flag + environment</span></td><td data-os="Windows"><span class="pm-ch">flag</span></td><td data-os="macOS"><span class="pm-ch">flag</span></td></tr><tr><th scope="row">Open terminals</th><td data-os="Linux"><span class="pm-ch">Konsole D-Bus, tmux</span></td><td data-os="Windows"><span class="pm-ch">console buffer (AttachConsole)</span></td><td data-os="macOS"><span class="pm-ch">Terminal.app, iTerm2, tmux</span></td></tr><tr><th scope="row">Its own terminal</th><td data-os="Linux"><span class="pm-ch">tmux / PTY</span></td><td data-os="Windows"><span class="pm-ch">cmd.exe</span></td><td data-os="macOS"><span class="pm-ch">tmux / PTY</span></td></tr><tr><th scope="row">Screenshots</th><td data-os="Linux"><span class="pm-ch">spectacle · grim · Xlib</span></td><td data-os="Windows"><span class="pm-ch">GDI</span></td><td data-os="macOS"><span class="pm-ch">screencapture</span></td></tr><tr><th scope="row">Visible agent cursor</th><td data-os="Linux"><span class="pm-ch">your cursor theme, click-through</span></td><td data-os="Windows"><span class="pm-plan"><svg class="ico" aria-hidden="true"><use href="#i-planned"/></svg>planned</span></td><td data-os="macOS"><span class="pm-plan"><svg class="ico" aria-hidden="true"><use href="#i-planned"/></svg>planned</span></td></tr></tbody></table>
+      <p class="pm-dim">9 surfaces × 3 platforms</p>
+      <table class="pm"><caption class="sr">The channel each capability uses on Linux, Windows and macOS</caption><thead><tr><td><span class="pm-cap">Capability</span></td><th scope="col">Linux</th><th scope="col">Windows</th><th scope="col">macOS <span class="pv">Preview</span></th></tr></thead><tbody><tr><th scope="row">Every window on screen</th><td data-os="Linux"><span class="pm-ch">KWin · hyprctl · swaymsg · EWMH</span><small>GNOME: AT-SPI only</small></td><td data-os="Windows"><span class="pm-ch">EnumWindows</span></td><td data-os="macOS"><span class="pm-ch">CGWindowList + AX</span></td></tr><tr><th scope="row">Real mouse</th><td data-os="Linux"><span class="pm-ch">XTEST · RemoteDesktop portal · Sway IPC</span></td><td data-os="Windows"><span class="pm-ch">SendInput</span></td><td data-os="macOS"><span class="pm-ch">CGEvent</span></td></tr><tr><th scope="row">Real keyboard</th><td data-os="Linux"><span class="pm-ch">XTEST · portal + clipboard · wtype</span></td><td data-os="Windows"><span class="pm-ch">SendInput (Unicode)</span></td><td data-os="macOS"><span class="pm-ch">CGEvent (Unicode)</span></td></tr><tr><th scope="row">Press a button by name</th><td data-os="Linux"><span class="pm-ch">AT-SPI</span></td><td data-os="Windows"><span class="pm-ch">UI Automation</span><small>not exercised under Wine</small></td><td data-os="macOS"><span class="pm-ch">Accessibility (AX)</span></td></tr><tr><th scope="row">Electron and Chromium with their tree on</th><td data-os="Linux"><span class="pm-ch">flag + environment</span></td><td data-os="Windows"><span class="pm-ch">flag</span></td><td data-os="macOS"><span class="pm-ch">flag</span></td></tr><tr><th scope="row">Open terminals</th><td data-os="Linux"><span class="pm-ch">Konsole D-Bus, tmux</span></td><td data-os="Windows"><span class="pm-ch">console buffer (AttachConsole)</span></td><td data-os="macOS"><span class="pm-ch">Terminal.app, iTerm2, tmux</span></td></tr><tr><th scope="row">Its own terminal</th><td data-os="Linux"><span class="pm-ch">tmux / PTY</span></td><td data-os="Windows"><span class="pm-ch">cmd.exe</span></td><td data-os="macOS"><span class="pm-ch">tmux / PTY</span></td></tr><tr><th scope="row">Visible agent cursor</th><td data-os="Linux"><span class="pm-ch">X11/XWayland window · your cursor theme</span></td><td data-os="Windows"><span class="pm-ch">layered window · system arrow</span></td><td data-os="macOS"><span class="pm-ch">NSWindow · system arrow</span></td></tr><tr><th scope="row">Screenshots</th><td data-os="Linux"><span class="pm-ch">spectacle · grim · Xlib</span></td><td data-os="Windows"><span class="pm-ch">GDI</span></td><td data-os="macOS"><span class="pm-ch">screencapture</span></td></tr></tbody></table>
       <p class="pm-src">Channels are read from the project README when this page is built.</p>
     </div>
   </div>
@@ -803,16 +810,16 @@ bash-5.2$</code></pre>
     <div class="sec-head" data-reveal>
       <span class="bignum" aria-hidden="true" data-parallax>09</span>
       <div><p class="kicker">Numbers</p><h2 id="numbers-h" class="big">By the numbers</h2></div>
-      <p>Counted from the v0.4.0 source every time this page is built. No estimates, no projections.</p>
+      <p>Counted from the v0.5.0 source every time this page is built. No estimates, no projections.</p>
     </div>
     <dl class="stats" data-stagger>
-      <div class="stat" data-reveal><dt>MCP tools</dt><dd data-count="22">22</dd></div>
-      <div class="stat" data-reveal><dt>CLI commands</dt><dd data-count="27">27</dd></div>
+      <div class="stat" data-reveal><dt>MCP tools</dt><dd data-count="23">23</dd></div>
+      <div class="stat" data-reveal><dt>CLI commands</dt><dd data-count="28">28</dd></div>
       <div class="stat" data-reveal><dt>ways to plug in: shell, MCP, HTTP, text loop</dt><dd data-count="4">4</dd></div>
-      <div class="stat" data-reveal><dt>desktop surfaces it reaches</dt><dd data-count="8">8</dd></div>
+      <div class="stat" data-reveal><dt>desktop surfaces it reaches</dt><dd data-count="9">9</dd></div>
       <div class="stat" data-reveal><dt>harness setups documented</dt><dd data-count="11">11</dd></div>
-      <div class="stat" data-reveal><dt>test suites, 4 of them in a throwaway desktop</dt><dd data-count="13">13</dd></div>
-      <div class="stat stat-wide" data-reveal><dt>lines of Python, core and adapters</dt><dd data-count="10410">10,410</dd></div>
+      <div class="stat" data-reveal><dt>test suites, 4 of them in a throwaway desktop</dt><dd data-count="15">15</dd></div>
+      <div class="stat stat-wide" data-reveal><dt>lines of Python, core and adapters</dt><dd data-count="11258">11,258</dd></div>
       <div class="stat stat-zero" data-reveal><dt>root or admin rights needed</dt><dd data-count="0">0</dd></div>
     </dl>
   </div>
@@ -856,18 +863,19 @@ bash-5.2$</code></pre>
     </div>
     <div class="track">
       <div class="track-col" data-reveal>
-        <h3 class="track-h"><svg class="ico" aria-hidden="true"><use href="#i-yes"/></svg>In v0.4.0 today</h3>
+        <h3 class="track-h"><svg class="ico" aria-hidden="true"><use href="#i-yes"/></svg>In v0.5.0 today</h3>
         <ul class="track-list done" data-stagger>
           <li data-reveal>KDE Plasma: every window through KWin scripting, mouse and keyboard through the RemoteDesktop portal, approved once</li>
           <li data-reveal>X11 (XTEST, EWMH), Sway and Hyprland (their own IPC) behind the same commands; on Sway the mouse needs no extra package</li>
           <li data-reveal>Reading and typing into open Konsole tabs and tmux panes</li>
-          <li data-reveal>22 MCP tools, 27 CLI commands, an HTTP API and a text loop for models without tool calling</li>
+          <li data-reveal>23 MCP tools, 28 CLI commands, an HTTP API and a text loop for models without tool calling</li>
           <li data-reveal>Windows: Win32 windows, Unicode input through SendInput, GDI screenshots, UI Automation, reading and typing into open consoles</li>
           <li data-reveal>macOS preview: Quartz input, CGWindowList windows, the accessibility tree, Terminal.app, iTerm2 and tmux</li>
           <li data-reveal>Electron and Chromium apps by name: <code>nexremote launch vesktop</code> starts them with their tree switched on</li>
           <li data-reveal>A compact tree: hidden items and empty wrappers left out, and every control carries the ref to click it</li>
           <li data-reveal>Windows, terminals and the accessibility tree as live MCP resources</li>
           <li data-reveal>A user service for the HTTP adapter, with a token file and TLS, to drive another machine</li>
+          <li data-reveal>A visible agent cursor on Linux, Windows and macOS that never touches your mouse, from every adapter: MCP, HTTP, CLI</li>
           <li data-reveal>A pip package: <code>pip install .[all]</code> on Linux, Windows and macOS</li>
           <li data-reveal>Input tests in an isolated sandbox desktop, X11 in Xvfb, Sway on a headless compositor, Windows under Wine</li>
         </ul>
@@ -876,7 +884,6 @@ bash-5.2$</code></pre>
         <h3 class="track-h"><svg class="ico" aria-hidden="true"><use href="#i-planned"/></svg>Planned</h3>
         <ul class="track-list next" data-stagger>
           <li data-reveal><strong>Real Windows and Mac hardware.</strong> Run the suites on Windows 10 and 11 and on a Mac, then drop the preview label.</li>
-          <li data-reveal><strong>Agent cursor on Windows and macOS.</strong> The visible pointer that shows where the agent is acting, drawn from your own cursor theme, exists only on Linux today.</li>
           <li data-reveal><strong>GNOME and a real Hyprland.</strong> Test the portal path and the window list on GNOME, and run Hyprland on a real compositor instead of fake IPC.</li>
         </ul>
       </div>
@@ -906,7 +913,7 @@ bash-5.2$</code></pre>
 nexremote observe --json</code></pre>
       </div>
       <div class="panel" role="tabpanel" id="p-mcp" aria-labelledby="tab-mcp" tabindex="0" hidden>
-        <p>22 tools over stdio for Claude Code, Claude Desktop, Cursor and other MCP clients. Screenshots come back as images the model can look at.</p>
+        <p>23 tools over stdio for Claude Code, Claude Desktop, Cursor and other MCP clients. Screenshots come back as images the model can look at.</p>
 <pre><code>claude mcp add nexremote -- ~/bin/nexremote-mcp</code></pre>
       </div>
       <div class="panel" role="tabpanel" id="p-http" aria-labelledby="tab-http" tabindex="0" hidden>
@@ -946,7 +953,7 @@ curl -s -H "Authorization: Bearer $SECRET" -X POST localhost:8788/terminals</cod
         <li>macOS: the code is written and its logic tested against a fake Quartz, but it has not yet been verified on a real Mac. It ships as a preview.</li>
         <li>Konsole exposes the visible screen only. For scrollback, run the agent in tmux.</li>
         <li>Electron and Chromium apps publish their tree only when started with <code>--force-renderer-accessibility</code>. <code>nexremote launch</code> adds it, but an app that is already running has to be restarted. Games and canvas apps are driven by screenshot and coordinates.</li>
-        <li>The visible agent cursor needs X11 or XWayland, so it is Linux-only and does not show on Sway without XWayland.</li>
+        <li>On Linux the visible agent cursor needs X11 or XWayland and does not show on Sway without XWayland. The Windows cursor is tested on Wine; the macOS cursor has not yet run on a real Mac.</li>
       </ul>
     </div>
   </div>
@@ -972,7 +979,7 @@ curl -s -H "Authorization: Bearer $SECRET" -X POST localhost:8788/terminals</cod
           <li>
             <h3>Download and unpack</h3>
             <div class="copyline"><code id="cmd-l1">unzip nexremote.zip &amp;&amp; cd nexremote</code><button class="copy" type="button" data-copy="#cmd-l1" data-done="Copied"><span class="copy-ico" aria-hidden="true"><svg class="ico i1"><use href="#i-copy"/></svg><svg class="ico i2"><use href="#i-check"/></svg></span><span data-label>Copy</span></button></div>
-            <p><a href="/download/nexremote.zip" download>nexremote.zip</a> (213 KB) · <a href="/download/nexremote.tar.gz" download>nexremote.tar.gz</a> (173 KB)</p>
+            <p><a href="/download/nexremote.zip" download>nexremote.zip</a> (237 KB) · <a href="/download/nexremote.tar.gz" download>nexremote.tar.gz</a> (192 KB)</p>
           </li>
           <li>
             <h3>Install the commands</h3>
@@ -993,7 +1000,7 @@ curl -s -H "Authorization: Bearer $SECRET" -X POST localhost:8788/terminals</cod
           <li>
             <h3>Download and unpack</h3>
             <div class="copyline"><code id="cmd-w1">Expand-Archive nexremote.zip -DestinationPath .; cd nexremote</code><button class="copy" type="button" data-copy="#cmd-w1" data-done="Copied"><span class="copy-ico" aria-hidden="true"><svg class="ico i1"><use href="#i-copy"/></svg><svg class="ico i2"><use href="#i-check"/></svg></span><span data-label>Copy</span></button></div>
-            <p><a href="/download/nexremote.zip" download>nexremote.zip</a> (213 KB)</p>
+            <p><a href="/download/nexremote.zip" download>nexremote.zip</a> (237 KB)</p>
           </li>
           <li>
             <h3>Install with pip</h3>
@@ -1014,7 +1021,7 @@ curl -s -H "Authorization: Bearer $SECRET" -X POST localhost:8788/terminals</cod
           <li>
             <h3>Download and unpack</h3>
             <div class="copyline"><code id="cmd-m1">unzip nexremote.zip &amp;&amp; cd nexremote</code><button class="copy" type="button" data-copy="#cmd-m1" data-done="Copied"><span class="copy-ico" aria-hidden="true"><svg class="ico i1"><use href="#i-copy"/></svg><svg class="ico i2"><use href="#i-check"/></svg></span><span data-label>Copy</span></button></div>
-            <p><a href="/download/nexremote.zip" download>nexremote.zip</a> (213 KB) · <a href="/download/nexremote.tar.gz" download>nexremote.tar.gz</a> (173 KB)</p>
+            <p><a href="/download/nexremote.zip" download>nexremote.zip</a> (237 KB) · <a href="/download/nexremote.tar.gz" download>nexremote.tar.gz</a> (192 KB)</p>
           </li>
           <li>
             <h3>Install with pip</h3>
@@ -1045,7 +1052,7 @@ curl -s -H "Authorization: Bearer $SECRET" -X POST localhost:8788/terminals</cod
           <a class="btn btn-invert" href="/download/nexremote.zip" download data-magnet>
             <svg class="ico" aria-hidden="true"><use href="#i-download"/></svg>
             <span>Download</span>
-            <span class="btn-meta">v0.4.0 · zip · 213 KB</span>
+            <span class="btn-meta">v0.5.0 · zip · 237 KB</span>
           </a>
           <a class="btn btn-ghost" href="mailto:omeralibayrakcii@gmail.com?subject=NexRemote" data-magnet>
             <svg class="ico" aria-hidden="true"><use href="#i-mail"/></svg>
@@ -1056,7 +1063,7 @@ curl -s -H "Authorization: Bearer $SECRET" -X POST localhost:8788/terminals</cod
           <code id="cmd-cta" data-typeline>./install.sh &amp;&amp; nexremote setup</code>
           <button class="copy" type="button" data-copy="#cmd-cta" data-done="Copied"><span class="copy-ico" aria-hidden="true"><svg class="ico i1"><use href="#i-copy"/></svg><svg class="ico i2"><use href="#i-check"/></svg></span><span data-label>Copy</span></button>
         </div>
-        <p class="meta"><a href="/download/nexremote.tar.gz" download>nexremote.tar.gz</a> (173 KB) · MIT · Linux · Windows · macOS (preview) · Python 3.9+</p>
+        <p class="meta"><a href="/download/nexremote.tar.gz" download>nexremote.tar.gz</a> (192 KB) · MIT · Linux · Windows · macOS (preview) · Python 3.9+</p>
       </div>
     </div>
   </div>
@@ -1068,7 +1075,7 @@ curl -s -H "Authorization: Bearer $SECRET" -X POST localhost:8788/terminals</cod
   <div class="wrap foot-row">
     <span class="foot-brand">
       <svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="5.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 1.5v5M12 17.5v5M1.5 12h5M17.5 12h5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/></svg>
-      NexRemote v0.4.0 · MIT
+      NexRemote v0.5.0 · MIT
     </span>
     <a href="#how">How it works</a>
     <a href="#install">Install</a>
@@ -1079,6 +1086,6 @@ curl -s -H "Authorization: Bearer $SECRET" -X POST localhost:8788/terminals</cod
 </footer>
 
 <script id="replay-i18n" type="application/json">{"captions": ["The agent asks what is on screen: every window with its ref, every terminal with the program in it.", "It reads another agent's terminal. Konsole hands over the visible text; no screenshot, no focus change.", "It answers in that terminal as if typed on its keyboard. The window never had to come forward.", "It finds the switch by its name and presses it through accessibility. The mouse does not move.", "The player publishes no controls, so it looks: a screenshot of that window, then a click on the pixel it saw. Your pointer goes back where it was."], "termMsg": "Fix both, then rerun the suite"}</script>
-<script src="/assets/site.js?v=0.4.0" defer></script>
+<script src="/assets/site.js?v=0.5.0" defer></script>
 </body>
 </html>

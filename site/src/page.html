@@ -50,6 +50,7 @@
   <symbol id="i-yes" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.75"/><path d="m8.2 12.3 2.6 2.6 5-5.4"/></symbol>
   <symbol id="i-no" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.75"/><path d="m9.2 9.2 5.6 5.6M14.8 9.2l-5.6 5.6"/></symbol>
   <symbol id="i-part" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.75"/><path d="M12 3.25a8.75 8.75 0 0 1 0 17.5z" fill="currentColor"/></symbol>
+  <symbol id="i-agentcursor" viewBox="0 0 24 24"><path d="M11 9.5 20 14.4l-4 1.2-1.9 3.9z"/><path d="M3.5 18.5c0-6 3-10.5 8.5-13" stroke-dasharray="1.6 2.6"/><circle cx="11" cy="9.5" r="3.4" opacity=".55"/></symbol>
   <symbol id="i-planned" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.75" stroke-dasharray="2.6 3.2"/><path d="M12 8v4.2l2.6 1.6"/></symbol>
 </svg>
 
@@ -600,6 +601,12 @@ Should I fix them? (y/n, or tell me)</code></pre>
         <p>{{r_shot_n}}</p>
         <dl><dt>{{th_cmd}}</dt><dd><code>screenshot --window --max-width</code></dd></dl>
       </li>
+      <li class="surface surface-wide2" data-surface data-reveal data-tilt>
+        <svg class="ico ico-lg" aria-hidden="true"><use href="#i-agentcursor"/></svg>
+        <h3>{{r_cursor}}</h3>
+        <p>{{r_cursor_n}}</p>
+        <dl><dt>{{th_cmd}}</dt><dd><code>point</code> <code>cursor</code> <code>cursor-hide</code></dd></dl>
+      </li>
       <li class="surface surface-caps" data-reveal data-tilt>
         <svg class="ico ico-lg" aria-hidden="true"><use href="#i-checklist"/></svg>
         <h3>{{r_caps}}</h3>
@@ -868,6 +875,7 @@ bash-5.2$</code></pre>
           <li data-reveal>{{sh10}}</li>
           <li data-reveal>{{sh11}}</li>
           <li data-reveal>{{sh12}}</li>
+          <li data-reveal>{{sh13}}</li>
           <li data-reveal>{{sh8}}</li>
           <li data-reveal>{{sh5}}</li>
         </ul>
@@ -876,7 +884,6 @@ bash-5.2$</code></pre>
         <h3 class="track-h"><svg class="ico" aria-hidden="true"><use href="#i-planned"/></svg>{{rm_next}}</h3>
         <ul class="track-list next" data-stagger>
           <li data-reveal><strong>{{rm5_t}}</strong> {{rm5_d}}</li>
-          <li data-reveal><strong>{{rm6_t}}</strong> {{rm6_d}}</li>
           <li data-reveal><strong>{{rm2_t}}</strong> {{rm2_d}}</li>
         </ul>
       </div>

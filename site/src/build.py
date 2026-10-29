@@ -18,7 +18,7 @@ Sayfadaki her sayı ölçülmüş bir değerdir:
 Bir sayı okunamazsa derleme durur; sayfaya tahmin yazılmaz.
 
 Tek istisna WINE_RESULT: Windows katmanının Wine'daki son uçtan uca koşusu
-(tests/wine/run.sh tests/test_windows_wine.py). Wine kurulumu gerektirdiği
+(tests/wine/run.sh tests/test_windows_wine.py 22 + test_cursor_wine.py 25). Wine kurulumu gerektirdiği
 için derlemede çalıştırılamaz; yeni bir koşudan sonra elle güncellenir.
 """
 from __future__ import annotations
@@ -75,16 +75,18 @@ def md_table_rows(text: str, after: str | None = None) -> list[list[str]]:
 
 
 # Windows katmanının Wine 10 içindeki son uçtan uca sonucu (bkz. modül notu)
-WINE_RESULT = "22/22"
+WINE_RESULT = "47/47"
 
 # README "Ne yapabilir" tablosu: satır sırası ve platform başlıkları beklenen gibi
 # olmalı; değişirse derleme durur (sayfa README'den sessizce ayrışmasın).
 README_ROWS = ["Ekrandaki her pencere", "Gerçek fare", "Gerçek klavye", "Butona adıyla basma",
-               "Electron/Chromium'u ağacı açık başlatma", "Açık terminaller", "Kendi terminali", "Ekran görüntüsü"]
+               "Electron/Chromium'u ağacı açık başlatma", "Açık terminaller", "Kendi terminali", "Görünür ajan imleci", "Ekran görüntüsü"]
 README_PLATFORMS = ["Linux", "Windows", "macOS"]
 # README hücrelerindeki Türkçe sözcüklerin İngilizcesi (ürün adları olduğu gibi kalır)
 CELL_EN = [("konsol tamponu", "console buffer"), ("portalı", "portal"), ("pano", "clipboard"),
-           ("bayrak + ortam", "flag + environment"), ("bayrak", "flag")]
+           ("bayrak + ortam", "flag + environment"), ("bayrak", "flag"),
+           ("katmanlı pencere", "layered window"), ("sistem oku", "system arrow"),
+           ("imleç teman", "your cursor theme"), ("pencere", "window")]
 
 
 def readme_matrix() -> tuple[list[str], list[tuple[str, list[str]]]]:
@@ -263,6 +265,7 @@ S = {
         "r_launch": "Electron by name", "r_launch_n": "Starts Discord, VS Code or Slack with their tree switched on, so their buttons have names too.",
         "r_terms": "Open terminals", "r_terms_n": "Shows what runs in each one: claude, ssh, vim, a build.",
         "r_shell": "Its own shell", "r_shell_n": "Sessions survive between calls, so it can start something and check on it later.",
+        "r_cursor": "Agent cursor", "r_cursor_n": "A second, visible arrow glides to where the agent works. Your mouse stays yours: clicks pass through it and focus never moves.",
         "r_shot": "Screen", "r_shot_n": "Crop and scale are remembered, so <code>click X Y --from-shot</code> lands on the right pixel.",
         "r_caps": "Something missing?", "r_caps_n": "One command reports which channels work on this machine and which packages the rest need.",
         "plat_kicker": "Platforms",
@@ -293,10 +296,7 @@ S = {
         "tb_legend": "Solid: a real desktop. Outline: a real display server, run headless or under Wine. Amber: logic checked against fakes. Dashed: not tested.",
         "pm_caption": "The channel each capability uses on Linux, Windows and macOS",
         "pm_cap": "Capability",
-        "pm_rows": "Every window on screen|Real mouse|Real keyboard|Press a button by name|Electron and Chromium with their tree on|Open terminals|Its own terminal|Screenshots",
-        "pm_cursor": "Visible agent cursor",
-        "pm_cursor_linux": "your cursor theme, click-through",
-        "pm_planned": "planned",
+        "pm_rows": "Every window on screen|Real mouse|Real keyboard|Press a button by name|Electron and Chromium with their tree on|Open terminals|Its own terminal|Visible agent cursor|Screenshots",
         "pm_note_gnome": "GNOME: AT-SPI only",
         "pm_note_wine": "not exercised under Wine",
         "pm_dim": "{{surfaces}} surfaces × {{platforms}} platforms",
@@ -393,8 +393,7 @@ S = {
         "rm2_d": "Test the portal path and the window list on GNOME, and run Hyprland on a real compositor instead of fake IPC.",
         "rm5_t": "Real Windows and Mac hardware.",
         "rm5_d": "Run the suites on Windows 10 and 11 and on a Mac, then drop the preview label.",
-        "rm6_t": "Agent cursor on Windows and macOS.",
-        "rm6_d": "The visible pointer that shows where the agent is acting, drawn from your own cursor theme, exists only on Linux today.",
+        "sh13": "A visible agent cursor on Linux, Windows and macOS that never touches your mouse, from every adapter: MCP, HTTP, CLI",
 
         "connect_kicker": "Connect",
         "connect_h": "Plug it into your agent",
@@ -420,7 +419,7 @@ S = {
         "l3": "macOS: the code is written and its logic tested against a fake Quartz, but it has not yet been verified on a real Mac. It ships as a preview.",
         "l4": "Konsole exposes the visible screen only. For scrollback, run the agent in tmux.",
         "l5": "Electron and Chromium apps publish their tree only when started with <code>--force-renderer-accessibility</code>. <code>nexremote launch</code> adds it, but an app that is already running has to be restarted. Games and canvas apps are driven by screenshot and coordinates.",
-        "l6": "The visible agent cursor needs X11 or XWayland, so it is Linux-only and does not show on Sway without XWayland.",
+        "l6": "On Linux the visible agent cursor needs X11 or XWayland and does not show on Sway without XWayland. The Windows cursor is tested on Wine; the macOS cursor has not yet run on a real Mac.",
 
         "install_kicker": "Install",
         "install_h": "Install in three steps",
@@ -524,6 +523,7 @@ S = {
         "r_launch": "Adıyla Electron", "r_launch_n": "Discord'u, VS Code'u ya da Slack'i ağaçları açık başlatır; onların düğmelerinin de adı olur.",
         "r_terms": "Açık terminaller", "r_terms_n": "Her birinde ne çalıştığını gösterir: claude, ssh, vim, bir build.",
         "r_shell": "Kendi kabuğu", "r_shell_n": "Oturumlar çağrılar arasında yaşar; bir şeyi başlatıp sonra dönüp bakabilir.",
+        "r_cursor": "Ajan imleci", "r_cursor_n": "Ajanın çalıştığı yere ikinci, görünür bir ok süzülür. Fareniz sizde kalır: tıklamalar içinden geçer, odak kaymaz.",
         "r_shot": "Ekran", "r_shot_n": "Kırpma ve ölçek hatırlanır; <code>click X Y --from-shot</code> doğru piksele düşer.",
         "r_caps": "Bir şey eksik mi?", "r_caps_n": "Tek komut, bu makinede hangi kanalların çalıştığını ve geri kalanı için hangi paketlerin gerektiğini söyler.",
         "plat_kicker": "Platformlar",
@@ -554,10 +554,7 @@ S = {
         "tb_legend": "Dolu: gerçek masaüstü. Çerçeve: ekransız ya da Wine altında çalışan gerçek bir görüntü sunucusu. Amber: mantık sahtelerle sınandı. Kesikli: test edilmedi.",
         "pm_caption": "Her yeteneğin Linux, Windows ve macOS'ta kullandığı kanal",
         "pm_cap": "Yetenek",
-        "pm_rows": "Ekrandaki her pencere|Gerçek fare|Gerçek klavye|Butona adıyla basma|Ağacı açık Electron ve Chromium|Açık terminaller|Kendi terminali|Ekran görüntüsü",
-        "pm_cursor": "Görünür ajan imleci",
-        "pm_cursor_linux": "kendi imleç teman, tıklamayı engellemez",
-        "pm_planned": "planlandı",
+        "pm_rows": "Ekrandaki her pencere|Gerçek fare|Gerçek klavye|Butona adıyla basma|Ağacı açık Electron ve Chromium|Açık terminaller|Kendi terminali|Görünür ajan imleci|Ekran görüntüsü",
         "pm_note_gnome": "GNOME'da yalnızca AT-SPI",
         "pm_note_wine": "Wine'da sınanamadı",
         "pm_dim": "{{surfaces}} yüzey × {{platforms}} platform",
@@ -654,8 +651,7 @@ S = {
         "rm2_d": "Portal yolunu ve pencere listesini GNOME'da test etmek; Hyprland'i sahte IPC yerine gerçek bir compositor'da çalıştırmak.",
         "rm5_t": "Gerçek Windows ve Mac donanımı.",
         "rm5_d": "Testleri Windows 10 ve 11'de ve bir Mac'te koşmak, sonra önizleme etiketini kaldırmak.",
-        "rm6_t": "Windows ve macOS'ta ajan imleci.",
-        "rm6_d": "Ajanın nerede çalıştığını gösteren, sizin imleç temanızdan çizilen görünür imleç bugün yalnızca Linux'ta var.",
+        "sh13": "Linux, Windows ve macOS'ta farenize dokunmayan görünür ajan imleci; her adaptörden: MCP, HTTP, CLI",
 
         "connect_kicker": "Bağlantı",
         "connect_h": "Ajanına bağla",
@@ -681,7 +677,7 @@ S = {
         "l3": "macOS: kod yazıldı ve mantığı sahte Quartz ile test edildi, ama gerçek bir Mac'te henüz doğrulanmadı; önizleme sürümü.",
         "l4": "Konsole yalnızca görünen ekranı verir. Geçmiş satırlar için ajanı tmux içinde çalıştırın.",
         "l5": "Electron ve Chromium uygulamaları ağaçlarını yalnızca <code>--force-renderer-accessibility</code> ile başlatılınca yayınlar. <code>nexremote launch</code> bu bayrağı ekler, ama zaten çalışan bir uygulamanın yeniden başlatılması gerekir. Oyunlar ve canvas uygulamaları ekran görüntüsü ve koordinatla kullanılır.",
-        "l6": "Görünür ajan imleci X11 ya da XWayland ister; bu yüzden yalnızca Linux'ta var ve XWayland'siz Sway'de görünmez.",
+        "l6": "Linux'ta görünür ajan imleci X11 ya da XWayland ister; XWayland'siz Sway'de görünmez. Windows imleci Wine'da sınandı; macOS imleci henüz gerçek bir Mac'te çalıştırılmadı.",
 
         "install_kicker": "Kurulum",
         "install_h": "Üç adımda kurulum",
@@ -756,8 +752,6 @@ def plat_matrix(lang: str, t: dict) -> str:
         raise SystemExit(f"[{lang}] pm_rows {len(labels)} satır, README {len(rows)}")
     # (satır, platform) -> hücre altı not; README "Sınırlar" ile aynı uyarılar
     notes = {(0, "Linux"): t["pm_note_gnome"], (3, "Windows"): t["pm_note_wine"]}
-    planned = (f'<span class="pm-plan"><svg class="ico" aria-hidden="true"><use href="#i-planned"/></svg>'
-               f'{esc(t["pm_planned"])}</span>')
 
     def th_os(name: str) -> str:
         tag = f' <span class="pv">{esc(t["preview"])}</span>' if name == "macOS" else ""
@@ -773,10 +767,6 @@ def plat_matrix(lang: str, t: dict) -> str:
         tds = "".join(td(h, f'<span class="pm-ch">{esc(cell_text(c, lang))}</span>', notes.get((i, h), ""))
                       for h, c in zip(head, cells))
         out.append(f'<tr><th scope="row">{esc(label)}</th>{tds}</tr>')
-    # görünür ajan imleci README tablosunda değil, "Sınırlar"da: yalnızca Linux
-    cur = td("Linux", f'<span class="pm-ch">{esc(t["pm_cursor_linux"])}</span>')
-    cur += td("Windows", planned) + td("macOS", planned)
-    out.append(f'<tr><th scope="row">{esc(t["pm_cursor"])}</th>{cur}</tr>')
     out.append("</tbody></table>")
     return "".join(out)
 
@@ -914,8 +904,8 @@ def render(lang: str, st: dict[str, int]) -> str:
     unused = set(S[lang]) - used - {"h1a", "h1b", "mail_subject", "arch_agent", "arch_agent_s",
                                      "arch_text", "arch_core", "arch_desk", "arch_alt",
                                      "a_win", "a_ctl", "a_in", "a_term", "a_sh", "a_shot",
-                                     "pm_rows", "pm_caption", "pm_cap", "pm_planned", "pm_cursor",
-                                     "pm_cursor_linux", "pm_note_gnome", "pm_note_wine"}
+                                     "pm_rows", "pm_caption", "pm_cap",
+                                     "pm_note_gnome", "pm_note_wine"}
     if unused:
         print(f"[{lang}] kullanılmayan anahtarlar: {sorted(unused)}", file=sys.stderr)
     # Yüzey kartları README tablosuyla aynı sayıda olmalı (sayfadaki sayı kartlarla tutarlı kalsın)
