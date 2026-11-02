@@ -1,0 +1,130 @@
+#!/usr/bin/env python3
+"""Ref ile yapılan eylemler ajan imlecini gösteriyor mu — X gerektirmez.
+
+Sahte GUI arka ucu ve sahte daemon kullanır; gerçek masaüstüne dokunmaz.
+"""
+import os
+import sys
+from unittest import mock
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.join(HERE, "..", "core"))
+
+from nexremote.nexremote import NexRemote  # noqa: E402
+
+results: list[tuple[str, bool]] = []
+
+
+def check(name: str, ok: bool, detail: str = "") -> None:
+    results.append((name, ok))
+    print(("  ✓ " if ok else "  ✗ ") + name + (f" — {detail}" if detail else ""))
+
+
+class FakeGui:
+    def __init__(self, box=(100, 200, 40, 20)):
+        self.box, self.calls = box, []
+
+    def bounds(self, ref):
+        self.calls.append("bounds")
+        if isinstance(self.box, Exception):
+            raise self.box
+        return self.box
+
+    def click(self, ref):
+        self.calls.append("click")
+        return True
+
+    def set_text(self, ref, text):
+        self.calls.append("set_text")
+        return True
+
+    def focus(self, ref):
+        self.calls.append("focus")
+        return True
+
+
+def make(gui, sent, available=True, send_error=False):
+    nr = NexRemote.__new__(NexRemote)
+    nr._gui = lambda: gui
+    nr.pointer_available = lambda: (available, "")
+    daemon = mock.Mock()
+
+    def send(cmd):
+        if send_error:
+            raise OSError("daemon yok")
+        sent.append(cmd)
+        return "OK"
+    daemon.send = send
+    nr._cursor_daemon = lambda: daemon
+    return nr
+
+
+FULL = ["SHOW", "MOVE 120 210", "CLICK"]
+
+for name in ("click", "focus"):
+    gui, sent = FakeGui(), []
+    check(f"{name}(ref) sonucu doğru", getattr(make(gui, sent), name)("r") is True)
+    check(f"{name}(ref) imleci öğe ortasına götürür", sent == FULL, str(sent))
+    check(f"{name}(ref) imleç eylemden önce", gui.calls.index("bounds") < gui.calls.index(name))
+
+gui, sent = FakeGui(), []
+check("set_text sonucu doğru", make(gui, sent).set_text("r", "x") is True)
+check("set_text imleci gösterir", sent == FULL, str(sent))
+
+gui, sent = FakeGui(), []
+make(gui, sent, available=False).click("r")
+check("imleç yoksa eylem yine çalışır", sent == [] and "click" in gui.calls)
+
+gui, sent = FakeGui(), []
+make(gui, sent, send_error=True).click("r")
+check("daemon hatası eylemi bozmaz", "click" in gui.calls)
+
+for label, box in (("konumsuz", None), ("sıfır boyut", (5, 5, 0, 0)),
+                   ("bounds hatası", RuntimeError("yok"))):
+    gui, sent = FakeGui(box), []
+    make(gui, sent).focus("r")
+    check(f"{label} öğede imleç atlanır, eylem çalışır", sent == [] and "focus" in gui.calls)
+
+with mock.patch.dict(os.environ, {"NEXREMOTE_CURSOR": "0"}):
+    gui, sent = FakeGui(), []
+    make(gui, sent).click("r")
+    check("NEXREMOTE_CURSOR=0 imleci kapatır", sent == [] and "click" in gui.calls)
+
+
+
+# ------------------------------------------------- Wayland konum çevirisi
+class Win:
+    def __init__(self, ref, title, pid, bounds):
+        self.ref, self.title, self.pid, self.bounds = ref, title, pid, bounds
+
+
+def offset_nr(frames, wm):
+    gui = FakeGui((8, 214, 100, 56))
+    gui.windows = lambda: frames
+    nr = make(gui, [])
+    nr.windows = lambda: wm
+    return nr
+
+
+R = "atspi:23:0/0/9/15"
+kcalc = Win("atspi:23:0", "", 7, (0, 0, 640, 480))
+nr = offset_nr([kcalc], [Win("win:a", "K Hesap", 7, (639, 285, 642, 509))])
+check("Wayland: pencere + dekorasyon eklenir",
+      nr.bounds(R) == (8 + 640, 214 + 313, 100, 56), str(nr.bounds(R)))
+x11 = Win("atspi:23:0", "", 7, (640, 313, 640, 480))
+nr = offset_nr([x11], [Win("win:a", "K", 7, (639, 285, 642, 509))])
+check("X11: konum zaten ekranda, fark 0", nr.bounds(R) == (8, 214, 100, 56), str(nr.bounds(R)))
+nr = offset_nr([kcalc], [])
+check("pencere yöneticisinde yoksa fark 0", nr.bounds(R) == (8, 214, 100, 56))
+titled = Win("atspi:23:0", "~ : claude", 7, (0, 0, 911, 480))
+nr = offset_nr([titled], [Win("win:b", "başka", 7, (0, 0, 911, 480)),
+                          Win("win:a", "~ : claude — Konsole", 7, (100, 100, 913, 509))])
+check("aynı pid: başlığa göre seçer", nr.bounds(R)[0] == 8 + 101, str(nr.bounds(R)))
+gui = FakeGui((8, 214, 100, 56))
+nr = make(gui, [])
+check("atspi olmayan ref'e dokunmaz", nr.bounds("uia:1") == (8, 214, 100, 56))
+
+
+ok = sum(1 for _, o in results if o)
+print(f"İMLEÇ GERİ BİLDİRİMİ: {ok} geçti, {len(results) - ok} başarısız")
+sys.exit(0 if ok == len(results) else 1)

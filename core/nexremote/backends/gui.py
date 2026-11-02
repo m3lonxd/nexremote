@@ -256,7 +256,10 @@ class GuiBackend(Backend):
                     return True
                 except Exception:
                     pass
-        # son çare: koordinata fiziksel tıkla
+        # son çare: koordinata fiziksel tıkla. Wayland'de konum pencereye
+        # görelidir; çevirisini yapan NexRemote.click tıklar.
+        if os.environ.get("WAYLAND_DISPLAY"):
+            return False
         b = self._extents(node)
         if b:
             return inp.click_at(b[0] + b[2] // 2, b[1] + b[3] // 2)

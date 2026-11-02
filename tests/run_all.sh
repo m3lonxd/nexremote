@@ -19,6 +19,7 @@ run "Sway/Hyprland (sahte IPC)"  python3 tests/test_wlroots_fake.py
 run "macOS mantık (sahte Quartz)"  python3 tests/test_macos_logic.py
 run "X11 — Xvfb sandbox"        tests/x11_sandbox.sh python3 tests/test_x11_sandbox.py
 run "imleç teması (sahte tema)"    python3 tests/test_cursor_theme.py
+run "ajan imleci — eylem geri bildirimi"  python3 tests/test_cursor_feedback.py
 run "ajan imleci — daemon/taşıma"  python3 tests/test_cursor_daemon.py
 run "ajan imleci — macOS (sahte objc)"  python3 tests/test_cursor_macos.py
 run "ajan imleci — Xvfb"         tests/x11_sandbox.sh python3 tests/test_cursor_x11.py

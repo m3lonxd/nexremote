@@ -240,6 +240,9 @@ class XAgentCursor(AgentCursorBase):
         self._visible = v
         try:
             (self._win.map if v else self._win.unmap)()
+            if v:                # sonradan öne gelen pencerelerin altında kalmasın
+                from Xlib import X
+                self._win.configure(stack_mode=X.Above)
             self.d.sync()
         except Exception:
             pass

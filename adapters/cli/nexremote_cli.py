@@ -15,7 +15,7 @@ Kullanım:
   nexremote launch [--wait N] PROG ... programı ağacı açık başlatır (Electron'a bayrak ekler)
   nexremote tree [--window REF]        erişilebilirlik ağacı (LLM dostu metin, ref'li)
   nexremote find "Kaydet" [--window R] öğe arar → atspi ref
-  nexremote click REF                  öğeye isimle tıklar (imleç oynamaz)
+  nexremote click REF                  öğeye isimle tıklar (ajan imleci görünür, faren oynamaz)
   nexremote click X Y [--right|--middle] [--double]   koordinata gerçek tık
   nexremote move X Y | scroll N [--at X Y] | drag X1 Y1 X2 Y2
   nexremote key "ctrl+s"               tuş kombinasyonu
@@ -362,10 +362,11 @@ def cmd_point(nr, a) -> None:
              "öğe konumu bulunamadı")
         return
     x, y = b[0] + b[2] // 2, b[1] + b[3] // 2
-    # 1) ajan imleci GÖRÜNÜR şekilde öğeye gitsin
-    nr.cursor(x, y, click=True, button=a.button)
-    # 2) ayrıca AT-SPI ile gerçek tıklama (güvenilir eylem)
-    nr.click(a.ref)
+    # click() ajan imlecini öğeye götürür, sonra AT-SPI ile gerçek tıklar
+    if nr.pointer_available()[0]:
+        nr.click(a.ref)
+    else:
+        nr.cursor(x, y, click=True, button=a.button)
     _out({"ok": True, "ref": a.ref, "x": x, "y": y}, a.json,
          f"imleç ({x},{y}) → öğe tıklandı")
 

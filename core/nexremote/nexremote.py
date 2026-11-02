@@ -165,9 +165,10 @@ class NexRemote:
     def click(self, ref: str) -> bool:
         """Öğeye isimle tıkla. Öğe eylem sunmuyorsa ortasına gerçek tık."""
         gui = self._gui()
+        self._agent_cursor_at(ref)
         if gui.click(ref):
             return True
-        b = gui.bounds(ref)
+        b = self.bounds(ref)
         if not b or b[2] <= 0 or b[3] <= 0:
             return False
         self.desktop.click(b[0] + b[2] // 2, b[1] + b[3] // 2)
@@ -175,9 +176,38 @@ class NexRemote:
 
     def bounds(self, ref: str) -> Optional[tuple[int, int, int, int]]:
         """Öğenin ekran dikdörtgeni (x, y, w, h)."""
-        return self._gui().bounds(ref)
+        b = self._gui().bounds(ref)
+        if not b or not ref.startswith("atspi:"):
+            return b
+        dx, dy = self._window_offset(ref)
+        return (b[0] + dx, b[1] + dy, b[2], b[3])
+
+    def _window_offset(self, ref: str) -> tuple[int, int]:
+        """Wayland'de AT-SPI "ekran" konumu aslında pencereye görelidir. Üst
+        pencerenin AT-SPI konumunu pencere yöneticisininkiyle karşılaştırıp
+        farkı döndürür; X11'de iki konum tutar, fark 0 çıkar."""
+        parts = ref.split("/")[0]
+        try:
+            frame = next((w for w in self._gui().windows() if w.ref == parts), None)
+            if frame is None or not frame.bounds or not frame.pid:
+                return (0, 0)
+            cands = [w for w in self.windows() if w.pid == frame.pid and w.bounds]
+        except Exception:
+            return (0, 0)
+        if not cands:
+            return (0, 0)
+        fx, fy, fw, fh = frame.bounds
+
+        def rank(w) -> tuple[bool, int]:
+            same_title = bool(frame.title) and w.title.startswith(frame.title)
+            return (not same_title, abs(w.bounds[2] - fw) + abs(w.bounds[3] - fh))
+        wx, wy, ww, wh = min(cands, key=rank).bounds
+        side = max(0, ww - fw) // 2             # dekorasyon: kenar + başlık çubuğu
+        top = max(0, wh - fh - side)
+        return (wx + side - fx, wy + top - fy)
 
     def set_text(self, ref: str, text: str) -> bool:
+        self._agent_cursor_at(ref)
         return self._gui().set_text(ref, text)
 
     def key(self, combo: str) -> bool:
@@ -228,6 +258,7 @@ class NexRemote:
                restore_pointer: bool = True) -> bool:
         back = self._user_pointer() if (at and restore_pointer) else None
         if at:
+            self._agent_cursor(int(at[0]), int(at[1]), click=False)
             self.desktop.move(int(at[0]), int(at[1]))
         self.desktop.scroll(int(dy), int(dx))
         if back is not None:
@@ -240,6 +271,7 @@ class NexRemote:
         self._check_button(button)
         steps = max(1, int(steps))
         back = self._user_pointer()
+        self._agent_cursor(int(x1), int(y1), click=False)
         self.desktop.move(int(x1), int(y1))
         self.desktop.button(button, True)
         try:
@@ -248,6 +280,7 @@ class NexRemote:
                 time.sleep(0.01)
         finally:
             self.desktop.button(button, False)
+        self._agent_cursor(int(x2), int(y2), click=False)
         if back is not None:
             self.desktop.move(*back)
         return True
@@ -258,17 +291,29 @@ class NexRemote:
         except Exception:
             return None  # imleci geri koymak isteğe bağlı; konum bilinmiyorsa atla
 
-    def _agent_cursor(self, x: int, y: int) -> None:
+    def _agent_cursor(self, x: int, y: int, click: bool = True) -> None:
         """Görsel geri bildirim: ajan imleci hedefe gider (varsa; hata yutulur
         çünkü tıklamanın kendisi imlece bağlı değildir)."""
         if os.environ.get("NEXREMOTE_CURSOR", "1") == "0" or not self.pointer_available()[0]:
             return
         try:
             ac = self._cursor_daemon()
+            ac.send("SHOW")                      # cursor-hide sonrası da görünsün
             ac.send(f"MOVE {int(x)} {int(y)}")   # yanıt hareket bitince gelir
-            ac.send("CLICK")
+            if click:
+                ac.send("CLICK")
         except Exception:
             pass
+
+    def _agent_cursor_at(self, ref: str) -> None:
+        """Ref ile yapılan eylemde de ajan imleci öğenin üstüne gitsin. Konumu
+        olmayan öğede imleç atlanır; eylem yine çalışır."""
+        try:
+            b = self.bounds(ref)
+        except Exception:
+            return
+        if b and b[2] > 0 and b[3] > 0:
+            self._agent_cursor(b[0] + b[2] // 2, b[1] + b[3] // 2)
 
     @staticmethod
     def _cursor_daemon():
@@ -348,6 +393,7 @@ class NexRemote:
             return None
 
     def focus(self, ref: str) -> bool:
+        self._agent_cursor_at(ref)
         return self._gui().focus(ref)
 
     # ------------------------------------------------- görünür fare imleci
