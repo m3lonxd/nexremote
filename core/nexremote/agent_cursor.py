@@ -36,6 +36,7 @@ import threading
 import time
 
 BOX = 56                       # pencere kenarı (px) — ok + tık halkası sığsın
+IDLE_SEC = 8.0                 # son komuttan bu kadar sonra imleç kapanır
 HOT = 16                       # okun ucunun pencere içindeki yeri (x = y); hedef nokta
 COLOR = (0x6e, 0xe7, 0xa8)     # yerleşik ok dolgusu #6ee7a8
 EDGE = (0x10, 0x14, 0x12)      # yerleşik ok kenarı
@@ -382,9 +383,18 @@ def _execute(cursor, cmd: list[str]) -> str:
     return "OK"
 
 
-def serve(cursor, ready=None) -> None:
+def idle_limit() -> float:
+    """İş bitince imlecin kapanacağı boşta kalma süresi (sn); 0 = hiç kapanma."""
+    try:
+        return max(0.0, float(os.environ.get("NEXREMOTE_CURSOR_IDLE", IDLE_SEC)))
+    except ValueError:
+        return IDLE_SEC
+
+
+def serve(cursor, ready=None, idle: float = 0.0) -> None:
     """Komutları dinle; pencere işlerini ÇAĞIRAN (ana) iş parçacığında yap.
-    QUIT gelince pencereyi kapatıp döner."""
+    QUIT gelince ya da idle sn komut gelmezse pencereyi kapatıp döner (PING
+    komut sayılmaz). Sonraki eylem daemon'ı yeniden başlatır."""
     srv, token = _listen()
     jobs: "queue.Queue[tuple[list[str], list, threading.Event]]" = queue.Queue()
     stop = threading.Event()
@@ -433,12 +443,15 @@ def serve(cursor, ready=None) -> None:
             threading.Thread(target=handle, args=(conn,), daemon=True).start()
 
     threading.Thread(target=accept, daemon=True).start()
+    last = time.monotonic()
     try:
         while not stop.is_set():
             try:
                 cmd, box, done = jobs.get(timeout=0.03)
             except queue.Empty:
                 cursor.pump()
+                if idle and time.monotonic() - last >= idle:
+                    break
                 continue
             if stop.is_set():
                 break
@@ -448,6 +461,7 @@ def serve(cursor, ready=None) -> None:
                 print(f"[cursor] {cmd[0]}: {e}", file=sys.stderr)
                 box.append("ERR")
             done.set()
+            last = time.monotonic()
     finally:
         try:
             srv.close()
@@ -550,7 +564,7 @@ def main(argv=None) -> int:
     for i, a in enumerate(argv):
         if a == "--display" and i + 1 < len(argv):
             display = argv[i + 1]
-    serve(make_cursor(display))
+    serve(make_cursor(display), idle=idle_limit())
     return 0
 
 

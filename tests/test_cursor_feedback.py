@@ -125,6 +125,42 @@ nr = make(gui, [])
 check("atspi olmayan ref'e dokunmaz", nr.bounds("uia:1") == (8, 214, 100, 56))
 
 
+# ------------------------------------------------------- boşta kapanma
+import tempfile  # noqa: E402
+import threading  # noqa: E402
+import time  # noqa: E402
+from nexremote import agent_cursor as ac  # noqa: E402
+
+
+class FakeCursor:
+    name = "sahte"
+    closed = False
+
+    def pump(self): pass
+    def set_visible(self, v): pass
+    def move_to(self, x, y, duration=None): pass
+    def pulse(self): pass
+    def close(self): self.closed = True
+
+
+check("varsayılan süre", ac.idle_limit() == ac.IDLE_SEC)
+with mock.patch.dict(os.environ, {"NEXREMOTE_CURSOR_IDLE": "x"}):
+    check("bozuk süre varsayılana düşer", ac.idle_limit() == ac.IDLE_SEC)
+if os.name != "nt":
+    with tempfile.TemporaryDirectory() as tmp, \
+            mock.patch.object(ac, "sock_path", lambda: os.path.join(tmp, "c.sock")):
+        cur, ready = FakeCursor(), threading.Event()
+        th = threading.Thread(target=ac.serve, args=(cur, ready, 0.6), daemon=True)
+        th.start()
+        ready.wait(3)
+        check("komut boşta sayacını sıfırlar",
+              ac.send("SHOW") == "OK" and (time.sleep(0.4) or ac.send("SHOW")) == "OK"
+              and (time.sleep(0.4) or th.is_alive()))
+        ac.daemon_running()
+        th.join(3)
+        check("boşta kalınca kapanır", not th.is_alive() and cur.closed)
+        check("soket temizlenir", not ac.daemon_running())
+
 ok = sum(1 for _, o in results if o)
 print(f"İMLEÇ GERİ BİLDİRİMİ: {ok} geçti, {len(results) - ok} başarısız")
 sys.exit(0 if ok == len(results) else 1)
