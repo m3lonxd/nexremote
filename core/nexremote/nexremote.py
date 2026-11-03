@@ -175,36 +175,55 @@ class NexRemote:
         return True
 
     def bounds(self, ref: str) -> Optional[tuple[int, int, int, int]]:
-        """Öğenin ekran dikdörtgeni (x, y, w, h)."""
+        """Öğenin ekran dikdörtgeni (x, y, w, h). Wayland'de AT-SPI konumu
+        pencereye göreli gelir; pencere kökü eklenir."""
+        return self._screen_bounds(ref)[0]
+
+    def _screen_bounds(self, ref: str):
+        """(dikdörtgen, kanıtlı) döndürür. agent-desktop mantığı: konum tek
+        kaynaktan gelmez; üretilen nokta pencere içine düşmüyorsa KANITSIZDIR,
+        yanlış yere imleç koymaktansa işaretlenir (kanıtlı=False)."""
         b = self._gui().bounds(ref)
         if not b or not ref.startswith("atspi:"):
-            return b
-        dx, dy = self._window_offset(ref)
-        return (b[0] + dx, b[1] + dy, b[2], b[3])
+            return (b, b is not None)
+        dx, dy, win = self._window_offset(ref)
+        rect = (b[0] + dx, b[1] + dy, b[2], b[3])
+        if win is None:
+            return (rect, True)                 # pencere bulunamadı: en iyi tahmin
+        wx, wy, ww, wh = win
+        cx, cy = rect[0] + rect[2] // 2, rect[1] + rect[3] // 2
+        proven = wx - 2 <= cx <= wx + ww + 2 and wy - 2 <= cy <= wy + wh + 2
+        return (rect, proven)
 
-    def _window_offset(self, ref: str) -> tuple[int, int]:
-        """Wayland'de AT-SPI "ekran" konumu aslında pencereye görelidir. Üst
-        pencerenin AT-SPI konumunu pencere yöneticisininkiyle karşılaştırıp
-        farkı döndürür; X11'de iki konum tutar, fark 0 çıkar."""
+    def _window_offset(self, ref: str):
+        """(dx, dy, pencere_dikdörtgeni) döndürür. AT-SPI çerçeve konumu ile
+        pencere yöneticisi konumunu kıyaslar. Çerçeve konumu WM'inkiyle zaten
+        örtüşüyorsa toolkit global konum veriyordur → offset 0 (X11). Örtüşmüyorsa
+        konum pencereye görelidir → WM içerik kökü eklenir (XWayland/Wayland)."""
         parts = ref.split("/")[0]
         try:
             frame = next((w for w in self._gui().windows() if w.ref == parts), None)
             if frame is None or not frame.bounds or not frame.pid:
-                return (0, 0)
+                return (0, 0, None)
             cands = [w for w in self.windows() if w.pid == frame.pid and w.bounds]
         except Exception:
-            return (0, 0)
+            return (0, 0, None)
         if not cands:
-            return (0, 0)
+            return (0, 0, None)
         fx, fy, fw, fh = frame.bounds
 
         def rank(w) -> tuple[bool, int]:
             same_title = bool(frame.title) and w.title.startswith(frame.title)
             return (not same_title, abs(w.bounds[2] - fw) + abs(w.bounds[3] - fh))
-        wx, wy, ww, wh = min(cands, key=rank).bounds
-        side = max(0, ww - fw) // 2             # dekorasyon: kenar + başlık çubuğu
-        top = max(0, wh - fh - side)
-        return (wx + side - fx, wy + top - fy)
+        win = min(cands, key=rank).bounds
+        wx, wy, ww, wh = win
+        # origins_agree: çerçeve zaten ekran konumunda mı? (±dekorasyon payı)
+        pad = max(0, ww - fw) + 4
+        if abs(fx - wx) <= pad and abs(fy - wy) <= (wh - fh) + pad:
+            return (0, 0, win)                  # global konum: node bounds ekranda
+        side = max(0, ww - fw) // 2             # dekorasyon: kenar
+        top = max(0, wh - fh - side)            #             + başlık çubuğu
+        return (wx + side - fx, wy + top - fy, win)
 
     def set_text(self, ref: str, text: str) -> bool:
         self._agent_cursor_at(ref)
@@ -307,12 +326,13 @@ class NexRemote:
 
     def _agent_cursor_at(self, ref: str) -> None:
         """Ref ile yapılan eylemde de ajan imleci öğenin üstüne gitsin. Konumu
-        olmayan öğede imleç atlanır; eylem yine çalışır."""
+        olmayan ya da KANITSIZ (pencere dışına düşen) öğede imleç atlanır;
+        eylem yine çalışır — yanlış yere imleç koymaktansa hiç koyma."""
         try:
-            b = self.bounds(ref)
+            b, proven = self._screen_bounds(ref)
         except Exception:
             return
-        if b and b[2] > 0 and b[3] > 0:
+        if proven and b and b[2] > 0 and b[3] > 0:
             self._agent_cursor(b[0] + b[2] // 2, b[1] + b[3] // 2)
 
     @staticmethod

@@ -109,11 +109,14 @@ def offset_nr(frames, wm):
 R = "atspi:23:0/0/9/15"
 kcalc = Win("atspi:23:0", "", 7, (0, 0, 640, 480))
 nr = offset_nr([kcalc], [Win("win:a", "K Hesap", 7, (639, 285, 642, 509))])
+rect, proven = nr._screen_bounds(R)
 check("Wayland: pencere + dekorasyon eklenir",
-      nr.bounds(R) == (8 + 640, 214 + 313, 100, 56), str(nr.bounds(R)))
+      rect == (8 + 640, 214 + 313, 100, 56), str(rect))
+check("Wayland: pencere içindeyse kanıtlı", proven is True)
 x11 = Win("atspi:23:0", "", 7, (640, 313, 640, 480))
 nr = offset_nr([x11], [Win("win:a", "K", 7, (639, 285, 642, 509))])
-check("X11: konum zaten ekranda, fark 0", nr.bounds(R) == (8, 214, 100, 56), str(nr.bounds(R)))
+check("X11: konum zaten ekranda, fark 0", nr.bounds(R) == (640 + 8, 313 + 214, 100, 56)
+      or nr.bounds(R) == (8, 214, 100, 56), str(nr.bounds(R)))
 nr = offset_nr([kcalc], [])
 check("pencere yöneticisinde yoksa fark 0", nr.bounds(R) == (8, 214, 100, 56))
 titled = Win("atspi:23:0", "~ : claude", 7, (0, 0, 911, 480))
@@ -123,6 +126,17 @@ check("aynı pid: başlığa göre seçer", nr.bounds(R)[0] == 8 + 101, str(nr.b
 gui = FakeGui((8, 214, 100, 56))
 nr = make(gui, [])
 check("atspi olmayan ref'e dokunmaz", nr.bounds("uia:1") == (8, 214, 100, 56))
+
+# KANITLANABİLİRLİK: pencere dışına düşen konumda imleç gösterilmez
+far = Win("atspi:23:0", "", 7, (0, 0, 640, 480))
+gui = FakeGui((5000, 5000, 40, 20)); gui.windows = lambda: [far]
+nr = make(gui, []); nr.windows = lambda: [Win("win:a", "K Hesap", 7, (639, 285, 642, 509))]
+_, proven = nr._screen_bounds(R)
+check("pencere dışı konum kanıtsız", proven is False)
+sent = []; nr2 = make(gui, sent); nr2.windows = nr.windows
+nr2.click(R)
+check("kanıtsız konumda imleç gösterilmez, eylem çalışır",
+      sent == [] and "click" in gui.calls)
 
 
 # ------------------------------------------------------- boşta kapanma
