@@ -520,7 +520,14 @@ def batch(cmds: list[str], wait: int, timeout: float = 5.0) -> list[str]:
     s = _connect(timeout)
     try:
         s.sendall("".join(c + "\n" for c in cmds).encode())
-        return [_readline(s) for _ in range(wait)]
+        buf = b""
+        while buf.count(b"\n") < wait:     # yanıtlar tek pakette birleşebilir
+            chunk = s.recv(256)
+            if not chunk:
+                break
+            buf += chunk
+        lines = buf.decode(errors="replace").split("\n")
+        return [ln.strip() for ln in lines[:wait]]
     finally:
         s.close()
 

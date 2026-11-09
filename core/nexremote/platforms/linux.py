@@ -406,9 +406,31 @@ class LinuxDesktop(Desktop):
             return False
         return os.path.getsize(path) > 0
 
+    def screenshot_image(self):
+        """En hızlı yol: giriş servisinin zaten açık ekran yayınındaki son kare
+        (~10 ms + kodlama). Kullanılamazsa None — çağıran dosya yoluna düşer.
+        Dönüş: (PIL görüntüsü, ekran orijini, ölçek)."""
+        if os.environ.get("NEXREMOTE_SHOT_STREAM", "1") == "0":
+            return None
+        from .. import portal_input
+        # servis çalışıyorsa D-Bus'a sormadan (~0.1 sn) doğrudan kullan
+        if not portal_input.running() and self._input_kind() != "portal":
+            return None
+        try:
+            return portal_input.frame_image()
+        except Exception:
+            return None   # çoklu ekran, GStreamer eksik, servis yok: eski yol çalışır
+
     def screenshot(self, path: str) -> Screenshot:
         path = os.path.abspath(path)
         errors = []
+        frame = self.screenshot_image()
+        if frame is not None:
+            img, origin, scale = frame
+            img.save(path, compress_level=1)
+            return Screenshot(path=path, width=img.width, height=img.height,
+                              backend="pipewire", display=os.environ.get("WAYLAND_DISPLAY"),
+                              scale=scale, origin=origin)
         if self.name == "kde-wayland" and os.environ.get("NEXREMOTE_SHOT_PORTAL", "1") != "0":
             if os.path.exists(path):
                 os.remove(path)

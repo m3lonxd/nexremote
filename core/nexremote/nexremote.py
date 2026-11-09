@@ -462,7 +462,17 @@ class NexRemote:
         üzerindeki koordinatı ekran koordinatına kendisi çevirir.
         """
         path = os.path.abspath(path or os.path.join(_runtime_dir(), "nexremote-shot.png"))
-        shot = self.desktop.screenshot(path)
+        # Bellekteki kare varsa kırp/küçült, PNG'yi yalnızca son boyutta bir kez kodla
+        grab = getattr(self.desktop, "screenshot_image", None)
+        frame = grab() if grab else None
+        img = None
+        if frame is not None:
+            img, origin, scale = frame
+            shot = Screenshot(path=path, width=img.width, height=img.height,
+                              backend="pipewire", scale=scale, origin=origin,
+                              display=os.environ.get("WAYLAND_DISPLAY"))
+        else:
+            shot = self.desktop.screenshot(path)
         crop = None
         if window_ref:
             w = next((w for w in self.windows() if w.ref == window_ref), None)
@@ -482,7 +492,8 @@ class NexRemote:
             except ImportError as e:
                 raise RuntimeError("kırpma/küçültme için Pillow gerekli "
                                    "(pip install pillow)") from e
-            img = Image.open(path)
+            if img is None:
+                img = Image.open(path)
             if crop:
                 img = img.crop(crop)
                 shot.origin = (round(shot.origin[0] + crop[0] / shot.scale),
@@ -494,6 +505,8 @@ class NexRemote:
                                  reducing_gap=3.0)
             img.save(path, compress_level=1)   # dosya biraz büyür, kayıt ~5 kat hızlı
             shot.width, shot.height = img.size
+        elif img is not None:
+            img.save(path, compress_level=1)
         _save_shot_meta(shot)
         return shot
 

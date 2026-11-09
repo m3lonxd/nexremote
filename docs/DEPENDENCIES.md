@@ -19,6 +19,7 @@ fare protokolüyle gönderilir. Ekran görüntüsü wlroots'ta grim ile alınır
 | Açık terminaller | Konsole D-Bus, tmux | `konsole`, `tmux` | Yalnızca ilgili tür listelenmez |
 | Kendi terminal oturumları | tmux (yoksa PTY) | `tmux` | PTY'ye düşer |
 | Ekran görüntüsü | spectacle / grim | `spectacle` veya `grim` | `screenshot` çalışmaz |
+| Hızlı ekran görüntüsü (~0.2 sn) | fare/klavye servisinin ekran yayını (PipeWire) | `gstreamer1.0-pipewire` | Screenshot portalı / spectacle'a düşer (~0.5–1.5 sn) |
 | Kırpma / küçültme | Pillow | `python3-pil` / `python-pillow` | Yalnızca tam boy görüntü |
 | Görünür ajan imleci | python-xlib + XWayland | `python3-xlib` | İmleç gösterilmez (tıklama yine çalışır) |
 | MCP adaptörü | `mcp` ≥ 2 | `pip install mcp` | CLI/HTTP yine çalışır |

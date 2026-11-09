@@ -18,6 +18,8 @@ Soket protokolü (satır başına bir komut, yanıt tek satır "OK ..."/"ERR ...
     SCROLL dy [dx]           tekerlek adımı (+aşağı / +sağ)
     KEY combo                ör. ctrl+shift+t, Return, alt+F4
     TYPE "<json-metin>"      JSON dizesi (çok satırlı metin güvenle taşınır)
+    FRAME "<json-yol>"       ekran yayınının son karesi → ham bayt dosyası; yanıt
+                             "OK w h satır_adımı pil_ham_modu ekran_x ekran_y ekran_w ekran_h"
     QUIT
 """
 from __future__ import annotations
@@ -297,6 +299,130 @@ class PortalSession:
         self.session = None
 
 
+class Grabber:
+    """Oturumun ekran yayınından (PipeWire) son kareyi bellekte tutar.
+
+    Ekran görüntüsü yeni bir yakalama değil, zaten gelen karenin kopyasıdır.
+    Akış ham formatta tutulur (dönüşüm yalnızca SHOT'ta), IDLE sn
+    kullanılmazsa durdurulur. KWin kareyi yalnızca ekran değişince yollar;
+    appsink son kareyi saklar, durağan ekranda da hazırdır.
+    """
+    IDLE = 30.0
+    FIRST_FRAME = 2.0
+
+    def __init__(self, portal: PortalSession) -> None:
+        self.p = portal
+        self.pipe = None
+        self.sink = None
+        self.last_use = 0.0
+
+    @staticmethod
+    def available() -> bool:
+        try:
+            import gi
+            gi.require_version("Gst", "1.0")
+            from gi.repository import Gst
+            Gst.init(None)
+            return all(Gst.ElementFactory.find(e) for e in ("pipewiresrc", "appsink"))
+        except Exception:
+            return False
+
+    def _start(self) -> None:
+        import gi
+        gi.require_version("Gst", "1.0")
+        from gi.repository import Gst
+        Gst.init(None)
+        if len(self.p.streams) != 1:
+            raise RuntimeError("çoklu ekranda yayından kare alma desteklenmiyor")
+        fd = self.p.sc.OpenPipeWireRemote(self.p.dbus.ObjectPath(self.p.session), {})
+        fd = fd.take()
+        node = self.p.streams[0]["node"]
+        pipe = Gst.parse_launch(
+            f"pipewiresrc fd={fd} path={node} do-timestamp=true ! "
+            "video/x-raw,format={BGRx,BGRA,RGBx,RGBA,xRGB,ARGB} ! "
+            "appsink name=sink max-buffers=1 drop=true sync=false "
+            "emit-signals=false enable-last-sample=true")
+        self.sink = pipe.get_by_name("sink")
+        if pipe.set_state(Gst.State.PLAYING) == Gst.StateChangeReturn.FAILURE:
+            pipe.set_state(Gst.State.NULL)
+            raise RuntimeError("PipeWire akışı başlatılamadı")
+        self.pipe = pipe
+        from gi.repository import GLib
+        GLib.timeout_add_seconds(5, self._idle_check)
+
+    def _idle_check(self) -> bool:
+        if self.pipe is not None and time.monotonic() - self.last_use > self.IDLE:
+            self.stop()
+            return False
+        return self.pipe is not None
+
+    def stop(self) -> None:
+        if self.pipe is not None:
+            from gi.repository import Gst
+            self.pipe.set_state(Gst.State.NULL)
+        self.pipe = self.sink = None
+
+    def _error(self) -> Optional[str]:
+        from gi.repository import Gst
+        msg = self.pipe.get_bus().pop_filtered(Gst.MessageType.ERROR)
+        return msg.parse_error()[0].message if msg else None
+
+    def frame(self, path: str) -> tuple[int, int, int, str]:
+        self.last_use = time.monotonic()
+        if self.pipe is not None and self._error():
+            self.stop()                       # akış koptu (ör. ekran değişti): yeniden kur
+        if self.pipe is None:
+            self._start()
+        sample = self.sink.get_property("last-sample")
+        if sample is None:                    # yeni akış: ilk kare birazdan gelir
+            # (pipewiresrc kendi iş parçacığında çalışır; ana döngüyü
+            # döndürmeye gerek yok — döndürmek soket işleyicisini iç içe çağırırdı)
+            end = time.monotonic() + self.FIRST_FRAME
+            while sample is None and time.monotonic() < end:
+                err = self._error()
+                if err:
+                    self.stop()
+                    raise RuntimeError(f"PipeWire: {err}")
+                time.sleep(0.005)
+                sample = self.sink.get_property("last-sample")
+        if sample is None:
+            raise RuntimeError("yayından kare gelmedi")
+        return self._save(sample, path)
+
+    @staticmethod
+    def _save(sample, path: str) -> tuple[int, int, int, str]:
+        """Kareyi olduğu gibi (ham bayt) yaz: PNG kodlaması istemcide, kırpma ve
+        küçültmeden SONRA bir kez yapılır. Dönüş: genişlik, yükseklik, satır
+        adımı, PIL ham modu."""
+        from gi.repository import Gst
+        st = sample.get_caps().get_structure(0)
+        w, h = st.get_value("width"), st.get_value("height")
+        fmt = st.get_value("format")   # ör. BGRx
+        # x (dolgu) baytı alfa gibi okunur, RGB'ye çevirirken atılır
+        raw = {"BGRx": "BGRA", "BGRA": "BGRA", "RGBx": "RGBA", "RGBA": "RGBA",
+               "xRGB": "ARGB", "ARGB": "ARGB"}[fmt]
+        buf = sample.get_buffer()
+        ok, m = buf.map(Gst.MapFlags.READ)
+        if not ok:
+            raise RuntimeError("kare belleği okunamadı")
+        try:
+            data = bytes(m.data)
+        finally:
+            buf.unmap(m)
+        # 4 bayt/piksel paketli format: satır adımı = boyut / yükseklik (dolgu dahil)
+        stride = len(data) // h
+        if stride < w * 4:
+            raise RuntimeError(f"beklenmeyen kare boyutu: {len(data)} bayt, {w}x{h}")
+        tmp = path + ".tmp"
+        fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        try:
+            os.write(fd, data)
+        finally:
+            os.close(fd)
+        os.replace(tmp, path)
+        return w, h, stride, raw
+
+
 def _load_token() -> Optional[str]:
     try:
         with open(TOKEN_FILE) as f:
@@ -321,6 +447,7 @@ class Daemon:
     def __init__(self, portal: PortalSession) -> None:
         self.p = portal
         self.last = (0.0, 0.0)
+        self.grab = Grabber(portal)
 
     def handle(self, line: str) -> str:
         cmd, _, rest = line.partition(" ")
@@ -380,7 +507,15 @@ class Daemon:
                 p.keysym(sym, False)
                 time.sleep(self.GAP)
             return "OK"
+        if cmd == "FRAME":
+            path = json.loads(rest)
+            if not isinstance(path, str) or not os.path.isabs(path):
+                raise ValueError("FRAME mutlak yol (JSON dizesi) bekler")
+            w, h, stride, raw = self.grab.frame(path)
+            s = p.streams[0]   # Grabber tek ekranı destekler
+            return f"OK {w} {h} {stride} {raw} {s['x']} {s['y']} {s['w']} {s['h']}"
         if cmd == "QUIT":
+            self.grab.stop()
             return "OK bye"
         return f"ERR bilinmeyen komut: {cmd}"
 
@@ -441,6 +576,7 @@ def serve() -> int:
     try:
         loop.run()
     finally:
+        daemon.grab.stop()
         portal.close()
         srv.close()
         try:
@@ -508,6 +644,33 @@ def call(line: str) -> str:
     if not reply.startswith("OK"):
         raise RuntimeError(reply[4:] if reply.startswith("ERR ") else reply or "yanıt yok")
     return reply[3:]
+
+
+def frame_image():
+    """Ekran yayınının son karesi: (PIL RGB görüntüsü, ekran orijini (x, y),
+    ölçek = görüntü pikseli / mantıksal piksel). Servis yoksa ve kayıtlı izin
+    de yoksa başlatmaz (izin diyaloğu açmamak için) — RuntimeError."""
+    if not running():
+        if not _load_token():
+            raise RuntimeError("giriş servisi kapalı ve kayıtlı izin yok")
+        ensure(wait=10.0)
+    path = os.path.join(RUNTIME, "nexremote-frame.raw")
+    reply = send("FRAME " + json.dumps(path))
+    if not reply.startswith("OK "):
+        raise RuntimeError(reply[4:] if reply.startswith("ERR ") else reply or "yanıt yok")
+    w, h, stride, raw, sx, sy, sw, _sh = reply[3:].split()
+    try:
+        with open(path, "rb") as f:
+            data = f.read()
+    finally:
+        try:
+            os.remove(path)      # ~8 MB; tmpfs'te bekletme
+        except OSError:
+            pass
+    from PIL import Image
+    img = Image.frombuffer("RGBA", (int(w), int(h)), data, "raw", raw,
+                           int(stride), 1).convert("RGB")
+    return img, (int(sx), int(sy)), (int(w) / int(sw) if int(sw) else 1.0)
 
 
 def _keyable(ch: str) -> bool:
