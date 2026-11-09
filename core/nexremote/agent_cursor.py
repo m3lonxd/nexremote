@@ -36,12 +36,13 @@ import threading
 import time
 
 BOX = 56                       # pencere kenarı (px) — ok + tık halkası sığsın
-IDLE_SEC = 8.0                 # son komuttan bu kadar sonra imleç kapanır
+IDLE_SEC = 8.0                 # son komuttan bu kadar sonra imleç gizlenir
+LINGER_SEC = 900.0             # gizli daemon bu kadar boşta kalırsa kapanır (yeniden başlatma maliyeti yok)
 HOT = 16                       # okun ucunun pencere içindeki yeri (x = y); hedef nokta
 COLOR = (0x6e, 0xe7, 0xa8)     # yerleşik ok dolgusu #6ee7a8
 EDGE = (0x10, 0x14, 0x12)      # yerleşik ok kenarı
 PULSE = (0x6e, 0xe7, 0xa8)     # tık halkası
-RINGS = (5, 7, 9, 11, 13, 15)  # tık halkasının kareleri (yarıçap, px)
+RINGS = (6, 10, 14)            # tık halkasının kareleri (yarıçap, px) — kısa ve sade
 
 # Standart ok imleci (ucu 0,0'da; birim = piksel). Breeze/Adwaita oranları.
 ARROW = [(0, 0), (0, 22), (5.2, 17), (9.2, 26.5), (13.6, 24.6), (9.6, 15.8), (16.5, 15.8)]
@@ -51,8 +52,8 @@ FPS = 120                      # hareket kare hızı
 
 # ------------------------------------------------------------------ hareket
 def move_duration(dist: float) -> float:
-    """Fitts benzeri: kısa mesafe hızlı, uzun mesafe biraz daha uzun (sn)."""
-    return min(0.7, 0.14 + 0.08 * math.log2(1 + dist / 24))
+    """Fitts benzeri ama kısa: göz hareketi fark etsin, süzülme hissi olmasın (sn)."""
+    return min(0.3, 0.1 + 0.045 * math.log2(1 + dist / 24))
 
 
 def min_jerk(t: float) -> float:
@@ -63,10 +64,10 @@ def min_jerk(t: float) -> float:
 
 def arc_control(sx: float, sy: float, x: float, y: float) -> tuple[float, float]:
     """Kavis için ikinci derece Bezier kontrol noktası: orta noktadan, yola dik,
-    mesafenin %8'i kadar (en çok 48 px). Yön hep aynı tarafa: el bileği gibi."""
+    mesafenin %3'ü kadar (en çok 16 px): neredeyse düz, savrulmaz."""
     dx, dy = x - sx, y - sy
     dist = math.hypot(dx, dy) or 1.0
-    off = min(48.0, dist * 0.08)
+    off = min(16.0, dist * 0.03)
     nx, ny = -dy / dist, dx / dist
     if ny > 0:                  # kavis yukarı doğru bükülsün
         nx, ny = -nx, -ny
@@ -282,7 +283,7 @@ class AgentCursorBase:
         """Tık geri bildirimi: uçtan genişleyen halka."""
         for r in RINGS:
             self._draw(ring=r)
-            self.wait(0.035)
+            self.wait(0.03)
         self._draw()
 
 
@@ -391,10 +392,11 @@ def idle_limit() -> float:
         return IDLE_SEC
 
 
-def serve(cursor, ready=None, idle: float = 0.0) -> None:
+def serve(cursor, ready=None, idle: float = 0.0, hide: float = 0.0) -> None:
     """Komutları dinle; pencere işlerini ÇAĞIRAN (ana) iş parçacığında yap.
-    QUIT gelince ya da idle sn komut gelmezse pencereyi kapatıp döner (PING
-    komut sayılmaz). Sonraki eylem daemon'ı yeniden başlatır."""
+    hide sn komut gelmezse imleç gizlenir (süreç sıcak kalır, sonraki eylem
+    beklemez); QUIT gelince ya da idle sn komut gelmezse pencereyi kapatıp
+    döner (PING komut sayılmaz). Sonraki eylem daemon'ı yeniden başlatır."""
     srv, token = _listen()
     jobs: "queue.Queue[tuple[list[str], list, threading.Event]]" = queue.Queue()
     stop = threading.Event()
@@ -444,15 +446,29 @@ def serve(cursor, ready=None, idle: float = 0.0) -> None:
 
     threading.Thread(target=accept, daemon=True).start()
     last = time.monotonic()
+    hidden = False
     try:
         while not stop.is_set():
             try:
                 cmd, box, done = jobs.get(timeout=0.03)
             except queue.Empty:
                 cursor.pump()
-                if idle and time.monotonic() - last >= idle:
+                quiet = time.monotonic() - last
+                if idle and quiet >= idle:
                     break
+                if hide and not hidden and quiet >= hide:
+                    try:
+                        cursor.set_visible(False)
+                    except Exception as e:
+                        print(f"[cursor] gizleme: {e}", file=sys.stderr)
+                    hidden = True
                 continue
+            if hidden and cmd[0].upper() in ("MOVE", "CLICK"):
+                try:
+                    cursor.set_visible(True)   # boşta gizlenen imleç geri gelsin
+                except Exception as e:
+                    print(f"[cursor] gösterme: {e}", file=sys.stderr)
+            hidden = False
             if stop.is_set():
                 break
             try:
@@ -497,6 +513,18 @@ def send(cmd: str, timeout: float = 5.0) -> str:
         s.close()
 
 
+def batch(cmds: list[str], wait: int, timeout: float = 5.0) -> list[str]:
+    """Komutları tek bağlantıda sırayla gönder; yalnızca ilk `wait` tanesinin
+    yanıtını bekle. Kalanlar (ör. tık halkası) daemon'da arka planda biter,
+    çağıranı bekletmez."""
+    s = _connect(timeout)
+    try:
+        s.sendall("".join(c + "\n" for c in cmds).encode())
+        return [_readline(s) for _ in range(wait)]
+    finally:
+        s.close()
+
+
 def start_daemon(display: str = "") -> bool:
     """Daemon çalışmıyorsa başlat (ayrı süreç; çağıran kapansa da yaşar)."""
     if daemon_running():
@@ -520,7 +548,7 @@ def start_daemon(display: str = "") -> bool:
     while time.monotonic() < end:
         if daemon_running():
             return True
-        time.sleep(0.15)
+        time.sleep(0.05)
     return False
 
 
@@ -564,7 +592,8 @@ def main(argv=None) -> int:
     for i, a in enumerate(argv):
         if a == "--display" and i + 1 < len(argv):
             display = argv[i + 1]
-    serve(make_cursor(display), idle=idle_limit())
+    hide = idle_limit()
+    serve(make_cursor(display), idle=max(LINGER_SEC, hide) if hide else 0.0, hide=hide)
     return 0
 
 

@@ -42,9 +42,16 @@ class NexRemote:
     def __init__(self, backends: Optional[list[Backend]] = None,
                  desktop: Optional[Desktop] = None):
         self.desktop: Desktop = desktop if desktop is not None else detect()
-        if backends is None:
-            backends = self._default_backends(self.desktop)
-        self.backends: dict[str, Backend] = {b.name: b for b in backends}
+        # Varsayılan arka uçlar ilk kullanımda yüklenir: AT-SPI kurulumu ~0.2 sn
+        # sürer ve koordinatla tık, klavye, ekran görüntüsü ona hiç ihtiyaç duymaz.
+        self._backends: Optional[dict[str, Backend]] = (
+            None if backends is None else {b.name: b for b in backends})
+
+    @property
+    def backends(self) -> dict[str, Backend]:
+        if self._backends is None:
+            self._backends = {b.name: b for b in self._default_backends(self.desktop)}
+        return self._backends
 
     @staticmethod
     def _default_backends(desktop: Desktop) -> list[Backend]:
@@ -398,12 +405,16 @@ class NexRemote:
         çünkü tıklamanın kendisi imlece bağlı değildir)."""
         if os.environ.get("NEXREMOTE_CURSOR", "1") == "0" or not self.pointer_available()[0]:
             return
+        # SHOW: cursor-hide sonrası da görünsün. MOVE yanıtı hareket bitince
+        # gelir; tık halkası beklenmez, gerçek tık onunla aynı anda olur.
+        cmds = ["SHOW", f"MOVE {int(x)} {int(y)}"] + (["CLICK"] if click else [])
+        from . import agent_cursor as ac
         try:
-            ac = self._cursor_daemon()
-            ac.send("SHOW")                      # cursor-hide sonrası da görünsün
-            ac.send(f"MOVE {int(x)} {int(y)}")   # yanıt hareket bitince gelir
-            if click:
-                ac.send("CLICK")
+            try:
+                ac.batch(cmds, wait=2)
+            except (OSError, ValueError, KeyError):   # daemon yok: başlat, bir kez daha
+                self._cursor_daemon()
+                ac.batch(cmds, wait=2)
         except Exception:
             pass
 
@@ -479,8 +490,9 @@ class NexRemote:
             if max_width and img.width > max_width:
                 factor = max_width / img.width
                 shot.scale *= factor
-                img = img.resize((max_width, round(img.height * factor)), Image.LANCZOS)
-            img.save(path)
+                img = img.resize((max_width, round(img.height * factor)), Image.LANCZOS,
+                                 reducing_gap=3.0)
+            img.save(path, compress_level=1)   # dosya biraz büyür, kayıt ~5 kat hızlı
             shot.width, shot.height = img.size
         _save_shot_meta(shot)
         return shot
@@ -564,7 +576,7 @@ class NexRemote:
         return []
 
     def close(self) -> None:
-        for b in self.backends.values():
+        for b in (self._backends or {}).values():
             try:
                 b.close()
             except Exception:

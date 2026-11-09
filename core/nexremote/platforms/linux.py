@@ -348,9 +348,74 @@ class LinuxDesktop(Desktop):
                  "gnome-wayland": "gnome-screenshot", "x11": "scrot"}.get(self.name)
         return sorted(tools, key=lambda t: t[1] != first) if first else tools
 
+    def _portal_screenshot(self, path: str, timeout: float = 5.0) -> bool:
+        """xdg Screenshot portalı (etkileşimsiz): KWin'den doğrudan alır, ~0.4 sn
+        (spectacle ~1.3 sn). Portal dosyayı kullanıcının Resimler klasörüne
+        yazar; hemen hedef yola taşınır."""
+        import time
+        try:
+            import dbus
+            from gi.repository import GLib
+            from .._dbus import session_bus
+            bus = session_bus()
+            obj = bus.get_object("org.freedesktop.portal.Desktop",
+                                 "/org/freedesktop/portal/desktop")
+        except Exception:
+            return False
+        token = f"nexshot{os.getpid()}_{int(time.monotonic() * 1000)}"
+        sender = bus.get_unique_name()[1:].replace(".", "_")
+        req = f"/org/freedesktop/portal/desktop/request/{sender}/{token}"
+        box: dict = {}
+        loop = GLib.MainLoop()
+
+        def on_response(code, results):
+            box["code"], box["results"] = int(code), results
+            loop.quit()
+
+        match = bus.add_signal_receiver(on_response, "Response",
+                                        "org.freedesktop.portal.Request",
+                                        "org.freedesktop.portal.Desktop", req)
+        timer = 0
+        try:
+            obj.Screenshot("", {"interactive": False, "handle_token": token},
+                           dbus_interface="org.freedesktop.portal.Screenshot",
+                           timeout=timeout)
+            if "code" not in box:
+                timer = GLib.timeout_add(int(timeout * 1000), loop.quit)
+                loop.run()
+        except dbus.DBusException:
+            return False
+        finally:
+            match.remove()
+            if timer and "code" in box:      # zaman aşımı tetiklendiyse kaynak zaten silindi
+                GLib.source_remove(timer)
+        if box.get("code") != 0:
+            return False
+        uri = str(box["results"].get("uri", ""))
+        if not uri.startswith("file://"):
+            return False
+        from urllib.parse import unquote
+        src = unquote(uri[len("file://"):])
+        try:
+            shutil.move(src, path)
+        except OSError:
+            try:
+                os.remove(src)   # kullanıcının klasöründe artık bırakma
+            except OSError:
+                pass
+            return False
+        return os.path.getsize(path) > 0
+
     def screenshot(self, path: str) -> Screenshot:
         path = os.path.abspath(path)
         errors = []
+        if self.name == "kde-wayland" and os.environ.get("NEXREMOTE_SHOT_PORTAL", "1") != "0":
+            if os.path.exists(path):
+                os.remove(path)
+            if self._portal_screenshot(path):
+                w, h = png_size(path)
+                return Screenshot(path=path, width=w, height=h, backend="portal",
+                                  display=os.environ.get("WAYLAND_DISPLAY"))
         for cmd, tool in self._shot_tools(path):
             if not shutil.which(tool):
                 continue

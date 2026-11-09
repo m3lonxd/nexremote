@@ -243,6 +243,8 @@ class XAgentCursor(AgentCursorBase):
             if v:                # sonradan öne gelen pencerelerin altında kalmasın
                 from Xlib import X
                 self._win.configure(stack_mode=X.Above)
+                self.d.sync()
+                self._draw()     # unmap içeriği silmiş olabilir (backing store yok)
             self.d.sync()
         except Exception:
             pass

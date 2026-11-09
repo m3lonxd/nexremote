@@ -11,6 +11,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, "..", "core"))
 
 from nexremote.nexremote import NexRemote  # noqa: E402
+from nexremote import agent_cursor as ac  # noqa: E402
 
 results: list[tuple[str, bool]] = []
 
@@ -43,19 +44,33 @@ class FakeGui:
         return True
 
 
-def make(gui, sent, available=True, send_error=False):
+REAL_BATCH = ac.batch
+waits: list[int] = []
+
+
+def make(gui, sent, available=True, send_error=False, missing=0):
+    """missing: daemon'ın ilk kaç bağlantıda yok sayılacağı (başlatma yolu)."""
     nr = NexRemote.__new__(NexRemote)
     nr._gui = lambda: gui
     nr.pointer_available = lambda: (available, "")
-    daemon = mock.Mock()
+    state = {"missing": missing, "started": 0}
 
-    def send(cmd):
+    def batch(cmds, wait, timeout=5.0):
         if send_error:
             raise OSError("daemon yok")
-        sent.append(cmd)
-        return "OK"
-    daemon.send = send
-    nr._cursor_daemon = lambda: daemon
+        if state["missing"]:
+            state["missing"] -= 1
+            raise FileNotFoundError("soket yok")
+        sent.extend(cmds)
+        waits.append(wait)
+        return ["OK"] * wait
+
+    def start():
+        state["started"] += 1
+        return ac
+    ac.batch = batch
+    nr._cursor_daemon = start
+    nr._fake = state
     return nr
 
 
@@ -70,6 +85,19 @@ for name in ("click", "focus"):
 gui, sent = FakeGui(), []
 check("set_text sonucu doğru", make(gui, sent).set_text("r", "x") is True)
 check("set_text imleci gösterir", sent == FULL, str(sent))
+
+check("tek bağlantı; tık halkası beklenmez", waits and all(w == 2 for w in waits), str(waits))
+
+gui, sent = FakeGui(), []
+nr = make(gui, sent, missing=1)
+nr.click("r")
+check("daemon yoksa bir kez başlatılır ve imleç yine gider",
+      nr._fake["started"] == 1 and sent == FULL and "click" in gui.calls, str(sent))
+
+gui, sent = FakeGui(), []
+nr = make(gui, sent)
+nr.click("r")
+check("daemon varsa başlatma/PING denemesi yok", nr._fake["started"] == 0)
 
 gui, sent = FakeGui(), []
 make(gui, sent, available=False).click("r")
@@ -174,6 +202,39 @@ if os.name != "nt":
         th.join(3)
         check("boşta kalınca kapanır", not th.is_alive() and cur.closed)
         check("soket temizlenir", not ac.daemon_running())
+
+    class Recorder(FakeCursor):
+        def __init__(self):
+            self.log = []
+        def set_visible(self, v): self.log.append(("vis", v))
+        def move_to(self, x, y, duration=None): self.log.append(("move", x, y))
+        def pulse(self):
+            time.sleep(0.3)
+            self.log.append(("pulse",))
+
+    with tempfile.TemporaryDirectory() as tmp, \
+            mock.patch.object(ac, "sock_path", lambda: os.path.join(tmp, "c.sock")):
+        cur, ready = Recorder(), threading.Event()
+        th = threading.Thread(target=ac.serve, args=(cur, ready, 0.0, 0.3), daemon=True)
+        th.start()
+        ready.wait(3)
+        t0 = time.monotonic()
+        out = REAL_BATCH(["SHOW", "MOVE 10 20", "CLICK"], wait=2)
+        took = time.monotonic() - t0
+        check("batch: iki yanıt döner, halkayı beklemez",
+              out == ["OK", "OK"] and took < 0.25, f"{out} {took:.2f}s")
+        time.sleep(0.5)
+        check("batch: bekletilmeyen CLICK yine çalışır", ("pulse",) in cur.log, str(cur.log))
+        time.sleep(0.4)
+        check("boşta imleç gizlenir, süreç yaşar",
+              cur.log[-1] == ("vis", False) and th.is_alive() and not cur.closed, str(cur.log))
+        cur.log.clear()
+        ac.send("MOVE 30 40")
+        check("gizliyken gelen MOVE imleci geri gösterir",
+              cur.log[:2] == [("vis", True), ("move", 30.0, 40.0)], str(cur.log))
+        ac.send("QUIT")
+        th.join(3)
+        check("QUIT ile kapanır", not th.is_alive() and cur.closed)
 
 ok = sum(1 for _, o in results if o)
 print(f"İMLEÇ GERİ BİLDİRİMİ: {ok} geçti, {len(results) - ok} başarısız")
