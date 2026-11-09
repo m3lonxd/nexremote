@@ -37,6 +37,37 @@ $ nexremote type "Merhaba dünya — ğüşıöç"
 | **Görünür ajan imleci** — ajan nerede çalışıyor gör; senin farene dokunmaz, tıklamayı engellemez | X11/XWayland pencere · imleç teman | katmanlı pencere · sistem oku | NSWindow · sistem oku |
 | **Ekran görüntüsü** — pencereye kırp, küçült; görüntü koordinatıyla tıkla | spectacle · grim · Xlib | GDI | screencapture |
 
+### Ref'ler yanlış düğmeye basmaz
+
+`tree` her okumada bir **anlık görüntü** alır ve eyleme açık her öğeye o
+okumaya bağlı bir ref verir:
+
+```console
+$ nexremote tree --window win:{…} -i
+# anlık görüntü @s7k2m9qx — Hesap Makinesi
+[frame] Hesap Makinesi
+  [button] 7  <click>  ref=@s7k2m9qx:e4
+  [button] Temizle  <click>  ref=@s7k2m9qx:e11
+$ nexremote click @s7k2m9qx:e4
+```
+
+Ref'in arkasında konum değil kimlik kanıtı durur: pencerenin süreci ve
+başlığı, öğenin rolü, kararlı adı, adlı ataları. Eylemden hemen önce canlı
+ağaç yeniden okunur ve öğe bu kanıtla aranır. Arada bir düğme eklenip liste
+kaysa da ref aynı öğeye gider. Kanıtlanamazsa hiçbir şeye basılmaz:
+`STALE_REF` (öğe gitti) ya da `AMBIGUOUS_TARGET` (artık birden çok öğe
+uyuyor) döner, ajan yeniden `tree` alır. Devre dışı düğme 5 sn'ye kadar
+beklenir (`NEXREMOTE_WAIT`), olmazsa `TIMEOUT`. Yoğun uygulamada
+`tree --root @s…:e3 -i` yalnız bir bölgeyi açar.
+
+Birden çok ajan aynı makinede çalışıyorsa fare/klavye olayları bir **girdi
+kirasıyla** sıraya girer: bir ajanın sürüklemesinin ortasına ötekinin tuşu
+karışmaz. Kira yalnız gönderim süresince tutulur.
+
+Bu iki fikir [agent-desktop](https://github.com/vercel-labs/agent-desktop)
+(Apache-2.0) projesinden uyarlandı; kod NexRemote için Python'da yeniden
+yazıldı.
+
 Root / yönetici gerekmez. Wayland'de fare ve klavye için masaüstü **bir kez**
 izin sorar; macOS'ta Erişilebilirlik ve Ekran Kaydı izni bir kez verilir.
 Windows ve X11 ayrıca izin istemez.
@@ -107,6 +138,8 @@ Komutların tamamı: `nexremote --help`. Ajan talimatı: [`adapters/skill/nexrem
 ```
 core/nexremote/
   nexremote.py      tek giriş noktası (facade); adaptörler yalnızca bunu bilir
+  snapshot.py       anlık görüntü ref'leri (@sid:eN), katı yeniden tanıma, otomatik bekleme
+  lease.py          girdi kirası: makine genelinde tek fare/klavye yazarı
   platforms/        işletim sistemi katmanı (Desktop sözleşmesi, base.py)
     linux.py          KWin / Hyprland / Sway / X11 seçimi
     x11.py wlroots.py X11 (XTEST, EWMH) · Sway, Hyprland IPC
@@ -143,6 +176,9 @@ erişilebilirlik okuması onaylar.
 - Windows: Wine içinde gerçek Windows Python'u, ayrı prefix ve başsız ekranla
   (`tests/wine/setup.sh` bir kez, sonra `tests/wine/run.sh tests/test_windows_wine.py`):
   gerçek Notepad penceresi ve cmd.exe konsolu açılır.
+- Anlık görüntü ref'leri: sahte ağaçla yol kayması, silinen/çoğalan öğe,
+  uygulama indeksi kayması, otomatik bekleme ve süreçler arası girdi kirası
+  (`tests/test_snapshot.py`).
 - macOS: Quartz/AX çağrıları sahte kütüphaneyle sınanır (`tests/test_macos_logic.py`).
 - Electron: sandbox'ta gerçek bir Electron penceresi açılır, butonu ağaçtaki
   ref'iyle tıklanır (`NEXR_ELECTRON=/yol/electron`; yoksa test atlanır).

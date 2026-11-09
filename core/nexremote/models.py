@@ -103,18 +103,26 @@ class Element:
                 and not self.value and not self.focused
                 and set(self.actions) <= {"click", "focus"})
 
-    def render(self, indent: int = 0, max_name: int = 60) -> str:
-        """LLM dostu metin satırı: `  [button] Kaydet  <click>  ref=atspi:1:0/3`
-
+    def render(self, indent: int = 0, max_name: int = 60,
+               refs: Optional[dict[str, str]] = None, interactive: bool = False) -> str:
+        """LLM dostu metin satırı: `  [button] Kaydet  <click>  ref=@s7k2m9qx:e4`
         İsimsiz kaplar yazılmaz, çocukları bir üst girintiye çıkar; tıklanabilir
-        öğeler ref'iyle yazılır ki model ayrıca `find` çağırmadan tıklayabilsin."""
-        return "\n".join(self._lines(indent, max_name, root=True))
+        öğeler ref'iyle yazılır ki model ayrıca `find` çağırmadan tıklayabilsin.
+        refs: arka uç ref'i → anlık görüntü ref'i (verilirse yalnızca bunlar
+        ref'li yazılır). interactive: ref'i olmayan dalları buda."""
+        return "\n".join(self._lines(indent, max_name, refs, interactive, root=True))
 
-    def _lines(self, indent: int, max_name: int, root: bool = False) -> list[str]:
-        if not root and self.is_wrapper():
+    def _has_ref(self, refs: dict[str, str]) -> bool:
+        return self.ref in refs or any(c._has_ref(refs) for c in self.children)
+
+    def _lines(self, indent: int, max_name: int, refs: Optional[dict[str, str]] = None,
+               interactive: bool = False, root: bool = False) -> list[str]:
+        if interactive and refs is not None and not root and not self._has_ref(refs):
+            return []
+        if not root and self.is_wrapper() and (refs is None or self.ref not in refs):
             out: list[str] = []
             for c in self.children:
-                out.extend(c._lines(indent, max_name))
+                out.extend(c._lines(indent, max_name, refs, interactive))
             return out
         pad = "  " * indent
         nm = self.name[:max_name].replace("\n", " ")
@@ -125,11 +133,16 @@ class Element:
             extra += f"  = {self.value[:40]!r}"
         if self.focused:
             extra += "  (*)"
-        if not root and (self.actions or self.value):
+        if not self.enabled:
+            extra += "  (devre dışı)"
+        if refs is not None:
+            if not root and self.ref in refs:
+                extra += f"  ref={refs[self.ref]}"
+        elif not root and (self.actions or self.value):
             extra += f"  ref={self.ref}"
         out = [f"{pad}[{self.role.value}] {nm}{extra}"]
         for c in self.children:
-            out.extend(c._lines(indent + 1, max_name))
+            out.extend(c._lines(indent + 1, max_name, refs, interactive))
         return out
 
 

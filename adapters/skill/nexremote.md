@@ -28,14 +28,25 @@ If `caps` says something needs approval, run `nexremote setup` once:
 
 ## 2. Act on GUI apps — structure first, pixels second
 ```bash
-nexremote tree --window win:{...}          # visible UI; actionable lines end in ref=…
-nexremote click <ref>                      # press it; the user's mouse does not move
+nexremote tree --window win:{...}          # snapshot; actionable lines end in ref=@s7k2m9qx:e4
+nexremote tree --window win:{...} -i       # only actionable elements (shorter)
+nexremote tree --root @s7k2m9qx:e3 -i      # drill into one region of a dense app
+nexremote click @s7k2m9qx:e4               # press it; the user's mouse does not move
 nexremote find "Save" --window win:{...}   # search by name/value → refs
-nexremote set-text <ref> "text"           # replace a field's content
+nexremote set-text @s7k2m9qx:e9 "text"     # replace a field's content
 ```
 `tree` leaves out closed menus and folds unnamed layout boxes, so what you
 read is what is on screen. Content scrolled out of view may be missing:
 scroll, then read again.
+
+Refs belong to the snapshot that printed them. Before every action the
+element is re-identified by window, role, name and named ancestors — never
+by position — so a ref keeps hitting the same button after the UI shifts.
+If it cannot be proven, the action is refused and nothing is pressed:
+`STALE_REF` (element gone / changed) or `AMBIGUOUS_TARGET` (now matches
+several) → take a new `tree` and use its refs. A disabled element is waited
+for up to 5 s (`NEXREMOTE_WAIT`), then `TIMEOUT`. Loop: tree → act → tree
+to verify.
 
 Electron/Chromium apps (Discord, Vesktop, VS Code, Slack, Chrome) publish an
 empty tree unless started with a flag; `tree` then ends with a `#` hint line.

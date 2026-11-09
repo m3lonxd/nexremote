@@ -52,7 +52,8 @@ def _tool_errors(fn):
         except ToolError:
             raise
         except Exception as exc:
-            raise ToolError(f"{fn.__name__} failed: {type(exc).__name__}: {exc}") from None
+            code = getattr(exc, "code", None) or type(exc).__name__
+            raise ToolError(f"{fn.__name__} failed: {code}: {exc}") from None
 
     return wrapper
 
@@ -140,16 +141,22 @@ def nexremote_launch(argv: list[str], wait: float = 15.0) -> dict:
 
 @mcp.tool()
 @_tool_errors
-def nexremote_tree(window_ref: str = "") -> str:
-    """Dump the accessibility tree of a window as indented readable text.
+def nexremote_tree(window_ref: str = "", interactive: bool = False, root: str = "") -> str:
+    """Snapshot a window's accessibility tree as indented readable text.
 
     Each line shows [role] name, actions like <click,set_text> and, for
-    actionable elements, ref=... that nexremote_click accepts directly.
-    Unnamed layout containers are folded away and hidden elements (closed
-    menus) are left out. Pass window_ref from nexremote_windows; empty string
-    uses the first window. An empty Electron tree ends with a hint line.
+    actionable elements, a snapshot ref like ref=@s7k2m9qx:e4 that
+    nexremote_click / nexremote_set_text accept. Refs are tied to this
+    snapshot: before acting, the element is re-identified by role, name and
+    named ancestors; if the UI changed the action fails with STALE_REF or
+    AMBIGUOUS_TARGET instead of hitting the wrong element - take a new tree.
+    interactive=True keeps only actionable elements and their ancestors.
+    root=<ref> returns only that element's subtree (drill into dense apps).
+    Pass window_ref from nexremote_windows; empty string uses the first
+    window. An empty Electron tree ends with a hint line.
     """
-    return _get_nexremote().tree(window_ref or None)
+    return _get_nexremote().tree(window_ref or None, interactive=interactive,
+                                 root=root or None)
 
 
 @mcp.tool()

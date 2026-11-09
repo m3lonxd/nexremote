@@ -149,7 +149,7 @@ def cmd_window(nr, a) -> None:
 
 def cmd_tree(nr, a) -> None:
     ref = a.window
-    if not ref:
+    if not ref and not a.root:
         ws = nr.windows()
         if not ws:
             _out({"error": "pencere yok"}, a.json, "pencere yok")
@@ -157,9 +157,10 @@ def cmd_tree(nr, a) -> None:
         foc = [w for w in ws if w.focused] or ws
         ref = foc[0].ref
     try:
-        txt = nr.tree(ref)
+        txt = nr.tree(ref, interactive=a.interactive, root=a.root)
     except Exception as e:
-        _out({"error": str(e)}, a.json, f"hata: {e}")
+        code = getattr(e, "code", None)
+        _out({"error": str(e), **({"code": code} if code else {})}, a.json, f"hata: {e}")
         raise SystemExit(1)
     if a.json:
         print(json.dumps({"window": ref, "tree": txt}, ensure_ascii=False, indent=2))
@@ -400,8 +401,12 @@ def build_parser() -> argparse.ArgumentParser:
     la.add_argument("--wait", type=float, default=15.0, help="pencere bekleme süresi (sn)")
     la.add_argument("argv", nargs=argparse.REMAINDER, help="program ve argümanları")
     la.set_defaults(fn=cmd_launch)
-    t = sub.add_parser("tree", help="erişilebilirlik ağacı")
+    t = sub.add_parser("tree", help="erişilebilirlik ağacı (anlık görüntü, @s…:eN ref'li)")
     t.add_argument("--window", default=None)
+    t.add_argument("-i", "--interactive", action="store_true",
+                   help="yalnız eyleme açık öğeler ve ataları")
+    t.add_argument("--root", default=None,
+                   help="yalnız bu ref'in alt ağacı (@s…:eN; yoğun uygulamada bölgeye in)")
     t.set_defaults(fn=cmd_tree)
     f = sub.add_parser("find", help="öğe ara")
     f.add_argument("query")
@@ -501,10 +506,12 @@ def main(argv=None) -> int:
         print("bu özellik bu makinede mevcut değil", file=sys.stderr)
         return 3
     except Exception as e:
+        code = getattr(e, "code", None)
         if args.json:
-            print(json.dumps({"error": str(e)}, ensure_ascii=False))
+            print(json.dumps({"error": str(e), **({"code": code} if code else {})},
+                             ensure_ascii=False))
         else:
-            print(f"hata: {e}", file=sys.stderr)
+            print(f"hata{f' [{code}]' if code else ''}: {e}", file=sys.stderr)
         return 1
     finally:
         try:

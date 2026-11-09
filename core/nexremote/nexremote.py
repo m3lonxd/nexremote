@@ -15,6 +15,8 @@ import sys
 from typing import Any, Optional
 
 from . import launch as launcher
+from . import snapshot as snap
+from .lease import input_lease
 from .base import Backend
 from .models import CommandResult, Element, Screenshot, Window
 from .platforms import Desktop, Unsupported, detect
@@ -24,6 +26,16 @@ from .platforms.base import runtime_dir as _runtime_dir
 def _save_shot_meta(shot: Screenshot) -> None:
     with open(os.path.join(_runtime_dir(), "nexremote-shot.json"), "w") as f:
         json.dump(shot.to_dict(), f)
+
+
+def _find_node(root: Element, ref: str) -> Optional[Element]:
+    stack = [root]
+    while stack:
+        n = stack.pop()
+        if n.ref == ref:
+            return n
+        stack.extend(n.children)
+    return None
 
 
 class NexRemote:
@@ -126,17 +138,54 @@ class NexRemote:
             raise ValueError(f"bilinmeyen pencere eylemi: {action}")
         return self.desktop.window_action(ref[4:], action)
 
-    def tree(self, window_ref: Optional[str] = None) -> str:
-        """Pencere ağacını LLM dostu metin olarak döndür."""
+    def snapshot(self, window_ref: Optional[str] = None,
+                 root: Optional[str] = None) -> tuple["snap.Snapshot", Optional[Element]]:
+        """Pencere ağacını oku, eyleme açık her öğeye @sid:eN ref'i ver.
+        root: bir anlık görüntü ref'i verilirse yalnızca o öğenin alt ağacı
+        döner (yoğun uygulamalarda önce iskelet, sonra bölge)."""
+        sub_ref = None
+        if root:
+            el = self._resolve_el(root, need_enabled=False, wait=0)
+            sub_ref = el.ref
+            data = snap.load(snap.parse_ref(root)[0])
+            window_ref = snap.find_window(data["window"], self._gui().windows()).ref
         ref = self._atspi_ref(window_ref) if window_ref else ""
-        root = self._gui().tree(ref)
-        text = root.render()
-        if not root.children:
-            win = next((w for w in self._gui().windows() if w.ref == root.ref), None)
+        gui = self._gui()
+        tree = gui.tree(ref)
+        s = snap.take(tree, gui.windows())
+        sub = None
+        if sub_ref:
+            sub = _find_node(tree, sub_ref)
+            if sub is None:
+                raise snap.StaleRef(f"{root} yeniden okumada kayboldu — yeniden `tree` alın")
+        return s, sub
+
+    def tree(self, window_ref: Optional[str] = None, interactive: bool = False,
+             root: Optional[str] = None) -> str:
+        """Pencere ağacını LLM dostu metin olarak döndür (ref'ler @sid:eN)."""
+        s, sub = self.snapshot(window_ref, root)
+        text = s.render(interactive=interactive, subtree=sub)
+        if not s.root.children and sub is None:
+            win = next((w for w in self._gui().windows() if w.ref == s.root.ref), None)
             exe = launcher.pid_exe(win.pid) if win is not None else None
             if launcher.is_chromium(exe):
                 text += "\n# " + launcher.electron_hint(win.title or win.app, exe)
         return text
+
+    def _resolve_el(self, ref: str, need_enabled: bool = True,
+                    wait: Optional[float] = None) -> Element:
+        gui = self._gui()
+        if wait is None:
+            wait = float(os.environ.get("NEXREMOTE_WAIT", snap.DEFAULT_WAIT))
+        return snap.resolve(ref, gui.tree, gui.windows, wait=wait,
+                            need_enabled=need_enabled)
+
+    def _live(self, ref: str, need_enabled: bool = True) -> str:
+        """Anlık görüntü ref'ini katı kimlik doğrulamasıyla canlı arka uç
+        ref'ine çevir; ham arka uç ref'leri (geriye uyum) olduğu gibi geçer."""
+        if snap.is_snapshot_ref(ref):
+            return self._resolve_el(ref, need_enabled).ref
+        return ref
 
     def launch(self, argv: list[str], wait: float = 15.0) -> dict:
         """Programı erişilebilirlik açık başlat (Electron'a bayrağı ekler) ve
@@ -160,18 +209,42 @@ class NexRemote:
             "ya da ekran görüntüsü + koordinat tıklaması kullanın")
 
     def find(self, query: str, window_ref: Optional[str] = None) -> list[Element]:
-        return self._gui().find(query, self._atspi_ref(window_ref) if window_ref else None)
+        """Adı/değeri eşleşen eyleme açık öğeler; ref'leri anlık görüntü ref'i."""
+        q = (query or "").lower().strip()
+        if not q:
+            return []
+        gui = self._gui()
+        wins = gui.windows()
+        refs = [self._atspi_ref(window_ref)] if window_ref else [w.ref for w in wins]
+        hits: list[Element] = []
+        for r in refs:
+            try:
+                s = snap.take(gui.tree(r), wins)
+            except Exception:
+                if window_ref:
+                    raise
+                continue                    # tek bozuk pencere aramayı durdurmasın
+            for node, _ in snap._walk(s.root):
+                if node.ref in s.refs and (q in node.name.lower()
+                                           or q in (node.value or "").lower()):
+                    hits.append(Element(ref=s.refs[node.ref], role=node.role,
+                                        name=node.name, value=node.value,
+                                        actions=node.actions, bounds=node.bounds,
+                                        focused=node.focused, enabled=node.enabled))
+        return hits
 
     def click(self, ref: str) -> bool:
         """Öğeye isimle tıkla. Öğe eylem sunmuyorsa ortasına gerçek tık."""
         gui = self._gui()
+        ref = self._live(ref)
         self._agent_cursor_at(ref)
-        if gui.click(ref):
-            return True
-        b = self.bounds(ref)
-        if not b or b[2] <= 0 or b[3] <= 0:
-            return False
-        self.desktop.click(b[0] + b[2] // 2, b[1] + b[3] // 2)
+        with input_lease():
+            if gui.click(ref):
+                return True
+            b = self.bounds(ref)
+            if not b or b[2] <= 0 or b[3] <= 0:
+                return False
+            self.desktop.click(b[0] + b[2] // 2, b[1] + b[3] // 2)
         return True
 
     def bounds(self, ref: str) -> Optional[tuple[int, int, int, int]]:
@@ -183,6 +256,7 @@ class NexRemote:
         """(dikdörtgen, kanıtlı) döndürür. agent-desktop mantığı: konum tek
         kaynaktan gelmez; üretilen nokta pencere içine düşmüyorsa KANITSIZDIR,
         yanlış yere imleç koymaktansa işaretlenir (kanıtlı=False)."""
+        ref = self._live(ref, need_enabled=False)
         b = self._gui().bounds(ref)
         if not b or not ref.startswith("atspi:"):
             return (b, b is not None)
@@ -226,15 +300,19 @@ class NexRemote:
         return (wx + side - fx, wy + top - fy, win)
 
     def set_text(self, ref: str, text: str) -> bool:
+        ref = self._live(ref)
         self._agent_cursor_at(ref)
-        return self._gui().set_text(ref, text)
+        with input_lease():
+            return self._gui().set_text(ref, text)
 
     def key(self, combo: str) -> bool:
-        self.desktop.key(combo)
+        with input_lease():
+            self.desktop.key(combo)
         return True
 
     def type_text(self, text: str) -> bool:
-        self.desktop.type_text(text)
+        with input_lease():
+            self.desktop.type_text(text)
         return True
 
     # --------------------------------------------------------- gerçek fare
@@ -251,9 +329,10 @@ class NexRemote:
         back = self._user_pointer() if restore_pointer else None
         if show_cursor:
             self._agent_cursor(x, y)
-        self.desktop.click(x, y, button, int(count))
-        if back is not None:
-            self.desktop.move(*back)
+        with input_lease():
+            self.desktop.click(x, y, button, int(count))
+            if back is not None:
+                self.desktop.move(*back)
         return True
 
     @staticmethod
@@ -278,10 +357,12 @@ class NexRemote:
         back = self._user_pointer() if (at and restore_pointer) else None
         if at:
             self._agent_cursor(int(at[0]), int(at[1]), click=False)
-            self.desktop.move(int(at[0]), int(at[1]))
-        self.desktop.scroll(int(dy), int(dx))
-        if back is not None:
-            self.desktop.move(*back)
+        with input_lease():
+            if at:
+                self.desktop.move(int(at[0]), int(at[1]))
+            self.desktop.scroll(int(dy), int(dx))
+            if back is not None:
+                self.desktop.move(*back)
         return True
 
     def drag(self, x1: int, y1: int, x2: int, y2: int, button: str = "left",
@@ -291,17 +372,19 @@ class NexRemote:
         steps = max(1, int(steps))
         back = self._user_pointer()
         self._agent_cursor(int(x1), int(y1), click=False)
-        self.desktop.move(int(x1), int(y1))
-        self.desktop.button(button, True)
-        try:
-            for i in range(1, steps + 1):
-                self.desktop.move(x1 + (x2 - x1) * i / steps, y1 + (y2 - y1) * i / steps)
-                time.sleep(0.01)
-        finally:
-            self.desktop.button(button, False)
+        with input_lease():
+            self.desktop.move(int(x1), int(y1))
+            self.desktop.button(button, True)
+            try:
+                for i in range(1, steps + 1):
+                    self.desktop.move(x1 + (x2 - x1) * i / steps, y1 + (y2 - y1) * i / steps)
+                    time.sleep(0.01)
+            finally:
+                self.desktop.button(button, False)
         self._agent_cursor(int(x2), int(y2), click=False)
         if back is not None:
-            self.desktop.move(*back)
+            with input_lease():
+                self.desktop.move(*back)
         return True
 
     def _user_pointer(self) -> Optional[tuple[int, int]]:
@@ -413,8 +496,10 @@ class NexRemote:
             return None
 
     def focus(self, ref: str) -> bool:
+        ref = self._live(ref, need_enabled=False)
         self._agent_cursor_at(ref)
-        return self._gui().focus(ref)
+        with input_lease():
+            return self._gui().focus(ref)
 
     # ------------------------------------------------- görünür fare imleci
     def cursor(self, x: int, y: int, click: bool = False,

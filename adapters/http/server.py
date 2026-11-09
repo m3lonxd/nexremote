@@ -101,7 +101,9 @@ def _dispatch(method: str, body: dict):
             raise ValueError("launch: 'argv' boş olmayan metin listesi olmalı")
         return nr.launch(argv, float(body.get("wait", 15.0)))
     if method == "tree":
-        return {"tree": nr.tree(body.get("window_ref") or "")}
+        return {"tree": nr.tree(body.get("window_ref") or "",
+                                interactive=bool(body.get("interactive")),
+                                root=body.get("root") or None)}
     if method == "find":
         return [{"ref": e.ref, "role": e.role.value, "name": e.name,
                  "value": e.value, "actions": e.actions}
@@ -241,6 +243,9 @@ class Handler(BaseHTTPRequestHandler):
         except NotImplementedError:
             return self._send(501, {"error": "bu makinede mevcut değil"})
         except Exception as e:
+            code = getattr(e, "code", None)
+            if code:                         # STALE_REF / AMBIGUOUS_TARGET / TIMEOUT …
+                return self._send(409, {"error": str(e), "code": code})
             return self._send(500, {"error": str(e)})
 
 

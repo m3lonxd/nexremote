@@ -106,7 +106,7 @@ def main() -> int:
 
         out = tree_of(wref, "Kaydet")
         line = next((ln for ln in out.splitlines() if "[button] Kaydet" in ln), "")
-        check("buton ağaçta ismiyle ve ref'iyle", "ref=atspi:" in line, line.strip())
+        check("buton ağaçta ismiyle ve ref'iyle", "ref=@s" in line, line.strip())
         check("isimli alan ağaçta", "[entry] Ad Soyad" in out)
         check("isimsiz kaplar katlandı (boş [panel] satırı yok)",
               not any(ln.strip() in ("[panel]", "[panel]   <click>") for ln in out.splitlines())
