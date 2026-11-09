@@ -29,8 +29,11 @@ cd site && python3 -m http.server 8899     # http://localhost:8899
 
 ## Deploy
 ```bash
-cd site && vercel --prod
+bash site/deploy.sh      # ~/nexremote kökünden
 ```
+`vercel --prod`'u doğrudan çalıştırmayın: Hobby planı, commit yazarı ekip
+sahibinin GitHub hesabı olmayan dağıtımı `BLOCKED` bırakır. Betik siteyi Git
+dışı geçici bir kopyadan yayınlar.
 
 ## Tasarım ilkeleri (anti-slop)
 Bu site bilinçli olarak AI-şablonundan kaçınır:
