@@ -35,7 +35,7 @@ $ nexremote type "Merhaba dünya — ğüşıöç"
 | **Açık terminaller** — başka bir ajanın, ssh'ın, build'in ekranını oku; ona yaz | Konsole D-Bus, tmux | konsol tamponu (AttachConsole) | Terminal.app, iTerm2, tmux |
 | **Kendi terminali** — komut çalıştır, çıktıyı al | tmux / PTY | cmd.exe | tmux / PTY |
 | **Görünür ajan imleci** — ajan nerede çalışıyor gör; senin farene dokunmaz, tıklamayı engellemez | X11/XWayland pencere · imleç teman | katmanlı pencere · sistem oku | NSWindow · sistem oku |
-| **Ekran görüntüsü** — pencereye kırp, küçült; görüntü koordinatıyla tıkla | spectacle · grim · Xlib | GDI | screencapture |
+| **Ekran görüntüsü** — pencereye kırp, küçült; görüntü koordinatıyla tıkla | PipeWire yayını · spectacle · grim · Xlib | GDI | screencapture |
 
 ### Ref'ler yanlış düğmeye basmaz
 

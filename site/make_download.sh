@@ -24,6 +24,8 @@ cd "$ROOT"
 tar --exclude='./.git' \
     --exclude='./site' \
     --exclude='./.claude' \
+    --exclude='./.venv' \
+    --exclude='./venv' \
     --exclude='*/__pycache__' \
     --exclude='*.pyc' \
     --exclude='./download' \
