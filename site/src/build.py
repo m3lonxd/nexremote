@@ -83,7 +83,8 @@ README_ROWS = ["Ekrandaki her pencere", "Gerçek fare", "Gerçek klavye", "Buton
                "Electron/Chromium'u ağacı açık başlatma", "Açık terminaller", "Kendi terminali", "Görünür ajan imleci", "Ekran görüntüsü"]
 README_PLATFORMS = ["Linux", "Windows", "macOS"]
 # README hücrelerindeki Türkçe sözcüklerin İngilizcesi (ürün adları olduğu gibi kalır)
-CELL_EN = [("konsol tamponu", "console buffer"), ("portalı", "portal"), ("pano", "clipboard"),
+CELL_EN = [("PipeWire yayını", "PipeWire stream"),
+           ("konsol tamponu", "console buffer"), ("portalı", "portal"), ("pano", "clipboard"),
            ("bayrak + ortam", "flag + environment"), ("bayrak", "flag"),
            ("katmanlı pencere", "layered window"), ("sistem oku", "system arrow"),
            ("imleç teman", "your cursor theme"), ("pencere", "window")]
@@ -265,8 +266,8 @@ S = {
         "r_launch": "Electron by name", "r_launch_n": "Starts Discord, VS Code or Slack with their tree switched on, so their buttons have names too.",
         "r_terms": "Open terminals", "r_terms_n": "Shows what runs in each one: claude, ssh, vim, a build.",
         "r_shell": "Its own shell", "r_shell_n": "Sessions survive between calls, so it can start something and check on it later.",
-        "r_cursor": "Agent cursor", "r_cursor_n": "A second, visible arrow glides to where the agent works. Your mouse stays yours: clicks pass through it and focus never moves.",
-        "r_shot": "Screen", "r_shot_n": "Crop and scale are remembered, so <code>click X Y --from-shot</code> lands on the right pixel.",
+        "r_cursor": "Agent cursor", "r_cursor_n": "A second, visible arrow moves to where the agent works: short and nearly straight, so you notice it without watching it drift. Your mouse stays yours: clicks pass through it and focus never moves.",
+        "r_shot": "Screen", "r_shot_n": "Crop and scale are remembered, so <code>click X Y --from-shot</code> lands on the right pixel. On Wayland the frame is copied from the screen stream the input service already holds, with no capture tool to start.",
         "r_caps": "Something missing?", "r_caps_n": "One command reports which channels work on this machine and which packages the rest need.",
         "plat_kicker": "Platforms",
         "plat_h": "Three desktops, one set of commands.",
@@ -394,6 +395,7 @@ S = {
         "rm5_t": "Real Windows and Mac hardware.",
         "rm5_d": "Run the suites on Windows 10 and 11 and on a Mac, then drop the preview label.",
         "sh13": "A visible agent cursor on Linux, Windows and macOS that never touches your mouse, from every adapter: MCP, HTTP, CLI",
+        "sh14": "Faster on Linux: screenshots from the live PipeWire stream (about 0.2 s instead of 1.5 s), clicks that never wait on the cursor animation",
 
         "connect_kicker": "Connect",
         "connect_h": "Plug it into your agent",
@@ -429,7 +431,7 @@ S = {
         "s2_d": "Puts <code>nexremote</code>, <code>nexremote-mcp</code>, <code>nexremote-http</code> and <code>nexremote-agent</code> in <code>~/bin</code>, then lists anything missing.",
         "s3_t": "Grant access once",
         "s3_d": "Turns on the accessibility tree and, on Wayland, opens the desktop's remote-control dialog: tick <em>Allow restoring</em>, press <em>Share</em>. X11 asks nothing.",
-        "reqs": "Needs <code>python3-dbus</code> <code>python3-gi</code> <code>xdg-desktop-portal-kde</code> <code>pipewire</code> <code>wl-clipboard</code>. Optional: <code>tmux</code> <code>python3-pil</code> <code>python3-xlib</code>, <code>pip install mcp</code>. Rather use pip? <code>pipx install --system-site-packages .</code> keeps the system's D-Bus and GObject bindings in view.",
+        "reqs": "Needs <code>python3-dbus</code> <code>python3-gi</code> <code>xdg-desktop-portal-kde</code> <code>pipewire</code> <code>wl-clipboard</code>. Optional: <code>tmux</code> <code>python3-pil</code> <code>python3-xlib</code> <code>gstreamer1.0-pipewire</code>, <code>pip install mcp</code>. Rather use pip? <code>pipx install --system-site-packages .</code> keeps the system's D-Bus and GObject bindings in view.",
         "w2_t": "Install with pip",
         "w2_d": "Puts <code>nexremote</code>, <code>nexremote-mcp</code>, <code>nexremote-http</code> and <code>nexremote-agent</code> on your path. <code>comtypes</code>, for UI Automation, comes along.",
         "w3_t": "See what works",
@@ -523,8 +525,8 @@ S = {
         "r_launch": "Adıyla Electron", "r_launch_n": "Discord'u, VS Code'u ya da Slack'i ağaçları açık başlatır; onların düğmelerinin de adı olur.",
         "r_terms": "Açık terminaller", "r_terms_n": "Her birinde ne çalıştığını gösterir: claude, ssh, vim, bir build.",
         "r_shell": "Kendi kabuğu", "r_shell_n": "Oturumlar çağrılar arasında yaşar; bir şeyi başlatıp sonra dönüp bakabilir.",
-        "r_cursor": "Ajan imleci", "r_cursor_n": "Ajanın çalıştığı yere ikinci, görünür bir ok süzülür. Fareniz sizde kalır: tıklamalar içinden geçer, odak kaymaz.",
-        "r_shot": "Ekran", "r_shot_n": "Kırpma ve ölçek hatırlanır; <code>click X Y --from-shot</code> doğru piksele düşer.",
+        "r_cursor": "Ajan imleci", "r_cursor_n": "Ajanın çalıştığı yere ikinci, görünür bir ok gider: kısa ve neredeyse düz; fark edersiniz ama gözünüzü yormaz. Fareniz sizde kalır: tıklamalar içinden geçer, odak kaymaz.",
+        "r_shot": "Ekran", "r_shot_n": "Kırpma ve ölçek hatırlanır; <code>click X Y --from-shot</code> doğru piksele düşer. Wayland'de kare, giriş servisinin zaten açık tuttuğu ekran yayınından kopyalanır; ayrıca bir yakalama aracı başlatılmaz.",
         "r_caps": "Bir şey eksik mi?", "r_caps_n": "Tek komut, bu makinede hangi kanalların çalıştığını ve geri kalanı için hangi paketlerin gerektiğini söyler.",
         "plat_kicker": "Platformlar",
         "plat_h": "Üç masaüstü, tek komut seti.",
@@ -652,6 +654,7 @@ S = {
         "rm5_t": "Gerçek Windows ve Mac donanımı.",
         "rm5_d": "Testleri Windows 10 ve 11'de ve bir Mac'te koşmak, sonra önizleme etiketini kaldırmak.",
         "sh13": "Linux, Windows ve macOS'ta farenize dokunmayan görünür ajan imleci; her adaptörden: MCP, HTTP, CLI",
+        "sh14": "Linux'ta daha hızlı: ekran görüntüsü canlı PipeWire yayınından (1,5 sn yerine yaklaşık 0,2 sn), imleç animasyonunu hiç beklemeyen tıklamalar",
 
         "connect_kicker": "Bağlantı",
         "connect_h": "Ajanına bağla",
@@ -687,7 +690,7 @@ S = {
         "s2_d": "<code>nexremote</code>, <code>nexremote-mcp</code>, <code>nexremote-http</code> ve <code>nexremote-agent</code> komutlarını <code>~/bin</code> altına koyar, eksik paketleri listeler.",
         "s3_t": "Erişimi bir kez ver",
         "s3_d": "Erişilebilirlik ağacını açar; Wayland'de masaüstünün uzaktan kontrol penceresini getirir: <em>Allow restoring</em> işaretle, <em>Share</em>'e bas. X11 bir şey sormaz.",
-        "reqs": "Gerekli: <code>python3-dbus</code> <code>python3-gi</code> <code>xdg-desktop-portal-kde</code> <code>pipewire</code> <code>wl-clipboard</code>. İsteğe bağlı: <code>tmux</code> <code>python3-pil</code> <code>python3-xlib</code>, <code>pip install mcp</code>. pip ile kurmak isterseniz: <code>pipx install --system-site-packages .</code> sistemdeki D-Bus ve GObject paketlerini görünür tutar.",
+        "reqs": "Gerekli: <code>python3-dbus</code> <code>python3-gi</code> <code>xdg-desktop-portal-kde</code> <code>pipewire</code> <code>wl-clipboard</code>. İsteğe bağlı: <code>tmux</code> <code>python3-pil</code> <code>python3-xlib</code> <code>gstreamer1.0-pipewire</code>, <code>pip install mcp</code>. pip ile kurmak isterseniz: <code>pipx install --system-site-packages .</code> sistemdeki D-Bus ve GObject paketlerini görünür tutar.",
         "w2_t": "pip ile kur",
         "w2_d": "<code>nexremote</code>, <code>nexremote-mcp</code>, <code>nexremote-http</code> ve <code>nexremote-agent</code> komutlarını kurar. UI Automation için <code>comtypes</code> da birlikte gelir.",
         "w3_t": "Neyin çalıştığına bak",
