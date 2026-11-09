@@ -24,4 +24,7 @@ trap cleanup EXIT
 unset WAYLAND_DISPLAY SWAYSOCK HYPRLAND_INSTANCE_SIGNATURE KDE_FULL_SESSION
 export XDG_SESSION_TYPE=x11 XDG_CURRENT_DESKTOP=none XDG_RUNTIME_DIR="$ROOT" \
        GDK_BACKEND=x11 NEXR_SANDBOX=1 NEXR_SANDBOX_KIND=x11 NEXREMOTE_CURSOR=0
+# D-Bus'ın kendiliğinden başlattığı a11y veri yolu bu dizini görmeli; yoksa
+# kullanıcının /run/user/$UID/at-spi/bus_N soketinin üstüne yazar ve temizlikte siler.
+dbus-update-activation-environment XDG_RUNTIME_DIR XDG_SESSION_TYPE XDG_CURRENT_DESKTOP
 xvfb-run -a -s "-screen 0 1280x800x24" "$@"
