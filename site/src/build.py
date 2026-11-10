@@ -15,6 +15,8 @@ Sayfadaki her sayı ölçülmüş bir değerdir:
   - test paketi         tests/run_all.sh içindeki run satırları (+ sandbox'takiler)
   - Python satırı       core/ ve adapters/ altındaki .py dosyalarının satır toplamı
   - indirme boyutları   site/download/ altındaki gerçek dosyalar
+  - sürüm notları       CHANGELOG.md (TR) + CHANGELOG.en.md (EN); sürümler ve tarihler
+                        eşleşmeli, en üstteki sürüm pyproject.toml'daki olmalı
 Bir sayı okunamazsa derleme durur; sayfaya tahmin yazılmaz.
 
 Tek istisna WINE_RESULT: Windows katmanının Wine'daki son uçtan uca koşusu
@@ -197,7 +199,7 @@ S = {
         "skip": "Skip to content",
         "nav_label": "Sections", "nav_how": "How it works", "nav_replay": "Replay",
         "nav_compare": "Compare", "nav_roadmap": "Roadmap", "nav_install": "Install",
-        "nav_platforms": "Platforms",
+        "nav_platforms": "Platforms", "nav_faq": "FAQ",
         "theme_label": "Switch light / dark",
         "eyebrow": "Desktop control for AI agents · Linux · Windows · macOS",
         "h1a": "Your agent can run commands.",
@@ -414,6 +416,35 @@ S = {
         "rm6_t": "Event-driven refresh.",
         "rm6_d": "Listen to accessibility change events so an unchanged window is not read at all, and measure v0.7 on a real KDE desktop.",
 
+        "rel_kicker": "Release notes",
+        "rel_h": "What changed, version by version",
+        "rel_p": "Built from the project's changelog every time this page is built. The newest version is open; click any other to read it.",
+        "rel_latest": "Latest",
+
+        "faq_kicker": "FAQ",
+        "faq_h": "Questions people ask",
+        "faq_p": "Short answers. The details are in the sections above.",
+        "faq_q1": "Will it take over my mouse?",
+        "faq_a1": "Mostly it doesn't need it. Controls pressed by name go through accessibility, and terminals are read and typed into directly, so the pointer doesn't move. Only a click on pixels borrows the one pointer, and it is put back where it was right after. The visible agent cursor is a separate drawing; your clicks pass through it.",
+        "faq_q2": "Do I need a vision model?",
+        "faq_a2": "No. Windows, controls and terminal text come back as text. A screenshot is needed only for apps that publish nothing to read: games, canvas apps, and Chromium apps not started with <code>nexremote launch</code>.",
+        "faq_q3": "Which agents and models does it work with?",
+        "faq_a3": "Anything that can run a shell command, such as Claude Code, Codex, Aider or Gemini CLI. MCP clients like Claude Desktop and Cursor get {{mcp_tools}} tools. Agents on another machine use the HTTP API, and local models without tool calling use the text loop.",
+        "faq_q4": "Does it send anything over the internet?",
+        "faq_a4": "NexRemote itself opens no outbound connections. The HTTP adapter only listens, and only on localhost unless you give it a token. What reaches a model is whatever your agent sends it, screenshots included, so the model provider you chose sees that.",
+        "faq_q5": "Can it control another computer?",
+        "faq_a5": "Yes, through the HTTP adapter running on that computer. It won't listen beyond localhost without a token of at least 24 characters; the token can live in a file and traffic can run over TLS. <code>deploy/install-service.sh</code> sets it up as a systemd user service.",
+        "faq_q6": "Why does an Electron app like VS Code, Discord or Slack show no buttons?",
+        "faq_a6": "Electron and Chromium publish their accessibility tree only when started with <code>--force-renderer-accessibility</code>. Start the app with <code>nexremote launch &lt;program&gt;</code>, which adds the flag; an app that is already running has to be restarted that way.",
+        "faq_q7": "Wayland keeps asking for permission. How do I stop it, or take access back?",
+        "faq_a7": "In the remote-control dialog, tick <em>Allow restoring</em> once and it won't ask again. To take access back, delete <code>~/.config/nexremote/portal.json</code>.",
+        "faq_q8": "Does it work on GNOME?",
+        "faq_a8": "It should, but it hasn't been tested yet. Mouse and keyboard go through the same RemoteDesktop portal as on KDE; the window list falls back to the accessibility tree, so apps that publish none are missing from it.",
+        "faq_q9": "Something behaves differently since v0.7. How do I get the old behaviour back?",
+        "faq_a9": "<code>NEXREMOTE_STRICT=1</code> reads the whole window before every action instead of taking the fast path. <code>NEXREMOTE_SERVICE=0</code> runs every command in its own process instead of the background service. On KDE, <code>NEXREMOTE_KWIN_WATCH=0</code> turns off the persistent window watcher. <code>NEXREMOTE_TRACE=1</code> shows which step takes the time.",
+        "faq_q10": "Is it free?",
+        "faq_a10": "Yes. It is MIT-licensed, and the download contains the full source.",
+
         "connect_kicker": "Connect",
         "connect_h": "Plug it into your agent",
         "connect_note": "Same core, four ways in. Pick whatever your harness already speaks.",
@@ -473,7 +504,7 @@ S = {
         "skip": "İçeriğe geç",
         "nav_label": "Bölümler", "nav_how": "Nasıl çalışır", "nav_replay": "Oturum",
         "nav_compare": "Karşılaştır", "nav_roadmap": "Yol haritası", "nav_install": "Kurulum",
-        "nav_platforms": "Platformlar",
+        "nav_platforms": "Platformlar", "nav_faq": "SSS",
         "theme_label": "Açık / koyu tema",
         "eyebrow": "AI ajanları için masaüstü kontrolü · Linux · Windows · macOS",
         "h1a": "",
@@ -690,6 +721,35 @@ S = {
         "rm6_t": "Olay güdümlü yenileme.",
         "rm6_d": "Erişilebilirlik değişiklik olaylarını dinleyip değişmemiş pencereyi hiç okumamak; v0.7'yi gerçek KDE masaüstünde ölçmek.",
 
+        "rel_kicker": "Sürüm notları",
+        "rel_h": "Sürüm sürüm ne değişti",
+        "rel_p": "Bu sayfa her derlendiğinde projenin sürüm notlarından üretilir. En yeni sürüm açık; diğerlerini okumak için üzerine tıklayın.",
+        "rel_latest": "Son sürüm",
+
+        "faq_kicker": "SSS",
+        "faq_h": "Sık sorulanlar",
+        "faq_p": "Kısa cevaplar. Ayrıntılar yukarıdaki bölümlerde.",
+        "faq_q1": "Faremi elimden alır mı?",
+        "faq_a1": "Çoğu zaman ona ihtiyacı yok. İsimle basılan kontroller erişilebilirlik üzerinden gider, terminaller doğrudan okunup yazılır; imleç oynamaz. Yalnızca piksele tık tek imleci ödünç alır ve hemen eski yerine koyar. Görünür ajan imleci ayrı bir çizimdir; tıklarınız içinden geçer.",
+        "faq_q2": "Görsel model gerekir mi?",
+        "faq_a2": "Hayır. Pencereler, kontroller ve terminal metni metin olarak gelir. Ekran görüntüsü yalnızca okunacak bir şey yayınlamayan uygulamalarda gerekir: oyunlar, canvas uygulamaları ve <code>nexremote launch</code> ile başlatılmamış Chromium uygulamaları.",
+        "faq_q3": "Hangi ajan ve modellerle çalışır?",
+        "faq_a3": "Kabuk komutu çalıştırabilen her ajanla: Claude Code, Codex, Aider, Gemini CLI gibi. Claude Desktop ve Cursor gibi MCP istemcileri {{mcp_tools}} araç alır. Başka makinedeki ajanlar HTTP API'yi, tool calling'i olmayan yerel modeller metin döngüsünü kullanır.",
+        "faq_q4": "İnternete bir şey gönderir mi?",
+        "faq_a4": "NexRemote'un kendisi dışarıya bağlantı açmaz. HTTP adaptörü yalnızca dinler; token vermezseniz de yalnızca localhost'u. Modele giden, ajanınızın ona gönderdiğidir (ekran görüntüleri dahil); onu seçtiğiniz model sağlayıcısı görür.",
+        "faq_q5": "Başka bir bilgisayarı yönetebilir mi?",
+        "faq_a5": "Evet, o bilgisayarda çalışan HTTP adaptörüyle. En az 24 karakterlik bir token olmadan localhost dışını dinlemez; token bir dosyada durabilir, trafik TLS üzerinden akabilir. <code>deploy/install-service.sh</code> onu systemd kullanıcı servisi olarak kurar.",
+        "faq_q6": "VS Code, Discord ya da Slack gibi bir Electron uygulamasında neden düğme görünmüyor?",
+        "faq_a6": "Electron ve Chromium erişilebilirlik ağacını yalnızca <code>--force-renderer-accessibility</code> ile başlatılınca yayınlar. Uygulamayı bu bayrağı ekleyen <code>nexremote launch &lt;program&gt;</code> ile başlatın; zaten çalışan bir uygulamanın bu yolla yeniden başlatılması gerekir.",
+        "faq_q7": "Wayland sürekli izin soruyor. Nasıl durdururum, izni nasıl geri alırım?",
+        "faq_a7": "Uzaktan kontrol penceresinde bir kez <em>Allow restoring</em> kutusunu işaretleyin, bir daha sormaz. İzni geri almak için <code>~/.config/nexremote/portal.json</code> dosyasını silin.",
+        "faq_q8": "GNOME'da çalışır mı?",
+        "faq_a8": "Çalışması gerekir, ama henüz test edilmedi. Fare ve klavye KDE'deki aynı RemoteDesktop portalından geçer; pencere listesi erişilebilirlik ağacına düşer, bu yüzden ağaç yayınlamayan uygulamalar listede görünmez.",
+        "faq_q9": "v0.7'den beri bir şey farklı davranıyor. Eski davranışa nasıl dönerim?",
+        "faq_a9": "<code>NEXREMOTE_STRICT=1</code> hızlı yol yerine her eylemden önce pencerenin tamamını okur. <code>NEXREMOTE_SERVICE=0</code> her komutu arka plan servisi yerine kendi sürecinde çalıştırır. KDE'de <code>NEXREMOTE_KWIN_WATCH=0</code> kalıcı pencere izleyicisini kapatır. <code>NEXREMOTE_TRACE=1</code> zamanın hangi adımda gittiğini gösterir.",
+        "faq_q10": "Ücretsiz mi?",
+        "faq_a10": "Evet. MIT lisanslı; indirilen paket kaynak kodun tamamını içerir.",
+
         "connect_kicker": "Bağlantı",
         "connect_h": "Ajanına bağla",
         "connect_note": "Aynı çekirdek, dört giriş. Harness'ın hangisini konuşuyorsa onu seç.",
@@ -750,7 +810,8 @@ RAW = {"reach_note", "r_shot_n", "watch_p1", "p_text", "f1_d", "f3_d", "s2_d", "
        "pa3_b", "arch_p", "sh8", "sh9", "lad4_d", "pixels_p", "l5", "w2_d", "reqs_win", "m2_d", "m3_d", "reqs_mac",
        "spd1_d", "spd3_d", "spd_cap", "sh15", "p_mcp"}
 # Derlemede üretilen, HTML içeren değerler
-GENERATED_RAW = {"replay_json", "h1_html", "marquee_html", "arch_svg_h", "arch_svg_v", "plat_matrix"}
+GENERATED_RAW = {"replay_json", "h1_html", "marquee_html", "arch_svg_h", "arch_svg_v", "plat_matrix",
+                 "rel_html", "faq_html", "faq_ld"}
 
 esc = html.escape
 
@@ -900,6 +961,109 @@ def arch_svgs(t: dict) -> tuple[str, str]:
     return horiz, vert
 
 
+# ------------------------------------------------------ sürüm notları + SSS
+# Kaynak: CHANGELOG.md (TR) ve CHANGELOG.en.md (EN). Sürümler/tarihler iki dosyada
+# aynı sırada olmalı ve en üstteki sürüm pyproject.toml'daki sürüm olmalı.
+CHANGELOG = {"tr": "CHANGELOG.md", "en": "CHANGELOG.en.md"}
+REL_HEAD = re.compile(r"^## v(\S+) — (.+) \((\d{4}-\d{2}-\d{2})\)$")
+MONTHS = {"en": ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+          "tr": ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos",
+                 "Eylül", "Ekim", "Kasım", "Aralık"]}
+
+
+def md_inline(text: str) -> str:
+    """Satır içi markdown'ın küçük bir alt kümesi: `kod` ve **kalın**; gerisi kaçışlanır."""
+    out = esc(text, quote=False)
+    out = re.sub(r"`([^`]+)`", r"<code>\1</code>", out)
+    return re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", out)
+
+
+def releases(lang: str) -> list[dict]:
+    name = CHANGELOG[lang]
+    out: list[dict] = []
+    for ln in read(name).splitlines():
+        m = REL_HEAD.match(ln)
+        if m:
+            out.append({"ver": m.group(1), "title": m.group(2), "date": m.group(3), "intro": [], "items": []})
+            continue
+        if ln.startswith("## "):
+            raise SystemExit(f"{name}: başlık biçimi tanınmadı: {ln!r}")
+        if not out or not ln.strip():
+            continue
+        cur = out[-1]
+        if ln.startswith("- "):
+            cur["items"].append(ln[2:].strip())
+        elif ln.startswith("  ") and cur["items"]:
+            cur["items"][-1] += " " + ln.strip()
+        elif cur["items"]:
+            raise SystemExit(f"{name} v{cur['ver']}: maddelerden sonra düz paragraf: {ln!r}")
+        else:
+            cur["intro"].append(ln.strip())
+    if not out:
+        raise SystemExit(f"{name}: hiç sürüm yok")
+    for r in out:
+        if not r["items"]:
+            raise SystemExit(f"{name} v{r['ver']}: madde yok")
+    return out
+
+
+@functools.lru_cache(maxsize=None)
+def release_notes() -> dict[str, list[dict]]:
+    notes = {lang: releases(lang) for lang in CHANGELOG}
+    keys = {lang: [(r["ver"], r["date"]) for r in rs] for lang, rs in notes.items()}
+    if keys["tr"] != keys["en"]:
+        raise SystemExit(f"CHANGELOG.md ile CHANGELOG.en.md sürüm/tarihleri tutmuyor:\n  tr {keys['tr']}\n  en {keys['en']}")
+    if notes["tr"][0]["ver"] != version():
+        raise SystemExit(f"en üstteki sürüm notu v{notes['tr'][0]['ver']}, pyproject.toml {version()}: "
+                         "önce CHANGELOG.md ve CHANGELOG.en.md'ye sürüm notunu yazın")
+    return notes
+
+
+def nice_date(iso: str, lang: str) -> str:
+    y, m, d = (int(x) for x in iso.split("-"))
+    mon = MONTHS[lang][m - 1]
+    return f"{mon} {d}, {y}" if lang == "en" else f"{d} {mon} {y}"
+
+
+def rel_html(lang: str, t: dict) -> str:
+    out = []
+    for i, r in enumerate(release_notes()[lang]):
+        badge = f'<span class="rel-new">{esc(t["rel_latest"])}</span>' if i == 0 else ""
+        intro = f'<p>{md_inline(" ".join(r["intro"]))}</p>' if r["intro"] else ""
+        items = "".join(f"<li>{md_inline(x)}</li>" for x in r["items"])
+        out.append(
+            f'<details class="rel"{" open" if i == 0 else ""}>'
+            f'<summary><span class="rel-v">v{esc(r["ver"])}</span>'
+            f'<span class="rel-t">{esc(r["title"])}</span>{badge}'
+            f'<time class="rel-d" datetime="{r["date"]}">{esc(nice_date(r["date"], lang))}</time></summary>'
+            f'<div class="rel-body">{intro}<ul>{items}</ul></div></details>')
+    return "".join(out)
+
+
+def faq_pairs(t: dict) -> list[tuple[str, str]]:
+    n = 1
+    pairs = []
+    while f"faq_q{n}" in t:
+        pairs.append((t[f"faq_q{n}"], t[f"faq_a{n}"]))
+        n += 1
+    return pairs
+
+
+def faq_html(t: dict) -> str:
+    return "".join(f'<details class="qa"><summary><h3 class="qa-q">{esc(q)}</h3></summary>'
+                   f'<div class="qa-a"><p>{a}</p></div></details>' for q, a in faq_pairs(t))
+
+
+def faq_ld(t: dict) -> str:
+    """FAQPage yapılandırılmış verisi (arama motorları için); cevaplar düz metin."""
+    def plain(x: str) -> str:
+        return html.unescape(re.sub(r"<[^>]+>", "", x))
+    data = {"@context": "https://schema.org", "@type": "FAQPage",
+            "mainEntity": [{"@type": "Question", "name": q,
+                            "acceptedAnswer": {"@type": "Answer", "text": plain(a)}} for q, a in faq_pairs(t)]}
+    return json.dumps(data, ensure_ascii=False).replace("</", "<\\/")
+
+
 # -------------------------------------------------------------------- render
 def render(lang: str, st: dict[str, int]) -> str:
     tpl = open(os.path.join(SRC, "page.html"), encoding="utf-8").read()
@@ -927,6 +1091,9 @@ def render(lang: str, st: dict[str, int]) -> str:
     vals["marquee_html"] = marquee_html(lang)
     vals["arch_svg_h"], vals["arch_svg_v"] = arch_svgs(t)
     vals["plat_matrix"] = plat_matrix(lang, t)
+    vals["rel_html"] = rel_html(lang, t)
+    vals["faq_html"] = faq_html(t)
+    vals["faq_ld"] = faq_ld(t)
     vals["wine_result"] = WINE_RESULT
 
     def sub(m: re.Match) -> str:
@@ -943,7 +1110,8 @@ def render(lang: str, st: dict[str, int]) -> str:
                                      "arch_text", "arch_core", "arch_desk", "arch_alt",
                                      "a_win", "a_ctl", "a_in", "a_term", "a_sh", "a_shot",
                                      "pm_rows", "pm_caption", "pm_cap",
-                                     "pm_note_gnome", "pm_note_wine"}
+                                     "pm_note_gnome", "pm_note_wine", "rel_latest"}
+    unused = {k for k in unused if not re.fullmatch(r"faq_[qa]\d+", k)}
     if unused:
         print(f"[{lang}] kullanılmayan anahtarlar: {sorted(unused)}", file=sys.stderr)
     # Yüzey kartları README tablosuyla aynı sayıda olmalı (sayfadaki sayı kartlarla tutarlı kalsın)
@@ -958,6 +1126,7 @@ def main() -> int:
     if missing:
         raise SystemExit(f"diller arasında eksik anahtar: {sorted(missing)}")
     st = stats()
+    release_notes()
     targets = {"en": os.path.join(SITE, "index.html"),
                "tr": os.path.join(SITE, "tr", "index.html")}
     for lang, path in targets.items():
