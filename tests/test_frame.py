@@ -29,10 +29,16 @@ frame[STRIDE:STRIDE + 4] = bytes([255, 0, 0, 0])
 
 
 class FakeGrab:
-    def frame(self, path):
+    def frame(self, path, crop=None, stream=None):
+        data, w, h, stride = bytes(frame), W, H, STRIDE
+        cx = cy = 0
+        if crop is not None:
+            data, w, h, stride, cx, cy = pi.crop_raw(data, W, H, STRIDE, crop, stream)
         with open(path, "wb") as f:
-            f.write(frame)
-        return W, H, STRIDE, "BGRA"
+            f.write(data)
+        if crop is not None:
+            return w, h, stride, "BGRA", cx, cy, W, H
+        return w, h, stride, "BGRA"
 
     def stop(self):
         pass
@@ -72,6 +78,33 @@ with tempfile.TemporaryDirectory() as tmp:
             check("servis+izin yoksa diyalog açmaz", False)
         except RuntimeError:
             check("servis+izin yoksa diyalog açmaz", True)
+
+# ------------------------------------------------- servis tarafında kırpma
+with tempfile.TemporaryDirectory() as tmp:
+    d = pi.Daemon.__new__(pi.Daemon)
+    d.p, d.last, d.grab = FakePortal(), (0.0, 0.0), FakeGrab()
+    raw = os.path.join(tmp, "f.raw")
+    # mantıksal (100.5, 0) 0.5x1 → yayın pikseli: x 1, y 0..2 (HiDPI 2x)
+    reply = d.handle("FRAME " + json.dumps(raw) + " 100.5 0 0.5 1")
+    check("FRAME kırpma: yalnızca dikdörtgen yazılır, yanıtta kırpma orijini + tam boyut",
+          reply == "OK 1 2 4 BGRA 100 0 2 1 1 0 4 2", reply)
+    check("kırpılmış dosya yalnızca pencerenin baytları", os.path.getsize(raw) == 8)
+    with mock.patch.object(pi, "RUNTIME", tmp), \
+            mock.patch.object(pi, "send", lambda line: d.handle(line)):
+        img, origin, scale = pi.frame_image(crop=(100.5, 0, 0.5, 1))
+    check("kırpılmış kare: piksel + orijin + ölçek",
+          img.size == (1, 2) and img.getpixel((0, 0)) == (0, 255, 0) and origin == (100, 0)
+          and scale == 2.0, f"{img.size} {img.getpixel((0, 0))} {origin} {scale}")
+    try:
+        pi.crop_raw(bytes(frame), W, H, STRIDE, (500, 500, 10, 10), FakePortal.streams[0])
+        check("ekran dışı kırpma → ValueError", False)
+    except ValueError:
+        check("ekran dışı kırpma → ValueError", True)
+    # eski servis kırpmayı bilmez: 8 alanlı yanıt → tam kare, çağıran kırpar
+    old = lambda line: d.handle(line.split(" 100")[0]) if " 100" in line else d.handle(line)  # noqa: E731
+    with mock.patch.object(pi, "RUNTIME", tmp), mock.patch.object(pi, "send", old):
+        img, origin, scale = pi.frame_image(crop=(100.5, 0, 0.5, 1))
+    check("eski servis: tam kare döner (geriye uyum)", img.size == (W, H) and origin == (100, 0))
 
 ok = sum(1 for _, o in results if o)
 print(f"KARE: {ok} geçti, {len(results) - ok} başarısız")

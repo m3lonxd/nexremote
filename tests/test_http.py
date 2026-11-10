@@ -98,6 +98,34 @@ def main() -> int:
         check("launch argv metin değil liste ister → 400", st == 400, str(e))
         st, e = req(port, "POST", "/yok", {}, token=TOKEN)
         check("bilinmeyen uç → hata kodu", st >= 400, str(st))
+        # tarayıcı koruması: bir web sayfası localhost'a istek atamasın
+        st, e = req(port, "POST", "/windows", {}, token=TOKEN,
+                    headers={"Origin": "http://kotu.example"})
+        check("Origin başlıklı (tarayıcı) istek → 403", st == 403, str(st))
+        st, e = req(port, "GET", "/screenshot.png", token=TOKEN,
+                    headers={"Sec-Fetch-Site": "cross-site"})
+        check("çapraz site GET → 403", st == 403, str(st))
+        st, e = req(port, "POST", "/click", {}, token=TOKEN)
+        check("eksik alan → 400 (çekirdek KeyError'ıyla karışmaz)",
+              st == 400 and "ref" in e.get("error", ""), str(e))
+        st, e = req(port, "POST", "/batch", {"steps": "x"}, token=TOKEN)
+        check("batch: steps liste değil → 400", st == 400, str(e))
+        st, e = req(port, "POST", "/batch", {"steps": [{"method": "windows"},
+                                                       {"method": "yok"},
+                                                       {"method": "windows"}]}, token=TOKEN)
+        check("batch: ilk hatada durur, kalan sayılır",
+              st == 200 and e["ok"] is False and len(e["steps"]) == 2 and e["skipped"] == 1, str(e)[:200])
+    finally:
+        p.terminate()
+        p.wait(5)
+
+    # token'sız (yalnız localhost): DNS yeniden bağlamaya karşı Host denetimi
+    p, port, line = start()
+    try:
+        st, _ = req(port, "POST", "/windows", {})
+        check("token'sız localhost: yerel Host → 200", st == 200, str(st))
+        st, _ = req(port, "POST", "/windows", {}, headers={"Host": f"kotu.example:{port}"})
+        check("token'sız localhost: yabancı Host → 403", st == 403, str(st))
     finally:
         p.terminate()
         p.wait(5)
@@ -113,6 +141,10 @@ def main() -> int:
     check("sertifika var anahtar yok → 2", r.returncode == 2)
     r = run_cli("--port", str(free_port()), "--token-file", "/yok/token")
     check("okunamayan token dosyası → 2", r.returncode == 2)
+    empty = os.path.join(tmp, "bos")
+    open(empty, "w").close()
+    r = run_cli("--port", str(free_port()), "--token-file", empty)
+    check("boş token dosyası → 2 (sessizce token'sız açılmaz)", r.returncode == 2)
 
     # token dosyası + TLS (kendinden imzalı sertifika)
     tf = os.path.join(tmp, "token")

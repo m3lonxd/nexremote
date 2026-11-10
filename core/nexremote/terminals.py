@@ -159,10 +159,16 @@ def read(ref: str, history: int = 0) -> str:
     return tmux_read(rest, history)
 
 
+def _exact(target: str) -> str:
+    """'oturum:0.1' → '=oturum:0.1': tmux oturum adını önek olarak da eşler
+    ('api' → 'api2'); '=' yalnızca tam adı kabul eder."""
+    return target if target.startswith("=") or ":" not in target else "=" + target
+
+
 def tmux_read(target: str, history: int = 0) -> str:
     """tmux bölmesinin ekranı (+ isteğe bağlı geçmiş). target: OTURUM:P.B"""
     rest = target
-    args = ["capture-pane", "-p", "-J", "-t", rest]
+    args = ["capture-pane", "-p", "-J", "-t", _exact(rest)]
     if history > 0:
         args += ["-S", f"-{int(history)}"]
     text = _tmux(*args)
@@ -184,5 +190,6 @@ def send(ref: str, text: str = "", enter: bool = False, keys: Optional[list[str]
 
 def tmux_send(target: str, payload: str) -> None:
     """Ham baytları tmux bölmesine yaz (klavyeden yazılmış gibi)."""
-    if _tmux("send-keys", "-t", target, "-l", payload) is None:
+    # -- : '-' ile başlayan metin (ör. "-la") bayrak sanılmasın
+    if _tmux("send-keys", "-t", _exact(target), "-l", "--", payload) is None:
         raise RuntimeError(f"tmux bölmesine yazılamadı: {target}")

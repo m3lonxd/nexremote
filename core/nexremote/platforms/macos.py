@@ -1410,11 +1410,13 @@ class MacDesktop(Desktop):
         self.move(x, y)
         time.sleep(0.03)
         down, up, _, btn = _MOUSE[button]
-        for i in range(1, max(1, min(int(count), 3)) + 1):
+        n = max(1, min(int(count), 3))
+        for i in range(1, n + 1):
             self._mouse(down, x, y, btn, click_state=i)
             time.sleep(0.012)
             self._mouse(up, x, y, btn, click_state=i)
-            time.sleep(0.05)
+            if i < n:
+                time.sleep(0.05)
 
     def _scroll_event(self, vertical: int, horizontal: int):
         q = self.q
@@ -1477,6 +1479,9 @@ class MacDesktop(Desktop):
 
     def paste_combo(self) -> str:
         return "cmd+v"
+
+    def select_all_combo(self) -> str:
+        return "cmd+a"
 
     # ----------------------------------------------------------- ekran
     def screenshot(self, path: str) -> Screenshot:

@@ -75,6 +75,7 @@ class Element:
     enabled: bool = True
     depth: int = 0
     children: list["Element"] = field(default_factory=list)
+    truncated: bool = False       # kökte: düğüm/süre bütçesi aşıldı, ağaç eksik
 
     def to_dict(self, with_children: bool = True) -> dict[str, Any]:
         d = {

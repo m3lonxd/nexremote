@@ -319,7 +319,21 @@ class AxBackend(Backend):
                        focused=vals.get("AXFocused") is True, enabled=enabled, depth=depth)
 
     # ------------------------------------------------------------ ağaç
-    def tree(self, window_ref: str) -> Element:
+    def ref_for_window(self, win) -> Optional[str]:
+        """win:<CGWindowID> → ax: pencere ref'i (CGWindowID ile eşlenir)."""
+        r = getattr(win, "ref", "") or ""
+        if not r.startswith("win:") or not win.pid:
+            return None
+        from types import SimpleNamespace
+        x, y, w, h = win.bounds or (0, 0, 0, 0)
+        info = SimpleNamespace(pid=win.pid, id=r[4:], title=win.title, app=win.app,
+                               x=x, y=y, w=w, h=h)
+        try:
+            return self._ref_for(info)
+        except (RuntimeError, ValueError):
+            return None
+
+    def tree(self, window_ref: str, light: bool = False) -> Element:
         q = self._require()
         if not window_ref:
             w = self._desk().active_window()

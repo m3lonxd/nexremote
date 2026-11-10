@@ -1,5 +1,57 @@
 # NexRemote — Geliştirme Raporu
 
+## v0.7.0 — hız (2026-11-10)
+
+Şikâyet: imleç tıklıyor, sonraki tık 4-5 sn sonra geliyor. Süre üç yerden
+geliyordu: her CLI çağrısı yeni süreç + yeni bağlantılar, her ref eyleminde
+pencerenin tüm ağacının (ve pencere listelerinin 3-4 kez) yeniden okunması,
+ve her eylem için ayrı model turu + ayrı doğrulama turu.
+
+- **Ölçüm:** `NEXREMOTE_TRACE=1` adım süreleri (servis kipinde istemcinin
+  stderr'ine gelir), `nexremote bench` p50/p95 (`--cli`: uçtan uca süreç süresi).
+- **Tık yolu:** eylem kapsamlı önbellek (pencere listeleri ve çözülen öğe bir
+  kez okunur), ajan imleci beklenmez (komut gönderilir, tık hemen atılır; daemon
+  yoksa arka planda başlar ve komutları kendisi çalıştırır, tek örnek kilidi),
+  Wayland servisine PING'siz çağrı, tık + imleci geri koyma tek komut, kanal
+  seçimi önbelleği, son tıktan sonraki bekleme kaldırıldı.
+- **Arka plan servisi:** CLI ince istemci; servis bağlantıları sıcak tutar, kod
+  değişince yenilenir, boşta kapanır, eş kimliği (SO_PEERCRED) denetlenir.
+  Xvfb'de `windows` çağrısı 120 → 55-70 ms (gerçek masaüstünde D-Bus/AT-SPI
+  kurulumu da kalktığı için fark daha büyük olmalı — ölçülmedi).
+- **Ağaç:** durum kümesi düğüm başına bir kez, hafif okuma (konum ve kimlikte
+  kullanılmayan değerler yok), düğüm/süre bütçesi, ref hızlı yolu (yol + kimlik;
+  GTK'da 18 → 3 ms). `NEXREMOTE_STRICT=1` her eylemde tam okuma.
+- **Daha az tur:** `do` (toplu adım), `--after` (eylem sonrası fark), `wait`,
+  `click-text`, `fill`, `sleep`; MCP `nexremote_batch/_click_text/_fill/_wait/_after`
+  (28 araç), HTTP `/batch /click_text /fill /wait` + `after`. Ajan döngüsü bir
+  turdaki tüm satırları çalıştırır, geçmişi kırpar.
+- **Ekran/KWin:** Wayland servisi kareyi pencereye kırparak yazar (eski servisle
+  geriye uyumlu), CLI görüntüyü varsayılan 1568 px'e küçültür, uzun ömürlü
+  süreçte KWin kalıcı pencere izleyicisi (kendini doğrular, tutmazsa eski yol).
+
+Aynı kod yollarındaki düzeltmeler: `--window win:…` aynı süreç/başlıkta yanlış
+pencereyi seçebiliyordu; tmux oturum adı önek eşleşmesi (`build` → `build2`);
+`-` ile başlayan metin tmux'a gitmiyordu; `&`/`# yorum` ile biten ya da geçmişi
+taşıran komutta `run` bitişi görmüyordu; CLI `run` çıkış kodunu gizliyordu;
+`find` her pencere için anlık görüntü yazıp eski ref'leri taşırıyordu; AT-SPI
+`set_text` yedeği odak alınamazsa başka alana yazabiliyordu; adsız giriş alanları
+ağaçtan düşüyordu; HTTP tarayıcıdan (Origin/DNS yeniden bağlama) sürülebiliyordu,
+boş token dosyası token'sız açılıyordu, istekler eşzamanlıydı; `send_keys`
+"end"/"up" gibi kelimeleri tuş sanıyordu; Wayland'de `ctrl++`; X11'de `key A` /
+`key ?` shift'siz gidiyordu; `term-read --history` Windows/macOS'ta hata;
+`point` imleç yokken gerçek tık yapmıyordu; ajan döngüsü erken bitiyordu;
+giriş servisi aynı anda birden çok kez başlatılabiliyordu; kanıtsız konuma
+gerçek tık; `move` kirasızdı; MCP'de negatif koordinat; boş `tree` ilk
+pencereyi açıyordu (artık etkin pencere).
+
+Testler: `test_atspi_fast.py` (Xvfb + gerçek GTK uygulaması, 24),
+`test_speed.py` (20), `test_http.py` 29, `test_frame.py` 11,
+`test_cursor_feedback.py` 38, X11 sandbox 23.
+
+**Doğrulanmayanlar:** KWin kalıcı izleyicisi, Wayland servisindeki yeni CLICK /
+FRAME kırpma ve kanal önbelleği gerçek KDE masaüstünde çalıştırılmadı (sahte
+servis + Xvfb). Servis macOS/Windows'ta varsayılan kapalı.
+
 ## v0.5.0 — ajan imleci her yerde (2026-10-29)
 
 Görünür ajan imleci artık üç işletim sisteminde ve tüm adaptörlerde.

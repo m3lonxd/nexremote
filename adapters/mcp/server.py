@@ -11,8 +11,9 @@ Transport: stdio (JSON-RPC on stdin/stdout, logs on stderr).
 from __future__ import annotations
 
 import sys
+import threading
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 # Make `import nexremote` work regardless of the current working directory.
 _CORE = Path(__file__).resolve().parents[2] / "core"
@@ -23,6 +24,9 @@ from mcp.server.mcpserver import MCPServer  # noqa: E402
 from mcp.server.mcpserver.exceptions import ToolError  # noqa: E402
 
 _nr: Any = None
+# Araçlar iş parçacığı havuzunda çalışabilir; çekirdek (AT-SPI, D-Bus, X)
+# iş parçacığı güvenli değil — çağrılar sırayla. RLock: batch iç içe çağırır.
+_lock = threading.RLock()
 
 
 def _get_nexremote():
@@ -34,7 +38,7 @@ def _get_nexremote():
     global _nr
     if _nr is None:
         from nexremote import NexRemote
-        _nr = NexRemote()
+        _nr = NexRemote(long_lived=True)
     return _nr
 
 
@@ -48,7 +52,8 @@ def _tool_errors(fn):
     @functools.wraps(fn)
     def wrapper(*args, **kwargs):
         try:
-            return fn(*args, **kwargs)
+            with _lock:
+                return fn(*args, **kwargs)
         except ToolError:
             raise
         except Exception as exc:
@@ -61,16 +66,21 @@ def _tool_errors(fn):
 mcp = MCPServer(
     name="nexremote",
     instructions=(
-        "NexRemote: see and control this Linux desktop and its terminals. "
+        "NexRemote: see and control this desktop and its terminals. "
         "Start with nexremote_observe (windows + open terminals). "
-        "Prefer structure over pixels: nexremote_find / nexremote_tree give "
+        "Prefer structure over pixels: nexremote_tree(interactive=True) gives "
         "element refs; nexremote_click(ref) presses them without moving the "
-        "user's mouse. When an app exposes no tree, call nexremote_screenshot, "
-        "then nexremote_click_at(x, y, from_screenshot=True) with pixel "
-        "coordinates read from that image. Terminals already open on the "
-        "desktop (other CLI agents, ssh, builds) are read with "
-        "nexremote_terminal_read and driven with nexremote_terminal_send. "
-        "Refs are opaque strings; pass them back unchanged."
+        "user's mouse; nexremote_click_text('Save') finds and presses in one call. "
+        "BE FAST: plan several steps and send them in ONE nexremote_batch call "
+        "(it stops at the first error and returns 'after' = what changed on "
+        "screen, with refs for new elements) instead of one tool call per action "
+        "plus a separate check. Use nexremote_wait instead of sleeping and re-reading. "
+        "Old refs stay valid after the UI changes (they are matched by identity). "
+        "When an app exposes no tree, call nexremote_screenshot, then "
+        "nexremote_click_at(x, y, from_screenshot=True) with pixel coordinates read "
+        "from that image. Terminals already open on the desktop (other CLI agents, "
+        "ssh, builds) are read with nexremote_terminal_read and driven with "
+        "nexremote_terminal_send. Refs are opaque strings; pass them back unchanged."
     ),
 )
 
@@ -201,8 +211,8 @@ def nexremote_click_at(x: float, y: float, button: str = "left", double: bool = 
 
 @mcp.tool()
 @_tool_errors
-def nexremote_cursor(x: float = -1, y: float = -1, click: bool = False, hide: bool = False,
-                     from_screenshot: bool = True) -> dict:
+def nexremote_cursor(x: Optional[float] = None, y: Optional[float] = None, click: bool = False,
+                     hide: bool = False, from_screenshot: bool = True) -> dict:
     """Move the agent's OWN visible pointer so the user can see where you act.
 
     This is a separate on-screen arrow, not the user's mouse: it never moves
@@ -214,7 +224,7 @@ def nexremote_cursor(x: float = -1, y: float = -1, click: bool = False, hide: bo
     nr = _get_nexremote()
     if hide:
         return {"hidden": bool(nr.cursor_hide())}
-    if x < 0 or y < 0:
+    if x is None or y is None:
         raise ValueError("x and y are required unless hide=True")
     sx, sy = nr.screen_point(x, y, from_screenshot)
     return {"ok": bool(nr.cursor(sx, sy, click=click)), "at": [sx, sy]}
@@ -222,15 +232,16 @@ def nexremote_cursor(x: float = -1, y: float = -1, click: bool = False, hide: bo
 
 @mcp.tool()
 @_tool_errors
-def nexremote_scroll(steps: int, x: float = -1, y: float = -1,
+def nexremote_scroll(steps: int, x: Optional[float] = None, y: Optional[float] = None,
                      from_screenshot: bool = True) -> bool:
     """Scroll the mouse wheel: positive steps scroll down, negative up.
 
-    If x, y are given (>= 0) the wheel is used over that point (screenshot
-    coordinates by default); otherwise wherever the pointer is.
+    If x, y are given the wheel is used over that point (screenshot
+    coordinates by default; negative values are valid on multi-monitor
+    setups); otherwise wherever the pointer is.
     """
     nr = _get_nexremote()
-    at = nr.screen_point(x, y, from_screenshot) if x >= 0 and y >= 0 else None
+    at = nr.screen_point(x, y, from_screenshot) if x is not None and y is not None else None
     return bool(nr.scroll(steps, at=at))
 
 
@@ -379,19 +390,132 @@ def nexremote_sessions() -> list[str]:
     return [str(s) for s in _get_nexremote().sessions()]
 
 
+# ------------------------------------------------------------ fast paths
+@mcp.tool()
+@_tool_errors
+def nexremote_click_text(text: str, window_ref: str = "", role: str = "",
+                         exact: bool = False) -> dict:
+    """Find an actionable element by its visible name and press it, in one call.
+
+    Exact (case-insensitive) name matches win over substring matches. If more
+    than one element matches, nothing is pressed and the error lists the
+    candidates with refs (AMBIGUOUS_TARGET). role narrows it (button, link,
+    menu_item, tab...). window_ref defaults to the focused window.
+    """
+    return _get_nexremote().click_text(text, window_ref=window_ref or None,
+                                       role=role or None, exact=exact)
+
+
+@mcp.tool()
+@_tool_errors
+def nexremote_fill(ref: str, text: str, enter: bool = False) -> bool:
+    """Replace a field's text (like nexremote_set_text) and optionally press Enter in it."""
+    return bool(_get_nexremote().fill(ref, text, enter=enter))
+
+
+@mcp.tool()
+@_tool_errors
+def nexremote_wait(element: str = "", window_title: str = "", gone: str = "",
+                   window_ref: str = "", timeout: float = 10.0) -> dict:
+    """Wait (polling inside, cheaply) until ONE condition holds, then return.
+
+    element: an element whose name/value contains this text appears (returns
+    its ref). window_title: a window whose title contains this text opens.
+    gone: the element behind this ref disappears. Fails with TIMEOUT.
+    """
+    return _get_nexremote().wait_for(element=element or None,
+                                     window_title=window_title or None,
+                                     gone=gone or None, window_ref=window_ref or None,
+                                     timeout=timeout)
+
+
+@mcp.tool()
+@_tool_errors
+def nexremote_after(window_ref: str = "") -> str:
+    """What changed in a window since its last snapshot: '+' new elements (with
+    refs), '-' gone, '~' changed values. Defaults to the focused window."""
+    return _get_nexremote().after(window_ref=window_ref or None)
+
+
+_BATCH_TOOLS = {
+    "click": lambda **k: nexremote_click(**k),
+    "click_text": lambda **k: nexremote_click_text(**k),
+    "click_at": lambda **k: nexremote_click_at(**k),
+    "set_text": lambda **k: nexremote_set_text(**k),
+    "fill": lambda **k: nexremote_fill(**k),
+    "key": lambda **k: nexremote_key(**k),
+    "type": lambda **k: nexremote_type(**k),
+    "scroll": lambda **k: nexremote_scroll(**k),
+    "drag": lambda **k: nexremote_drag(**k),
+    "window_action": lambda **k: nexremote_window_action(**k),
+    "wait": lambda **k: nexremote_wait(**k),
+    "tree": lambda **k: nexremote_tree(**k),
+    "find": lambda **k: nexremote_find(**k),
+    "terminal_send": lambda **k: nexremote_terminal_send(**k),
+    "terminal_read": lambda **k: nexremote_terminal_read(**k),
+    "run": lambda **k: nexremote_run(**k),
+    "send_keys": lambda **k: nexremote_send_keys(**k),
+    "read_screen": lambda **k: nexremote_read_screen(**k),
+}
+
+
+@mcp.tool()
+@_tool_errors
+def nexremote_batch(steps: list[dict], after: bool = True) -> dict:
+    """Run several actions in ONE call, in order; stop at the first failure.
+
+    steps: [{"tool": "click", "args": {"ref": "@s…:e4"}},
+            {"tool": "type", "args": {"text": "7"}},
+            {"tool": "key", "args": {"combo": "Return"}}]
+    tool is one of: click, click_text, click_at, set_text, fill, key, type,
+    scroll, drag, window_action, wait, tree, find, terminal_send,
+    terminal_read, run, send_keys, read_screen (args as in those tools).
+    after=True (default) appends what changed on screen afterwards, so no
+    separate verification call is needed.
+    """
+    nr = _get_nexremote()
+    try:
+        before = nr.windows() if after else None
+    except Exception:
+        before = None
+    out, failed = [], False
+    for i, st in enumerate(steps):
+        name = str(st.get("tool", "")).removeprefix("nexremote_")
+        fn = _BATCH_TOOLS.get(name)
+        if fn is None:
+            out.append({"tool": name, "ok": False, "error": f"unknown or not batchable tool: {name}"})
+            failed = True
+            break
+        try:
+            out.append({"tool": name, "ok": True, "result": fn(**(st.get("args") or {}))})
+        except Exception as e:
+            out.append({"tool": name, "ok": False, "error": str(e)})
+            failed = True
+            break
+    res: dict = {"ok": not failed, "steps": out, "skipped": len(steps) - len(out)}
+    if after:
+        try:
+            res["after"] = nr.after(before_windows=before)
+        except Exception as e:
+            res["after"] = f"(after unavailable: {e})"
+    return res
+
+
 # ----------------------------------------------------------------- resources
 # Read-only views a client can attach as context without spending a tool call.
 # Each read is live: it queries the desktop at the moment of the read.
 @mcp.resource("nexremote://windows", name="windows", mime_type="application/json",
               description="Every window on screen: ref, title, app, pid, bounds, focused.")
 def resource_windows() -> list[dict]:
-    return [w.to_dict() for w in _get_nexremote().windows()]
+    with _lock:
+        return [w.to_dict() for w in _get_nexremote().windows()]
 
 
 @mcp.resource("nexremote://terminals", name="terminals", mime_type="application/json",
               description="Terminals open on the desktop (Konsole tabs, tmux panes, consoles).")
 def resource_terminals() -> list[dict]:
-    return _get_nexremote().terminals()
+    with _lock:
+        return _get_nexremote().terminals()
 
 
 @mcp.resource("nexremote://tree/{ref}", name="tree", mime_type="text/plain",
@@ -399,6 +523,11 @@ def resource_terminals() -> list[dict]:
                           "ref is a window ref from nexremote://windows, percent-encoded "
                           "(win:{id} → win%3A%7Bid%7D); 'focused' means the active window.")
 def resource_tree(ref: str) -> str:
+    with _lock:
+        return _resource_tree(ref)
+
+
+def _resource_tree(ref: str) -> str:
     nr = _get_nexremote()
     if ref == "focused":
         ws = nr.windows()

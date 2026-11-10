@@ -60,6 +60,40 @@ uyuyor) döner, ajan yeniden `tree` alır. Devre dışı düğme 5 sn'ye kadar
 beklenir (`NEXREMOTE_WAIT`), olmazsa `TIMEOUT`. Yoğun uygulamada
 `tree --root @s…:e3 -i` yalnız bir bölgeyi açar.
 
+### Hızlı: bir tık bir model turu değil
+
+Her CLI çağrısı eskiden yeni bir Python süreci, yeni D-Bus/AT-SPI bağlantısı ve
+pencerenin tüm ağacını yeniden okumaydı; imleç animasyonu da tıkı bekletiyordu.
+v0.7'de:
+
+- **Arka plan servisi** (Linux'ta varsayılan): ilk `nexremote` çağrısı servisi
+  başlatır, sonrakiler bağlantıları sıcak tutan servise gider — çağrı başına
+  süreç maliyeti yarıya iner. Kod değişince servis kendiliğinden yenilenir,
+  10 dk boşta kalınca kapanır. `nexremote service status|stop`, kapatmak için
+  `NEXREMOTE_SERVICE=0`.
+- **Ref hızlı yolu:** tıklamadan önce yalnızca ref'in yolundaki düğüm ve ataları
+  okunur; kimlik kanıtı tutarsa ağacın geri kalanı okunmaz (GTK test
+  uygulamasında 18 ms → 3 ms). Tutmazsa tam okuma. Her eylemde tam okuma için
+  `NEXREMOTE_STRICT=1`.
+- **İmleç tıkı bekletmez:** ajan imleci ~80 ms süzülür (`NEXREMOTE_CURSOR_MS`),
+  gerçek tık hemen atılır; daemon yoksa arka planda başlar.
+- **Daha az model turu:**
+
+```console
+$ nexremote do 'click-text "Yeni"' 'fill @s…:e9 "rapor.txt" --enter' 'wait --element Kaydedildi' --after
+[1] ✓ click-text "Yeni"
+[2] ✓ fill @s…:e9 "rapor.txt" --enter
+[3] ✓ wait --element Kaydedildi
+# sonrası @s7q… — Belge
++ [button] Kapat  ref=@s7q…:e4
+```
+
+`--after` eylemden sonra neyin değiştiğini yazar (yeni öğeler ref'leriyle), ayrı
+doğrulama turu gerekmez. `wait` koşulu içeride yoklar. MCP'de `nexremote_batch`,
+HTTP'de `POST /batch` aynı işi yapar.
+
+`NEXREMOTE_TRACE=1` her adımın süresini yazar; `nexremote bench` p50/p95 ölçer.
+
 Birden çok ajan aynı makinede çalışıyorsa fare/klavye olayları bir **girdi
 kirasıyla** sıraya girer: bir ajanın sürüklemesinin ortasına ötekinin tuşu
 karışmaz. Kira yalnız gönderim süresince tutulur.
@@ -109,7 +143,7 @@ nexremote caps
 | Ajan | Bağlantı |
 |---|---|
 | Kabuk çalıştıran her harness | `nexremote skill` çıktısını sistem talimatına ekle |
-| MCP istemcisi (Claude Code, Claude Desktop, Cursor) | `claude mcp add nexremote -- ~/bin/nexremote-mcp` — 23 araç + canlı kaynaklar (`nexremote://windows`, `nexremote://terminals`, `nexremote://tree/{ref}`), ekran görüntüsü görsel olarak döner |
+| MCP istemcisi (Claude Code, Claude Desktop, Cursor) | `claude mcp add nexremote -- ~/bin/nexremote-mcp` — 28 araç (`nexremote_batch` dahil) + canlı kaynaklar (`nexremote://windows`, `nexremote://terminals`, `nexremote://tree/{ref}`), ekran görüntüsü görsel olarak döner |
 | HTTP konuşan uzak ajan | `NEXREMOTE_TOKEN=… nexremote-http --port 8788` ya da servis olarak: `deploy/install-service.sh` |
 | Tool-calling'i olmayan model | `nexremote-agent --model-cmd "ollama run qwen2.5" --goal "…"` |
 
@@ -129,7 +163,9 @@ deploy/install-service.sh --uninstall
 ```
 
 Ağa açarken en az 24 karakterlik token zorunludur. Token sabit zamanlı
-karşılaştırılır, 4 MB'tan büyük ya da bozuk gövdeler 400 döner.
+karşılaştırılır, 4 MB'tan büyük ya da bozuk gövdeler 400 döner. Tarayıcıdan
+gelen istekler (`Origin` / çapraz site) reddedilir — bir web sayfası localhost'taki
+servise komut gönderemez; token'sız çalışırken `Host` da yerel ad olmalıdır.
 
 Komutların tamamı: `nexremote --help`. Ajan talimatı: [`adapters/skill/nexremote.md`](adapters/skill/nexremote.md).
 
@@ -137,15 +173,16 @@ Komutların tamamı: `nexremote --help`. Ajan talimatı: [`adapters/skill/nexrem
 
 ```
 core/nexremote/
-  nexremote.py      tek giriş noktası (facade); adaptörler yalnızca bunu bilir
-  snapshot.py       anlık görüntü ref'leri (@sid:eN), katı yeniden tanıma, otomatik bekleme
+  nexremote.py      tek giriş noktası (facade); eylem kapsamı, after/wait/click_text
+  snapshot.py       anlık görüntü ref'leri (@sid:eN), hızlı yol + katı yeniden tanıma, fark
+  trace.py          NEXREMOTE_TRACE=1 adım süreleri
   lease.py          girdi kirası: makine genelinde tek fare/klavye yazarı
   platforms/        işletim sistemi katmanı (Desktop sözleşmesi, base.py)
     linux.py          KWin / Hyprland / Sway / X11 seçimi
     x11.py wlroots.py X11 (XTEST, EWMH) · Sway, Hyprland IPC
     windows.py        Win32 + SendInput + GDI; _wincon.py konsol yardımcısı
     macos.py          Quartz CGEvent + CGWindowList + Terminal/iTerm2
-  kwin.py           pencereler + imleç konumu (KWin betiği → callDBus ile yanıt)
+  kwin.py           pencereler + imleç konumu (KWin betiği → callDBus); servis için kalıcı izleyici
   portal_input.py   fare/klavye daemon'ı (RemoteDesktop + ScreenCast oturumu)
   terminals.py      masaüstündeki Konsole sekmeleri ve tmux bölmeleri
   backends/gui.py   AT-SPI ağacı (Linux), isimle bulma/tıklama
@@ -156,7 +193,7 @@ core/nexremote/
   xcursor.py        imleç arka ucu, Linux (X11/XWayland, click-through)
   wincursor.py      imleç arka ucu, Windows (katmanlı pencere, WS_EX_TRANSPARENT)
   maccursor.py      imleç arka ucu, macOS (ctypes objc, ignoresMouseEvents)
-adapters/  cli · mcp · http · skill
+adapters/  cli (+ arka plan servisi) · mcp · http · skill
 ```
 
 ## Testler
@@ -182,6 +219,9 @@ erişilebilirlik okuması onaylar.
 - macOS: Quartz/AX çağrıları sahte kütüphaneyle sınanır (`tests/test_macos_logic.py`).
 - Electron: sandbox'ta gerçek bir Electron penceresi açılır, butonu ağaçtaki
   ref'iyle tıklanır (`NEXR_ELECTRON=/yol/electron`; yoksa test atlanır).
+- AT-SPI hızlı yol: Xvfb içinde gerçek bir GTK uygulamasıyla yol kayması,
+  kaybolan/ikiz öğe, katı kip, `after`, `wait`, `fill` (`tests/test_atspi_fast.py`).
+- Hız: servis, `do`, gecikme bütçesi, tmux düzeltmeleri, ajan döngüsü (`tests/test_speed.py`).
 
 ## Sınırlar
 
@@ -199,6 +239,12 @@ erişilebilirlik okuması onaylar.
   Çalışan bir uygulamada sonradan açılamaz, uygulamanın yeniden başlatılması gerekir.
   Firefox tabanlı tarayıcılar ağacı kendiliğinden yayınlar. Oyunlar ve canvas
   uygulamaları için ekran görüntüsü + koordinat tıklaması kullanılır.
+- v0.7'nin KWin kalıcı pencere izleyicisi, Wayland giriş servisindeki tek
+  komutta tık + imleci geri koyma ve servis tarafında kare kırpma gerçek KDE
+  masaüstünde henüz denenmedi (sahte servisle sınandı); izleyici kendini tek
+  seferlik okumayla doğrular, tutmazsa eski yola döner (`NEXREMOTE_KWIN_WATCH=0`
+  ile kapatılır). Arka plan servisi macOS ve Windows'ta varsayılan kapalı
+  (`NEXREMOTE_SERVICE=1`).
 - Görünür ajan imleci Linux'ta X11/XWayland ister (XWayland'siz saf Wayland'de görünmez, tıklama yine çalışır). Windows arka ucu Wine'da sınandı; macOS arka ucu önizleme, gerçek Mac'te denenmedi.
 
 MIT

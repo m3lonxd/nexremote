@@ -5,7 +5,7 @@ Hiçbiri diğerine bağımlı değildir — biri çalışmıyorsa diğeri devred
 
 | Harness / İstemci | Adaptör | Kurulum | Not |
 |---|---|---|---|
-| **Claude Desktop** | MCP | `claude_desktop_config.json`'a `mcpServers.nexremote` ekle | 23 araç + kaynaklar |
+| **Claude Desktop** | MCP | `claude_desktop_config.json`'a `mcpServers.nexremote` ekle | 28 araç + kaynaklar |
 | **Claude Code** | Skill + CLI | bu repoyu `~/.claude/skills/`e bağla, `nexremote` PATH'te | `/nexremote` skill'i |
 | **Cursor** | MCP | `.cursor/mcp.json` | stdio |
 | **Continue / Roo** | MCP | MCP yapılandırması | stdio |
@@ -74,6 +74,14 @@ durur. Böylece **tool-calling desteği olmayan modeller bile ajan olur.**
 | `NEXREMOTE_BIN` | `install.sh` wrapper dizini (varsayılan `~/bin`) |
 | `NEXREMOTE_TOKEN` / `NEXREMOTE_TOKEN_FILE` | HTTP adaptörü için Bearer token (veya onu içeren dosya) |
 | `PYTHONPATH` | wrapper'lar otomatik ayarlar; elle kullanımda `core/` ekle |
+| `NEXREMOTE_SERVICE` | `0`: CLI arka plan servisini kullanma; `1`: macOS/Windows'ta da aç (Linux'ta varsayılan açık) |
+| `NEXREMOTE_SERVICE_IDLE` | servis bu kadar sn boşta kalınca kapanır (varsayılan 600) |
+| `NEXREMOTE_STRICT` | `1`: ref hızlı yolunu kapat, her eylemde tüm ağacı oku (ikiz öğe denetimi) |
+| `NEXREMOTE_TRACE` | `1`: her adımın süresi stderr'e |
+| `NEXREMOTE_CURSOR_MS` | ajan imlecinin süzülme süresi (varsayılan 80; tık beklemez) |
+| `NEXREMOTE_SETTLE` | `--after` öncesi arayüzün durulma beklemesi, sn (varsayılan 0.15) |
+| `NEXREMOTE_TREE_NODES` / `NEXREMOTE_TREE_MS` | ağaç okuma bütçesi (varsayılan 5000 düğüm / 10000 ms) |
+| `NEXREMOTE_KWIN_WATCH` | `0`: uzun ömürlü süreçte KWin kalıcı izleyicisini kapat |
 
 ## Sorun giderme
 

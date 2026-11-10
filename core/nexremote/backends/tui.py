@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import os
 import re
+import secrets
 import shutil
 import subprocess
 import sys
@@ -38,16 +39,43 @@ from ..models import Capability, CommandResult
 SESSION_PREFIX = "nexremote_"
 
 # tmux'ta doğrudan tuş adı olarak tanınan isimler (Enter, C-c, ...).
-_TMUX_KEY_RE = re.compile(r"^(?:[CM]-[A-Za-z]|Enter|Escape|Esc|Space|Tab|BSpace|"
-                          r"BTab|DC|IC|Up|Down|Left|Right|Home|End|PgUp|PgDn|"
-                          r"F[0-9]{1,2}|KP[0-9]|C-\\\\)$", re.IGNORECASE)
+# Büyük/küçük harf duyarlı: "end", "up", "tab" gibi sıradan kelimeler metin olarak
+# yazılmalı, tuş olarak değil. Yalnızca tmux'un kendi yazımı tuş sayılır.
+_TMUX_KEY_RE = re.compile(r"^(?:[CMS]-(?:[A-Za-z0-9]|Space|Enter|Tab|Up|Down|Left|Right|"
+                          r"Home|End|BSpace)|Enter|Escape|Space|Tab|BSpace|"
+                          r"BTab|DC|IC|Up|Down|Left|Right|Home|End|PgUp|PgDn|PPage|NPage|"
+                          r"F[0-9]{1,2}|KP[0-9]|C-\\\\|C-\\)$")
+_CTRL_RE = re.compile(r"^(?:C-|ctrl\+)([A-Za-z])$", re.IGNORECASE)
+
+
+def _key_name(k: str) -> Optional[str]:
+    """Tuş adıysa tmux yazımı ('Enter', 'C-c', 'Up'…), değilse None (düz metin).
+    ctrl+x / C-x büyük-küçük harf fark etmez; 'Esc' de kabul edilir."""
+    m = _CTRL_RE.match(k)
+    if m:
+        return f"C-{m.group(1).lower()}"
+    if k == "Esc":
+        return "Escape"
+    return k if _TMUX_KEY_RE.match(k) else None
+
 
 # ANSI CSI / OSC kaçış dizileri (PTY çıktısını LLM dostu metne indirgemek için).
 _ANSI_RE = re.compile(r"\x1b\[[0-9;?]*[ -/]*[@-~]|\x1b\][^\x07]*\x07|\x1b[@-_]")
 
 # Sentinel (tamamlanma belirteci) biçimi: komut bitince ekrana basılır.
-_START_TOKEN = "__NEXR_START__"
+# Her çalıştırmada benzersiz belirteç: geçmişte kalan eskileriyle karışmaz,
+# ekrandan/geçmişten taşan uzun çıktıda da bitiş yakalanır.
+_START_TOKEN = "__NEXR_START__"          # eski sürüm uyumu (testler)
 _EXIT_RE = re.compile(r"^__NEXR_(\d+)__$")
+
+
+def _pane(name: str) -> str:
+    """Tam ad eşleşmeli bölme hedefi: `-t build` build2'ye de gider, `=build:` gitmez."""
+    return f"={name}:"
+
+
+def _sess(name: str) -> str:
+    return f"={name}"
 
 
 def _normalize_session(session: str) -> str:
@@ -70,24 +98,24 @@ def _strip_ansi(text: str) -> str:
                    for c in text)
 
 
+_PTY_KEYS = {
+    "Enter": b"\r", "Space": b" ", "Tab": b"\t", "BTab": b"\x1b[Z", "Escape": b"\x1b",
+    "BSpace": b"\x7f", "Up": b"\x1b[A", "Down": b"\x1b[B", "Right": b"\x1b[C",
+    "Left": b"\x1b[D", "Home": b"\x1b[H", "End": b"\x1b[F", "PgUp": b"\x1b[5~",
+    "PPage": b"\x1b[5~", "PgDn": b"\x1b[6~", "NPage": b"\x1b[6~", "DC": b"\x1b[3~",
+    "IC": b"\x1b[2~",
+}
+
+
 def _keys_to_bytes(keys: str) -> bytes:
-    """Tuş adını PTY'ye yazılacak ham baytlara çevir (Enter/C-c/Escape...)."""
-    table = {
-        "enter": b"\r", "return": b"\r", "space": b" ", "tab": b"\t",
-        "escape": b"\x1b", "esc": b"\x1b", "backspace": b"\x7f",
-        "up": b"\x1b[A", "down": b"\x1b[B", "right": b"\x1b[C",
-        "left": b"\x1b[D", "home": b"\x1b[H", "end": b"\x1b[F",
-        "pgup": b"\x1b[5~", "pgdn": b"\x1b[6~", "delete": b"\x1b[3~",
-    }
-    k = (keys or "").strip()
-    low = k.lower()
-    if low in table:
-        return table[low]
-    # C-x / ctrl+x -> kontrol karakteri
-    m = re.match(r"^(?:C-|ctrl\+)([A-Za-z])$", k, re.IGNORECASE)
-    if m:
-        return bytes([ord(m.group(1).upper()) - 64])
-    return k.encode("utf-8", "replace")
+    """Tuş adını PTY'ye yazılacak ham baytlara çevir; tmux kipiyle aynı adlar
+    tuş sayılır (Enter, C-c, BSpace, Up…), gerisi düz metindir."""
+    name = _key_name((keys or "").strip())
+    if name and name.startswith("C-") and len(name) == 3:
+        return bytes([ord(name[2].upper()) - 64])
+    if name in _PTY_KEYS:
+        return _PTY_KEYS[name]
+    return (keys or "").encode("utf-8", "replace")
 
 
 class _PtySession:
@@ -279,7 +307,7 @@ class TuiBackend(Backend):
     def _ensure_session(self, name: str) -> bool:
         """Oturum yoksa oluştur; varsa (ve bizimse) dokunma."""
         try:
-            if self._tmux("has-session", "-t", name).returncode == 0:
+            if self._tmux("has-session", "-t", _sess(name)).returncode == 0:
                 return True
         except (subprocess.TimeoutExpired, OSError):
             return False
@@ -295,7 +323,7 @@ class TuiBackend(Backend):
     def _capture(self, name: str) -> str:
         """Tüm geçmişi + görünür ekranı düz metin olarak al."""
         try:
-            r = self._tmux("capture-pane", "-p", "-S", "-", "-t", name)
+            r = self._tmux("capture-pane", "-p", "-J", "-S", "-", "-t", _pane(name))
             if r.returncode == 0:
                 return r.stdout
         except (subprocess.TimeoutExpired, OSError):
@@ -304,7 +332,7 @@ class TuiBackend(Backend):
 
     def _session_exists(self, name: str) -> bool:
         try:
-            return self._tmux("has-session", "-t", name).returncode == 0
+            return self._tmux("has-session", "-t", _sess(name)).returncode == 0
         except (subprocess.TimeoutExpired, OSError):
             return False
 
@@ -316,55 +344,59 @@ class TuiBackend(Backend):
             return CommandResult(output=f"tmux oturumu açılamadı: {name}",
                                  exit_code=-1, session=session, timed_out=False)
 
-        # Belirteçli satır: başlangıç işareti + komut + çıkış kodu.
-        # $? kabuk tarafından genişletilir; __NEXR_<kod>__ olarak ekrana basılır.
-        # ÖNEMLİ: yeni komut ekrana gelmeden ÖNCE geçmişteki (scrollback) eski
-        # sentinel/exit belirteçleriyle yanlış eşleşmemek için taban çizgisi al.
-        pre = self._capture(name)
-        pre_starts = pre.count(_START_TOKEN)
-
-        payload = f"echo {_START_TOKEN}; {command}; echo __NEXR_$?__"
+        # Benzersiz başlangıç/bitiş belirteçleri. Komut `{ …\n}` içine alınır:
+        # sonu `&` ya da `# yorum` ile biten komut da sözdizimini bozmaz.
+        tok = secrets.token_hex(4)
+        start_tok = f"__NEXR_S_{tok}__"
+        end_re = re.compile(rf"^__NEXR_E_{tok}_(\d+)__$")
+        payload = f"echo {start_tok}; {{ {command}\n}}; echo __NEXR_E_{tok}_$?__"
         try:
-            # -l (literal): özel karakterler tuş adı olarak yorumlanmasın.
-            self._tmux("send-keys", "-t", name, "-l", payload)
-            self._tmux("send-keys", "-t", name, "Enter")
+            # -l (literal): özel karakterler tuş adı olarak yorumlanmasın; -- ile
+            # '-' ile başlayan metin bayrak sanılmasın.
+            self._tmux("send-keys", "-t", _pane(name), "-l", "--", payload)
+            self._tmux("send-keys", "-t", _pane(name), "Enter")
         except (subprocess.TimeoutExpired, OSError) as e:
             return CommandResult(output=f"send-keys hatası: {e}",
                                  exit_code=-1, session=session)
 
         deadline = time.monotonic() + max(timeout, 0.1)
-        # 1) YENİ start belirtecini bekle (eski sentinel'lere aldanma).
-        start_deadline = min(time.monotonic() + 3.0, deadline)
-        while time.monotonic() < start_deadline:
-            if self._capture(name).count(_START_TOKEN) > pre_starts:
-                break
-            if not self._session_exists(name):
-                return CommandResult(output="oturum kapandı (çıkış?)",
-                                     exit_code=-1, session=session)
-            time.sleep(0.05)
-
-        # 2) Yeni start'tan SONRAKİ exit belirtecini bekle.
-        timed_out = True
+        delay = 0.03
         while True:
             screen = self._capture(name)
-            if screen.count(_START_TOKEN) > pre_starts:
-                after = self._after_last_start(screen)
-                exit_code = self._parse_exit(after.splitlines())
-                if exit_code is not None:
-                    out = self._extract_output(after.splitlines())
-                    return CommandResult(output=out, exit_code=exit_code,
-                                         session=session, timed_out=False)
+            done = self._parse_tokens(screen.splitlines(), start_tok, end_re)
+            if done is not None:
+                out, code = done
+                return CommandResult(output=out, exit_code=code,
+                                     session=session, timed_out=False)
             if not self._session_exists(name):
-                # Kabuk çıktı: sentinel hiç basılmadı -> erken dur.
-                return CommandResult(output=screen, exit_code=-1,
-                                     session=session)
+                return CommandResult(output=screen, exit_code=-1, session=session)
             if time.monotonic() >= deadline:
                 break
-            time.sleep(0.12)
+            time.sleep(delay)
+            delay = min(delay * 1.5, 0.15)     # kısa komut hızlı döner, uzun komut az yoklanır
 
-        # Zaman aşımı — eldeki ekranı döndür.
         return CommandResult(output=self._capture(name), exit_code=-1,
-                             session=session, timed_out=timed_out)
+                             session=session, timed_out=True)
+
+    @staticmethod
+    def _parse_tokens(lines: list[str], start_tok: str,
+                      end_re: "re.Pattern[str]") -> Optional[tuple[str, int]]:
+        """Bitiş belirteci görüldüyse (çıktı, çıkış kodu); yoksa None. Başlangıç
+        satırı geçmişten taşmışsa çıktı ekranın başından alınır."""
+        end_i = code = None
+        for i in range(len(lines) - 1, -1, -1):
+            m = end_re.match(lines[i].strip())
+            if m:
+                end_i, code = i, int(m.group(1))
+                break
+        if end_i is None:
+            return None
+        start_i = -1
+        for i in range(end_i - 1, -1, -1):
+            if lines[i].strip() == start_tok:
+                start_i = i
+                break
+        return "\n".join(lines[start_i + 1:end_i]).rstrip(), code
 
     @staticmethod
     def _after_last_start(screen: str) -> str:
@@ -498,7 +530,7 @@ class TuiBackend(Backend):
             if not self._ensure_session(name):
                 return ""
             try:
-                r = self._tmux("capture-pane", "-p", "-t", name)
+                r = self._tmux("capture-pane", "-p", "-t", _pane(name))
                 if r.returncode == 0:
                     return r.stdout.rstrip("\n")
             except (subprocess.TimeoutExpired, OSError):
@@ -513,18 +545,24 @@ class TuiBackend(Backend):
 
     # ------------------------------------------------------------ tuş gönder
     def send_keys(self, keys: str, session: str = "default") -> bool:
-        """Tuşa bas: Enter/C-c/C-d/Escape gibi adlar veya düz metin."""
+        """Tuşa bas: Enter/C-c/C-d/Escape gibi adlar veya düz metin.
+
+        tmux ve PTY kipi aynı adları kabul eder: tmux yazımı (Enter, Escape, C-c,
+        BSpace, Up…; büyük-küçük harf önemli) ve ctrl+x. "end", "up" gibi sıradan
+        kelimeler düz metin olarak yazılır."""
         if not keys:
             return False
+        k = keys.strip()
         if self.tmux:
             name = self._session_name(session)
             if not self._ensure_session(name):
                 return False
+            key = _key_name(k)
             try:
-                if _TMUX_KEY_RE.match(keys.strip()):
-                    r = self._tmux("send-keys", "-t", name, keys.strip())
+                if key:
+                    r = self._tmux("send-keys", "-t", _pane(name), key)
                 else:
-                    r = self._tmux("send-keys", "-t", name, "-l", keys)
+                    r = self._tmux("send-keys", "-t", _pane(name), "-l", "--", keys)
                 return r.returncode == 0
             except (subprocess.TimeoutExpired, OSError):
                 return False
@@ -585,7 +623,7 @@ class TuiBackend(Backend):
                 names = []
             for nm in names:
                 try:
-                    self._tmux("kill-session", "-t", nm)
+                    self._tmux("kill-session", "-t", _sess(nm))
                     killed.append(nm[len(SESSION_PREFIX):])
                 except (subprocess.TimeoutExpired, OSError):
                     pass

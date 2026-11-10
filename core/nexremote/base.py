@@ -25,7 +25,9 @@ class Backend(ABC):
     def windows(self) -> list[Window]:
         raise NotImplementedError
 
-    def tree(self, window_ref: str) -> Element:
+    def tree(self, window_ref: str, light: bool = False) -> Element:
+        """light=True: yalnızca kimlik için gerekenler (rol, ad, eylemler, durum);
+        konum ve çoğu değer okunmaz. Ref çözümlemesinde kullanılır."""
         raise NotImplementedError
 
     def find(self, query: str, window_ref: Optional[str] = None) -> list[Element]:

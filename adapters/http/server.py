@@ -30,6 +30,11 @@ API (hepsi POST, JSON gövde; GET /health ve GET /caps de var):
   POST /send_keys {keys, session}
   POST /sessions
   POST /launch  {argv, wait}   programı ağacı açık başlat (Electron'a bayrak)
+  POST /click_text {text, window_ref, role, exact}   adıyla bul + tıkla (tek okuma)
+  POST /fill    {ref, text, enter}
+  POST /wait    {element | window_title | gone, window_ref, timeout}
+  POST /batch   {steps: [{method, ...}], after}   adımlar sırayla, ilk hatada durur
+  Eylem uçlarına "after": true eklenirse yanıtta "after" (arayüzde ne değişti) döner.
 
 Güvenlik: varsayılan olarak yalnızca localhost'a bağlanır. Başka bir arayüze
 token'sız (veya 24 karakterden kısa token'la) bağlanmayı REDDEDER — masaüstü
@@ -38,6 +43,12 @@ zorunludur; sabit zamanlı karşılaştırılır. Token'ı komut satırına değ
 NEXREMOTE_TOKEN'a ya da --token-file'a koyun (ps çıktısında görünmesin).
 --tls-cert/--tls-key ile HTTPS; ağ üzerinden düz HTTP'de token okunabilir,
 TLS yoksa SSH tüneli kullanın. Kurulum: deploy/install-service.sh.
+
+Tarayıcı koruması: `Origin` ya da çapraz site `Sec-Fetch-Site` taşıyan istekler
+reddedilir (bir web sayfası localhost'taki servise istek atıp komut
+çalıştıramasın). Token'sız çalışırken `Host` da yerel ad olmalıdır (DNS
+yeniden bağlama). Tarayıcıdan bilerek erişilecekse: --allow-origin URL.
+İstekler tek tek işlenir (çekirdek iş parçacığı güvenli değildir).
 """
 from __future__ import annotations
 
@@ -48,6 +59,7 @@ import os
 import secrets
 import ssl
 import sys
+import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse
 
@@ -59,7 +71,12 @@ for cand in (os.path.join(_HERE, "..", "..", "core"),
         sys.path.insert(0, cand)
 
 TOKEN = None
+ALLOW_ORIGINS: set[str] = set()
 _NR = None
+_LOCK = threading.Lock()                # çekirdek iş parçacığı güvenli değil: sırayla
+_LOCAL_HOSTS = {"127.0.0.1", "localhost", "::1", "[::1]"}
+_AFTER_OK = {"click", "click_at", "click_text", "fill", "set_text", "key", "type",
+             "window_action", "scroll", "drag", "batch"}
 MAX_BODY = 4 * 1024 * 1024   # type/set_text için bol; daha büyüğü hata
 MIN_REMOTE_TOKEN = 24
 
@@ -72,12 +89,76 @@ def get_nr():
     global _NR
     if _NR is None:
         from nexremote import NexRemote
-        _NR = NexRemote()
+        _NR = NexRemote(long_lived=True)
     return _NR
+
+
+def _host_name(host: str) -> str:
+    """'127.0.0.1:8788' → '127.0.0.1', '[::1]:8788' → '[::1]'."""
+    if host.startswith("["):
+        return host.split("]", 1)[0] + "]"
+    return host.rsplit(":", 1)[0] if host.count(":") == 1 else host
+
+
+def _need(body: dict, key: str):
+    """Zorunlu alan; yoksa 400 (çekirdekten gelen KeyError ile karışmasın)."""
+    if key not in body:
+        raise BadRequest(f"eksik alan: {key}")
+    return body[key]
+
+
+def dispatch(method: str, body: dict):
+    """Tek istek: sırayla (kilit), istenirse eylem sonrası farkla."""
+    with _LOCK:
+        nr = get_nr()
+        after = bool(body.get("after")) and method in _AFTER_OK
+        before = None
+        if after:
+            try:
+                before = nr.windows()
+            except Exception:
+                before = None
+        result = _dispatch(method, body)
+        if after:
+            result = result if isinstance(result, dict) else {"result": result}
+            result["after"] = nr.after(before_windows=before)
+        return result
+
+
+def _batch(body: dict):
+    steps = body.get("steps")
+    if not isinstance(steps, list) or not steps or not all(isinstance(x, dict) for x in steps):
+        raise BadRequest("batch: 'steps' boş olmayan nesne listesi olmalı")
+    out = []
+    for i, st in enumerate(steps):
+        m = st.get("method")
+        if not isinstance(m, str) or m in ("batch", "launch"):
+            raise BadRequest(f"batch adım {i}: geçersiz 'method'")
+        try:
+            out.append({"method": m, "ok": True, "result": _dispatch(m, st)})
+        except Exception as e:
+            code = getattr(e, "code", None)
+            out.append({"method": m, "ok": False, "error": str(e),
+                        **({"code": code} if code else {})})
+            break
+    return {"ok": all(r["ok"] for r in out) and len(out) == len(steps),
+            "steps": out, "skipped": len(steps) - len(out)}
 
 
 def _dispatch(method: str, body: dict):
     nr = get_nr()
+    if method == "batch":
+        return _batch(body)
+    if method == "click_text":
+        return nr.click_text(_need(body, "text"), window_ref=body.get("window_ref"),
+                             role=body.get("role"), exact=bool(body.get("exact")))
+    if method == "fill":
+        return {"ok": nr.fill(_need(body, "ref"), body.get("text", ""),
+                              enter=bool(body.get("enter")))}
+    if method == "wait":
+        return nr.wait_for(element=body.get("element"), window_title=body.get("window_title"),
+                           gone=body.get("gone"), window_ref=body.get("window_ref"),
+                           timeout=float(body.get("timeout", 10.0)))
     if method == "caps":
         return nr.capabilities()
     if method == "observe":
@@ -109,9 +190,9 @@ def _dispatch(method: str, body: dict):
                  "value": e.value, "actions": e.actions}
                 for e in nr.find(body.get("query", ""), body.get("window_ref"))]
     if method == "click":
-        return {"ok": nr.click(body["ref"])}
+        return {"ok": nr.click(_need(body, "ref"))}
     if method == "set_text":
-        return {"ok": nr.set_text(body["ref"], body.get("text", ""))}
+        return {"ok": nr.set_text(_need(body, "ref"), body.get("text", ""))}
     if method == "key":
         return {"ok": nr.key(body.get("combo", ""))}
     if method == "type":
@@ -120,15 +201,15 @@ def _dispatch(method: str, body: dict):
         return nr.screenshot(body.get("path"), window_ref=body.get("window_ref"),
                              max_width=int(body.get("max_width", 0))).to_dict()
     if method == "window_action":
-        return {"ok": nr.window_action(body["ref"], body["action"])}
+        return {"ok": nr.window_action(_need(body, "ref"), _need(body, "action"))}
     if method == "click_at":
-        x, y = nr.screen_point(float(body["x"]), float(body["y"]),
+        x, y = nr.screen_point(float(_need(body, "x")), float(_need(body, "y")),
                                bool(body.get("from_screenshot", False)))
         nr.click_at(x, y, button=body.get("button", "left"),
                     count=2 if body.get("double") else 1)
         return {"ok": True, "clicked": [x, y]}
     if method == "cursor":
-        x, y = nr.screen_point(float(body["x"]), float(body["y"]),
+        x, y = nr.screen_point(float(_need(body, "x")), float(_need(body, "y")),
                                bool(body.get("from_screenshot", False)))
         return {"ok": nr.cursor(x, y, click=bool(body.get("click"))), "at": [x, y]}
     if method == "cursor_hide":
@@ -141,15 +222,15 @@ def _dispatch(method: str, body: dict):
         return {"ok": nr.scroll(int(body.get("steps", 1)), at=at)}
     if method == "drag":
         fs = bool(body.get("from_screenshot", False))
-        a = nr.screen_point(float(body["x1"]), float(body["y1"]), fs)
-        b = nr.screen_point(float(body["x2"]), float(body["y2"]), fs)
+        a = nr.screen_point(float(_need(body, "x1")), float(_need(body, "y1")), fs)
+        b = nr.screen_point(float(_need(body, "x2")), float(_need(body, "y2")), fs)
         return {"ok": nr.drag(a[0], a[1], b[0], b[1])}
     if method == "terminals":
         return nr.terminals()
     if method == "terminal_read":
-        return {"screen": nr.terminal_read(body["ref"], int(body.get("history", 0)))}
+        return {"screen": nr.terminal_read(_need(body, "ref"), int(body.get("history", 0)))}
     if method == "terminal_send":
-        return {"ok": nr.terminal_send(body["ref"], body.get("text", ""),
+        return {"ok": nr.terminal_send(_need(body, "ref"), body.get("text", ""),
                                        enter=bool(body.get("enter")), keys=body.get("keys"))}
     if method == "run":
         return nr.run(body.get("command", ""), body.get("session", "default"),
@@ -174,6 +255,18 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(data)))
         self.end_headers()
         self.wfile.write(data)
+
+    def _browser_blocked(self) -> bool:
+        """Tarayıcıdan gelen (Origin / çapraz site) ya da yerel olmayan Host'lu
+        (DNS yeniden bağlama) isteği reddet."""
+        origin = self.headers.get("Origin")
+        if origin is not None and origin not in ALLOW_ORIGINS:
+            return True
+        if self.headers.get("Sec-Fetch-Site") in ("cross-site", "same-site") and not ALLOW_ORIGINS:
+            return True
+        if not TOKEN and _host_name(self.headers.get("Host") or "") not in _LOCAL_HOSTS | {""}:
+            return True
+        return False
 
     def _authed(self) -> bool:
         if not TOKEN:
@@ -205,11 +298,13 @@ class Handler(BaseHTTPRequestHandler):
         path = urlparse(self.path).path.rstrip("/")
         if path == "/health":
             return self._send(200, {"ok": True})
+        if self._browser_blocked():
+            return self._send(403, {"error": "tarayıcıdan erişim kapalı (--allow-origin)"})
         if not self._authed():
             return self._send(401, {"error": "yetkisiz"})
         if path == "/caps":
             try:
-                return self._send(200, _dispatch("caps", {}))
+                return self._send(200, dispatch("caps", {}))
             except Exception as e:
                 return self._send(500, {"error": str(e)})
         if path == "/screenshot.png":
@@ -227,11 +322,13 @@ class Handler(BaseHTTPRequestHandler):
         return self._send(404, {"error": "bulunamadı"})
 
     def do_POST(self):
+        if self._browser_blocked():
+            return self._send(403, {"error": "tarayıcıdan erişim kapalı (--allow-origin)"})
         if not self._authed():
             return self._send(401, {"error": "yetkisiz"})
         method = urlparse(self.path).path.rstrip("/").lstrip("/")
         try:
-            return self._send(200, _dispatch(method, self._body()))
+            return self._send(200, dispatch(method, self._body()))
         except BadRequest as e:
             return self._send(400, {"error": str(e)})
         except KeyError as e:
@@ -261,17 +358,24 @@ def main(argv=None) -> int:
     p.add_argument("--tls-cert", default=os.environ.get("NEXREMOTE_TLS_CERT"))
     p.add_argument("--tls-key", default=os.environ.get("NEXREMOTE_TLS_KEY"))
     p.add_argument("--gen-token", action="store_true", help="rastgele token yaz ve çık")
+    p.add_argument("--allow-origin", action="append", default=[],
+                   help="bu tarayıcı kökeninden gelen isteklere izin ver (tekrarlanabilir)")
     a = p.parse_args(argv)
     if a.gen_token:
         print(secrets.token_urlsafe(32))
         return 0
     TOKEN = a.token
+    ALLOW_ORIGINS.update(a.allow_origin)
     if a.token_file:
         try:
             with open(a.token_file) as f:
                 TOKEN = f.readline().strip()
         except OSError as e:
             print(f"HATA: token dosyası okunamadı: {e}", file=sys.stderr)
+            return 2
+        if not TOKEN:
+            # boş dosya sessizce "token yok" kipine düşmesin
+            print(f"HATA: token dosyası boş: {a.token_file}", file=sys.stderr)
             return 2
     TOKEN = TOKEN or None
     if a.host not in ("127.0.0.1", "localhost", "::1"):

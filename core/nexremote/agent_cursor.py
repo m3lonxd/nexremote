@@ -21,6 +21,12 @@ olmalıdır (aynı makinedeki başka kullanıcılar imleci süremez).
 
 Pencere işlemleri hep daemon'ın ANA iş parçacığında yapılır (Win32 ve AppKit
 pencerenin sahibi olan iş parçacığını ister); bağlantılar iş kuyruğuna yazar.
+
+Beklemesiz kullanım (v0.7): istemci komutları yazıp bağlantıyı hemen kapatabilir
+(`batch(..., wait=0)`); daemon kalan komutları yine sırayla çalıştırır. Daemon
+yoksa `spawn_daemon(display, komutlar)` onu arka planda başlatır ve komutları
+ilk iş olarak çalıştırır — çağıran hiç beklemez. Tek örnek bir kilit dosyasıyla
+korunur: aynı anda başlatılan ikinci daemon komutlarını birinciye iletip çıkar.
 """
 from __future__ import annotations
 
@@ -34,6 +40,7 @@ import socket
 import sys
 import threading
 import time
+from typing import Optional
 
 BOX = 56                       # pencere kenarı (px) — ok + tık halkası sığsın
 IDLE_SEC = 8.0                 # son komuttan bu kadar sonra imleç gizlenir
@@ -300,10 +307,15 @@ def use_tcp() -> bool:
     return os.name == "nt" or os.environ.get("NEXREMOTE_CURSOR_TCP") == "1"
 
 
+# Protokol sürümü yola yazılır: eski sürümün (yanıt beklemeyen istemciyi
+# desteklemeyen) daemon'ı çalışıyorsa yenisi onunla karışmaz.
+PROTO = 2
+
+
 def sock_path() -> str:
     """POSIX Unix soketi (NEXREMOTE_CURSOR_SOCK ile değiştirilebilir)."""
     uid = os.getuid() if hasattr(os, "getuid") else _user()
-    return os.environ.get("NEXREMOTE_CURSOR_SOCK", f"/tmp/nexremote-cursor-{uid}.sock")
+    return os.environ.get("NEXREMOTE_CURSOR_SOCK", f"/tmp/nexremote-cursor-{uid}-{PROTO}.sock")
 
 
 def endpoint_file() -> str:
@@ -311,7 +323,27 @@ def endpoint_file() -> str:
     if os.environ.get("NEXREMOTE_CURSOR_ENDPOINT"):
         return os.environ["NEXREMOTE_CURSOR_ENDPOINT"]
     import tempfile
-    return os.path.join(tempfile.gettempdir(), f"nexremote-cursor-{_user()}.json")
+    return os.path.join(tempfile.gettempdir(), f"nexremote-cursor-{_user()}-{PROTO}.json")
+
+
+def lock_path() -> str:
+    return (endpoint_file() if use_tcp() else sock_path()) + ".lock"
+
+
+def _try_lock(path: str):
+    """Tek örnek kilidi: alınırsa açık dosya tanıtıcısı, alınamazsa None."""
+    fd = os.open(path, os.O_RDWR | os.O_CREAT, 0o600)
+    try:
+        if os.name == "nt":
+            import msvcrt
+            msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)
+        else:
+            import fcntl
+            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        return fd
+    except OSError:
+        os.close(fd)
+        return None
 
 
 def _listen() -> tuple[socket.socket, str]:
@@ -392,7 +424,8 @@ def idle_limit() -> float:
         return IDLE_SEC
 
 
-def serve(cursor, ready=None, idle: float = 0.0, hide: float = 0.0) -> None:
+def serve(cursor, ready=None, idle: float = 0.0, hide: float = 0.0,
+          initial: Optional[list[str]] = None) -> None:
     """Komutları dinle; pencere işlerini ÇAĞIRAN (ana) iş parçacığında yap.
     hide sn komut gelmezse imleç gizlenir (süreç sıcak kalır, sonraki eylem
     beklemez); QUIT gelince ya da idle sn komut gelmezse pencereyi kapatıp
@@ -406,6 +439,17 @@ def serve(cursor, ready=None, idle: float = 0.0, hide: float = 0.0) -> None:
         ready.set()
 
     def handle(conn: socket.socket) -> None:
+        alive = [True]
+
+        def reply(data: bytes) -> None:
+            # İstemci yanıt beklemeden kapatmış olabilir (batch wait=0): kalan
+            # komutlar yine çalışsın, yalnızca yanıt yazılmasın.
+            if alive[0]:
+                try:
+                    conn.sendall(data)
+                except OSError:
+                    alive[0] = False
+
         try:
             f = conn.makefile("r", encoding="utf-8", errors="replace")
             if token and not hmac.compare_digest(f.readline().strip(), token):
@@ -416,18 +460,18 @@ def serve(cursor, ready=None, idle: float = 0.0, hide: float = 0.0) -> None:
                     continue
                 c = p[0].upper()
                 if c == "PING":
-                    conn.sendall(b"PONG\n")
+                    reply(b"PONG\n")
                     continue
                 if c == "QUIT":
                     stop.set()
                     jobs.put((p, [], threading.Event()))
-                    conn.sendall(b"BYE\n")
+                    reply(b"BYE\n")
                     return
                 box: list = []
                 done = threading.Event()
                 jobs.put((p, box, done))
                 done.wait()
-                conn.sendall(((box[0] if box else "ERR") + "\n").encode())
+                reply(((box[0] if box else "ERR") + "\n").encode())
         except Exception:
             pass
         finally:
@@ -445,6 +489,9 @@ def serve(cursor, ready=None, idle: float = 0.0, hide: float = 0.0) -> None:
             threading.Thread(target=handle, args=(conn,), daemon=True).start()
 
     threading.Thread(target=accept, daemon=True).start()
+    for c in initial or []:                     # başlatanın beklemediği ilk komutlar
+        if c.split():
+            jobs.put((c.split(), [], threading.Event()))
     last = time.monotonic()
     hidden = False
     try:
@@ -520,6 +567,8 @@ def batch(cmds: list[str], wait: int, timeout: float = 5.0) -> list[str]:
     s = _connect(timeout)
     try:
         s.sendall("".join(c + "\n" for c in cmds).encode())
+        if wait <= 0:
+            return []                       # daemon komutları yine sırayla çalıştırır
         buf = b""
         while buf.count(b"\n") < wait:     # yanıtlar tek pakette birleşebilir
             chunk = s.recv(256)
@@ -532,10 +581,14 @@ def batch(cmds: list[str], wait: int, timeout: float = 5.0) -> list[str]:
         s.close()
 
 
-def start_daemon(display: str = "") -> bool:
-    """Daemon çalışmıyorsa başlat (ayrı süreç; çağıran kapansa da yaşar)."""
-    if daemon_running():
-        return True
+def spawn_daemon(display: str = "", initial: Optional[list[str]] = None) -> None:
+    """Daemon'ı arka planda başlat ve BEKLEME: `initial` komutlarını daemon
+    hazır olunca kendisi çalıştırır (ilk tıkta imleç yine görünür, tık
+    gecikmez). Başka bir örnek çalışıyorsa komutlar ona iletilir."""
+    _spawn(display, initial)
+
+
+def _spawn(display: str, initial: Optional[list[str]]):
     import subprocess
     core = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     env = dict(os.environ)
@@ -544,13 +597,22 @@ def start_daemon(display: str = "") -> bool:
     if display:
         env["DISPLAY"] = display
         args += ["--display", display]
+    if initial:
+        args += ["--exec", ";".join(initial)]
     kw: dict = {}
     if os.name == "nt":
         kw["creationflags"] = 0x08000000 | 0x00000200   # CREATE_NO_WINDOW | NEW_PROCESS_GROUP
     else:
         kw["start_new_session"] = True
-    subprocess.Popen(args, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
-                     stderr=subprocess.DEVNULL, env=env, **kw)
+    return subprocess.Popen(args, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                            stderr=subprocess.DEVNULL, env=env, **kw)
+
+
+def start_daemon(display: str = "") -> bool:
+    """Daemon çalışmıyorsa başlat ve hazır olmasını bekle (açık `cursor` komutu)."""
+    if daemon_running():
+        return True
+    _spawn(display, None)
     end = time.monotonic() + 10
     while time.monotonic() < end:
         if daemon_running():
@@ -596,11 +658,26 @@ def make_cursor(display: str = ""):
 def main(argv=None) -> int:
     argv = argv if argv is not None else sys.argv[1:]
     display = ""
+    initial: list[str] = []
     for i, a in enumerate(argv):
         if a == "--display" and i + 1 < len(argv):
             display = argv[i + 1]
+        if a == "--exec" and i + 1 < len(argv):
+            initial = [c for c in argv[i + 1].split(";") if c.strip()]
+    lock = _try_lock(lock_path())
+    if lock is None:
+        # Başka bir örnek başlıyor/çalışıyor: komutları ona ilet, ikinci pencere açma.
+        end = time.monotonic() + 5
+        while initial and time.monotonic() < end:
+            try:
+                batch(initial, wait=0)
+                break
+            except (OSError, ValueError, KeyError):
+                time.sleep(0.05)
+        return 0
     hide = idle_limit()
-    serve(make_cursor(display), idle=max(LINGER_SEC, hide) if hide else 0.0, hide=hide)
+    serve(make_cursor(display), idle=max(LINGER_SEC, hide) if hide else 0.0, hide=hide,
+          initial=initial)
     return 0
 
 
