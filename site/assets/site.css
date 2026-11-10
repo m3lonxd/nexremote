@@ -544,6 +544,7 @@ html:not(.js) .mq-dup { display: none; }
 .watch .big { margin-bottom: 24px; }
 .watch p { color: var(--ink-2); max-width: 44ch; }
 .sample { margin: 0; }
+.speed-sample { margin-top: 28px; }
 .sample-bar { display: flex; align-items: center; gap: 7px; padding: 12px 16px; border: 1px solid var(--rule-2); border-bottom: 0; border-radius: 14px 14px 0 0; background: var(--paper-3); font: 400 .74rem var(--mono); color: var(--ink-3); }
 .sample-bar i { width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid var(--rule-2); }
 .sample-bar span { margin-left: 8px; }
