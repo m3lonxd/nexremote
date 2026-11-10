@@ -6,19 +6,29 @@ bu sınıfı sarar. Hiçbir adaptör backend detayını bilmez.
 İşletim sistemine bağlı her şey (pencereler, fare/klavye, ekran görüntüsü,
 masaüstündeki terminaller) `platforms.Desktop` üzerinden gider; erişilebilirlik
 ağacı (öğe bul/tıkla) platformun verdiği GUI backend'idir (AT-SPI / UIA).
+
+HIZ (v0.7)
+    * Her genel çağrı bir "eylem kapsamı" açar: pencere listeleri ve çözülen
+      öğe kapsam boyunca bir kez okunur (eskiden tek tıkta 3-4 kez).
+    * Ajan imleci gerçek tıkı beklemez: komutlar gönderilir, tık hemen atılır.
+    * Ref çözümlemesi önce yol + kimlik hızlı yolunu dener (snapshot.py).
+    * `after()` eylemden sonra değişeni döndürür; ayrı doğrulama turu gerekmez.
 """
 from __future__ import annotations
 
 import json
 import os
 import sys
-from typing import Any, Optional
+import time
+from contextlib import contextmanager
+from typing import Any, Callable, Iterator, Optional
 
 from . import launch as launcher
 from . import snapshot as snap
+from . import trace
 from .lease import input_lease
 from .base import Backend
-from .models import CommandResult, Element, Screenshot, Window
+from .models import CommandResult, Element, Role, Screenshot, Window
 from .platforms import Desktop, Unsupported, detect
 from .platforms.base import runtime_dir as _runtime_dir
 
@@ -38,19 +48,54 @@ def _find_node(root: Element, ref: str) -> Optional[Element]:
     return None
 
 
+def _count(root: Element) -> int:
+    n, stack = 0, [root]
+    while stack:
+        e = stack.pop()
+        n += 1
+        stack.extend(e.children)
+    return n
+
+
+def cursor_seconds() -> float:
+    """Ajan imlecinin hedefe süzülme süresi (NEXREMOTE_CURSOR_MS, varsayılan 80)."""
+    try:
+        ms = float(os.environ.get("NEXREMOTE_CURSOR_MS", "80"))
+    except ValueError:
+        ms = 80.0
+    return max(0.001, ms / 1000)
+
+
+class NotFound(snap.RefError):
+    code = "NOT_FOUND"
+
+
 class NexRemote:
+    # Sınıf düzeyinde varsayılanlar: testler örneği __init__ olmadan kurar.
+    _memo: Optional[dict] = None
+    long_lived = False
+
     def __init__(self, backends: Optional[list[Backend]] = None,
-                 desktop: Optional[Desktop] = None):
+                 desktop: Optional[Desktop] = None, long_lived: bool = False):
         self.desktop: Desktop = desktop if desktop is not None else detect()
         # Varsayılan arka uçlar ilk kullanımda yüklenir: AT-SPI kurulumu ~0.2 sn
         # sürer ve koordinatla tık, klavye, ekran görüntüsü ona hiç ihtiyaç duymaz.
         self._backends: Optional[dict[str, Backend]] = (
             None if backends is None else {b.name: b for b in backends})
+        # Uzun ömürlü süreç (servis, MCP, HTTP): olay döngüsü kuyruğu her
+        # eylemden önce boşaltılır, pencere listesi izlenebilir.
+        self.long_lived = long_lived
+        if long_lived and hasattr(self.desktop, "enable_watch"):
+            try:
+                self.desktop.enable_watch()
+            except Exception:
+                pass
 
     @property
     def backends(self) -> dict[str, Backend]:
         if self._backends is None:
-            self._backends = {b.name: b for b in self._default_backends(self.desktop)}
+            with trace.span("arka uçlar"):
+                self._backends = {b.name: b for b in self._default_backends(self.desktop)}
         return self._backends
 
     @staticmethod
@@ -87,6 +132,51 @@ class NexRemote:
     def _tui(self) -> Backend:
         return self.backend("tui")
 
+    # ------------------------------------------------------------ eylem kapsamı
+    @contextmanager
+    def _scope(self) -> Iterator[None]:
+        """Bir genel çağrı boyunca okunanları paylaş (pencere listeleri, çözülen
+        öğe). İç içe çağrılar dıştakinin kapsamını kullanır."""
+        if self._memo is not None:
+            yield
+            return
+        self._pump()
+        self._memo = {}
+        try:
+            yield
+        finally:
+            self._memo = None
+
+    def _m(self, key: str, fn: Callable[[], Any]) -> Any:
+        memo = self._memo
+        if memo is None:
+            return fn()
+        if key not in memo:
+            memo[key] = fn()
+        return memo[key]
+
+    def _forget(self) -> None:
+        """Pencereleri değiştiren eylemden sonra (etkinleştir, kapat…)."""
+        if self._memo is not None:
+            self._memo.clear()
+
+    def _pump(self) -> None:
+        """Uzun ömürlü süreçte GLib kuyruğunu boşalt: AT-SPI önbelleğini
+        güncelleyen sinyaller ve KWin izleyicisinin bildirimleri işlenir."""
+        if not self.long_lived:
+            return
+        GLib = sys.modules.get("gi.repository.GLib")
+        if GLib is None:
+            return
+        try:
+            ctx = GLib.MainContext.default()
+            n = 0
+            while ctx.pending() and n < 20000:
+                ctx.iteration(False)
+                n += 1
+        except Exception:
+            pass
+
     # ---------------------------------------------------------------- keşif
     def capabilities(self) -> dict[str, Any]:
         """Ne yapabildiğimi anlat — metin-tabanlı modeller bunu okur."""
@@ -106,9 +196,9 @@ class NexRemote:
             "pointer": self._pointer_cap(),
             "actions": [
                 "windows", "window_action", "tree", "find", "click", "click_at",
-                "move", "scroll", "drag", "key", "type_text", "set_text",
-                "screenshot", "terminals", "terminal_read", "terminal_send",
-                "run", "read_screen", "send_keys", "sessions", "cursor",
+                "click_text", "fill", "move", "scroll", "drag", "key", "type_text",
+                "set_text", "screenshot", "terminals", "terminal_read", "terminal_send",
+                "run", "read_screen", "send_keys", "sessions", "cursor", "after", "wait",
             ],
         }
 
@@ -128,14 +218,25 @@ class NexRemote:
         """Ekrandaki pencereler. Pencere yöneticisi her pencereyi bilir;
         erişilebilirlik ağacı yalnızca yayınlayanları — ona yalnızca
         pencere yöneticisine erişilemezse düşülür."""
-        try:
-            return [Window(ref=f"win:{w.id}", title=w.title, app=w.app, pid=w.pid,
-                           focused=w.active, bounds=(w.x, w.y, w.w, w.h))
-                    for w in self.desktop.windows()]
-        except Unsupported:
-            if "gui" not in self.backends:
-                raise
-            return self._gui().windows()
+        return self._m("wm", self._windows_now)
+
+    def _windows_now(self) -> list[Window]:
+        with trace.span("pencereler"):
+            try:
+                return [Window(ref=f"win:{w.id}", title=w.title, app=w.app, pid=w.pid,
+                               focused=w.active, bounds=(w.x, w.y, w.w, w.h))
+                        for w in self.desktop.windows()]
+            except Unsupported:
+                if "gui" not in self.backends:
+                    raise
+                return self._gui().windows()
+
+    def _gwin(self) -> list[Window]:
+        """Erişilebilirlik ağacının pencereleri (kapsam boyunca bir kez)."""
+        def read():
+            with trace.span("ağaç pencereleri"):
+                return self._gui().windows()
+        return self._m("gwin", read)
 
     def window_action(self, ref: str, action: str) -> bool:
         """activate | close | minimize — ref: windows() çıktısındaki win:{...}"""
@@ -143,49 +244,81 @@ class NexRemote:
             raise ValueError("pencere eylemi win:... ref'i ister; `windows` ile alın")
         if action not in ("activate", "close", "minimize"):
             raise ValueError(f"bilinmeyen pencere eylemi: {action}")
-        return self.desktop.window_action(ref[4:], action)
+        try:
+            return self.desktop.window_action(ref[4:], action)
+        finally:
+            self._forget()
+
+    def _focused_ref(self) -> Optional[str]:
+        try:
+            ws = self.windows()
+        except Exception:
+            return None
+        foc = [w for w in ws if w.focused]
+        return foc[0].ref if foc else None
+
+    def _read_tree(self, ref: str, light: bool = False) -> Element:
+        gui = self._gui()
+        with trace.span("ağaç okuma", kip="hafif" if light else "tam") as info:
+            try:
+                root = gui.tree(ref, light=light) if light else gui.tree(ref)
+            except TypeError:                  # light parametresi olmayan arka uç
+                root = gui.tree(ref)
+            if trace.enabled():
+                info["düğüm"] = _count(root)
+        return root
 
     def snapshot(self, window_ref: Optional[str] = None,
                  root: Optional[str] = None) -> tuple["snap.Snapshot", Optional[Element]]:
         """Pencere ağacını oku, eyleme açık her öğeye @sid:eN ref'i ver.
         root: bir anlık görüntü ref'i verilirse yalnızca o öğenin alt ağacı
         döner (yoğun uygulamalarda önce iskelet, sonra bölge)."""
-        sub_ref = None
-        if root:
-            el = self._resolve_el(root, need_enabled=False, wait=0)
-            sub_ref = el.ref
-            data = snap.load(snap.parse_ref(root)[0])
-            window_ref = snap.find_window(data["window"], self._gui().windows()).ref
-        ref = self._atspi_ref(window_ref) if window_ref else ""
-        gui = self._gui()
-        tree = gui.tree(ref)
-        s = snap.take(tree, gui.windows())
-        sub = None
-        if sub_ref:
-            sub = _find_node(tree, sub_ref)
-            if sub is None:
-                raise snap.StaleRef(f"{root} yeniden okumada kayboldu — yeniden `tree` alın")
-        return s, sub
+        with self._scope():
+            sub_ref = None
+            if root:
+                el = self._resolve_el(root, need_enabled=False, wait=0)
+                sub_ref = el.ref
+                data = snap.load(snap.parse_ref(root)[0])
+                window_ref = snap.find_window(data["window"], self._gwin()).ref
+            if not window_ref:
+                window_ref = self._focused_ref()   # etkin pencere (arka ucun ilki değil)
+            ref = self._gui_ref(window_ref) if window_ref else ""
+            tree = self._read_tree(ref)
+            s = snap.take(tree, self._gwin())
+            sub = None
+            if sub_ref:
+                sub = _find_node(tree, sub_ref)
+                if sub is None:
+                    raise snap.StaleRef(f"{root} yeniden okumada kayboldu — yeniden `tree` alın")
+            return s, sub
 
     def tree(self, window_ref: Optional[str] = None, interactive: bool = False,
              root: Optional[str] = None) -> str:
         """Pencere ağacını LLM dostu metin olarak döndür (ref'ler @sid:eN)."""
-        s, sub = self.snapshot(window_ref, root)
-        text = s.render(interactive=interactive, subtree=sub)
-        if not s.root.children and sub is None:
-            win = next((w for w in self._gui().windows() if w.ref == s.root.ref), None)
-            exe = launcher.pid_exe(win.pid) if win is not None else None
-            if launcher.is_chromium(exe):
-                text += "\n# " + launcher.electron_hint(win.title or win.app, exe)
-        return text
+        with self._scope():
+            s, sub = self.snapshot(window_ref, root)
+            text = s.render(interactive=interactive, subtree=sub)
+            if s.root.truncated:
+                text += ("\n# ağaç kısaltıldı (düğüm/süre sınırı: NEXREMOTE_TREE_NODES, "
+                         "NEXREMOTE_TREE_MS) — `tree --root @…` ile bölgeye inin")
+            if not s.root.children and sub is None:
+                win = next((w for w in self._gwin() if w.ref == s.root.ref), None)
+                exe = launcher.pid_exe(win.pid) if win is not None else None
+                if launcher.is_chromium(exe):
+                    text += "\n# " + launcher.electron_hint(win.title or win.app, exe)
+            return text
 
     def _resolve_el(self, ref: str, need_enabled: bool = True,
                     wait: Optional[float] = None) -> Element:
         gui = self._gui()
         if wait is None:
             wait = float(os.environ.get("NEXREMOTE_WAIT", snap.DEFAULT_WAIT))
-        return snap.resolve(ref, gui.tree, gui.windows, wait=wait,
-                            need_enabled=need_enabled)
+        el = snap.resolve(ref, lambda r: self._read_tree(r, light=True), self._gwin,
+                          wait=wait, need_enabled=need_enabled,
+                          probe=getattr(gui, "probe", None))
+        if self._memo is not None:
+            self._memo["el:" + el.ref] = el
+        return el
 
     def _live(self, ref: str, need_enabled: bool = True) -> str:
         """Anlık görüntü ref'ini katı kimlik doğrulamasıyla canlı arka uç
@@ -197,74 +330,137 @@ class NexRemote:
     def launch(self, argv: list[str], wait: float = 15.0) -> dict:
         """Programı erişilebilirlik açık başlat (Electron'a bayrağı ekler) ve
         açılan pencerenin win: ref'ini döndür."""
-        return launcher.launch(argv, self.windows, wait)
+        return launcher.launch(argv, self._windows_now, wait)
 
-    def _atspi_ref(self, ref: str) -> str:
-        """win:{id} (KWin) → aynı pencerenin atspi: ref'i (pid + başlık eşleşmesi)."""
+    def _gui_ref(self, ref: str) -> str:
+        """win:{id} (pencere yöneticisi) → aynı pencerenin erişilebilirlik ref'i.
+
+        Arka uç kimliği doğrudan eşleyebiliyorsa (UIA: HWND, AX: CGWindowID) o
+        kullanılır. AT-SPI'de süreç + başlık + boyutla eşlenir; eşit adaylar
+        arasında tahmin yapılmaz (AMBIGUOUS_TARGET)."""
         if not ref.startswith("win:"):
             return ref
         target = next((w for w in self.windows() if w.ref == ref), None)
         if target is None:
             raise ValueError(f"pencere bulunamadı: {ref}")
-        cands = [w for w in self._gui().windows() if w.pid == target.pid]
-        exact = [w for w in cands if w.title == target.title]
-        if exact or cands:
-            return (exact or cands)[0].ref
-        raise RuntimeError(
-            f"'{target.title}' erişilebilirlik ağacı yayınlamıyor — "
-            "`nexremote setup` ile erişilebilirliği açıp uygulamayı yeniden başlatın "
-            "ya da ekran görüntüsü + koordinat tıklaması kullanın")
+        gui = self._gui()
+        direct = getattr(gui, "ref_for_window", None)
+        if direct is not None:
+            r = direct(target)
+            if r:
+                return r
+        cands = [w for w in self._gwin() if target.pid is not None and w.pid == target.pid]
+        if not cands:
+            raise RuntimeError(
+                f"'{target.title}' erişilebilirlik ağacı yayınlamıyor — "
+                "`nexremote setup` ile erişilebilirliği açıp uygulamayı yeniden başlatın "
+                "ya da ekran görüntüsü + koordinat tıklaması kullanın")
+        if len(cands) == 1:
+            return cands[0].ref
+        pool = ([w for w in cands if w.title == target.title]
+                or [w for w in cands if w.title and target.title.startswith(w.title)]
+                or cands)
+        if len(pool) == 1:
+            return pool[0].ref
+        if target.bounds:
+            tx, ty, tw, th = target.bounds
+
+            def dist(w: Window) -> int:
+                if not w.bounds:
+                    return 10 ** 9
+                x, y, ww, hh = w.bounds
+                return abs(ww - tw) + abs(hh - th)
+            ranked = sorted(pool, key=dist)
+            if dist(ranked[0]) < dist(ranked[1]):
+                return ranked[0].ref
+        raise snap.AmbiguousTarget(
+            f"'{target.title}' için {len(pool)} erişilebilirlik penceresi eşleşiyor "
+            "(aynı süreç, aynı başlık) — pencereyi öne alıp `tree` deneyin ya da "
+            "`tree --window atspi:…` ile doğrudan seçin", candidates=[w.ref for w in pool])
+
+    # geriye uyum: eski ad
+    _atspi_ref = _gui_ref
 
     def find(self, query: str, window_ref: Optional[str] = None) -> list[Element]:
-        """Adı/değeri eşleşen eyleme açık öğeler; ref'leri anlık görüntü ref'i."""
+        """Adı/değeri eşleşen eyleme açık öğeler; ref'leri anlık görüntü ref'i.
+        Yalnızca sonuç çıkan pencereler için anlık görüntü yazılır (her pencere
+        için yazmak, elde tutulan eski ref'leri depodan taşırırdı)."""
         q = (query or "").lower().strip()
         if not q:
             return []
-        gui = self._gui()
-        wins = gui.windows()
-        refs = [self._atspi_ref(window_ref)] if window_ref else [w.ref for w in wins]
-        hits: list[Element] = []
-        for r in refs:
-            try:
-                s = snap.take(gui.tree(r), wins)
-            except Exception:
-                if window_ref:
-                    raise
-                continue                    # tek bozuk pencere aramayı durdurmasın
-            for node, _ in snap._walk(s.root):
-                if node.ref in s.refs and (q in node.name.lower()
-                                           or q in (node.value or "").lower()):
+        with self._scope():
+            wins = self._gwin()
+            refs = [self._gui_ref(window_ref)] if window_ref else [w.ref for w in wins]
+            hits: list[Element] = []
+            for r in refs:
+                try:
+                    tree = self._read_tree(r)
+                except Exception:
+                    if window_ref:
+                        raise
+                    continue                    # tek bozuk pencere aramayı durdurmasın
+                matched = [n for n, _ in snap._walk(tree)
+                           if snap.actionable(n) and (q in n.name.lower()
+                                                      or q in (n.value or "").lower())]
+                if not matched:
+                    continue
+                s = snap.take(tree, wins)
+                for node in matched:
                     hits.append(Element(ref=s.refs[node.ref], role=node.role,
                                         name=node.name, value=node.value,
                                         actions=node.actions, bounds=node.bounds,
                                         focused=node.focused, enabled=node.enabled))
-        return hits
+            return hits
 
+    # ----------------------------------------------------------- ref eylemleri
     def click(self, ref: str) -> bool:
         """Öğeye isimle tıkla. Öğe eylem sunmuyorsa ortasına gerçek tık."""
+        with trace.span("click", ref=ref), self._scope():
+            return self._click_backend(self._live(ref))
+
+    def _click_backend(self, bref: str) -> bool:
         gui = self._gui()
-        ref = self._live(ref)
-        self._agent_cursor_at(ref)
-        with input_lease():
-            if gui.click(ref):
-                return True
-            b = self.bounds(ref)
-            if not b or b[2] <= 0 or b[3] <= 0:
-                return False
-            self.desktop.click(b[0] + b[2] // 2, b[1] + b[3] // 2)
+        rect, proven = self._safe_rect(bref)
+        ok_rect = bool(rect and rect[2] > 0 and rect[3] > 0)
+        if proven and ok_rect:
+            self._agent_cursor(rect[0] + rect[2] // 2, rect[1] + rect[3] // 2)
+        with self._lease():
+            with trace.span("gönderim"):
+                if gui.click(bref):
+                    return True
+                # Eylem sunmayan öğe: ortasına gerçek tık — yalnızca konum
+                # kanıtlıysa (pencere dışına düşen konum başka bir şeye basardı).
+                if not (proven and ok_rect):
+                    return False
+                self.desktop.click(rect[0] + rect[2] // 2, rect[1] + rect[3] // 2)
+        self._forget()
         return True
 
     def bounds(self, ref: str) -> Optional[tuple[int, int, int, int]]:
         """Öğenin ekran dikdörtgeni (x, y, w, h). Wayland'de AT-SPI konumu
         pencereye göreli gelir; pencere kökü eklenir."""
-        return self._screen_bounds(ref)[0]
+        with self._scope():
+            return self._screen_bounds(ref)[0]
+
+    def _safe_rect(self, bref: str):
+        try:
+            return self._screen_bounds(bref)
+        except Exception:
+            return (None, False)
+
+    def _raw_bounds(self, bref: str) -> Optional[tuple[int, int, int, int]]:
+        """Arka ucun verdiği dikdörtgen; bu kapsamda çözülen öğe varsa onunki."""
+        el = (self._memo or {}).get("el:" + bref)
+        if el is not None and el.bounds:
+            return el.bounds
+        return self._gui().bounds(bref)
 
     def _screen_bounds(self, ref: str):
         """(dikdörtgen, kanıtlı) döndürür. agent-desktop mantığı: konum tek
         kaynaktan gelmez; üretilen nokta pencere içine düşmüyorsa KANITSIZDIR,
         yanlış yere imleç koymaktansa işaretlenir (kanıtlı=False)."""
         ref = self._live(ref, need_enabled=False)
-        b = self._gui().bounds(ref)
+        b = self._raw_bounds(ref)
         if not b or not ref.startswith("atspi:"):
             return (b, b is not None)
         dx, dy, win = self._window_offset(ref)
@@ -283,7 +479,7 @@ class NexRemote:
         konum pencereye görelidir → WM içerik kökü eklenir (XWayland/Wayland)."""
         parts = ref.split("/")[0]
         try:
-            frame = next((w for w in self._gui().windows() if w.ref == parts), None)
+            frame = next((w for w in self._gwin() if w.ref == parts), None)
             if frame is None or not frame.bounds or not frame.pid:
                 return (0, 0, None)
             cands = [w for w in self.windows() if w.pid == frame.pid and w.bounds]
@@ -307,20 +503,87 @@ class NexRemote:
         return (wx + side - fx, wy + top - fy, win)
 
     def set_text(self, ref: str, text: str) -> bool:
-        ref = self._live(ref)
-        self._agent_cursor_at(ref)
-        with input_lease():
-            return self._gui().set_text(ref, text)
+        """Alanın içeriğini değiştir. Arka uç metni doğrudan yazamıyorsa öğe
+        odaklanır, tümü seçilir ve yazılır — odak alınamazsa HİÇBİR ŞEY yazılmaz
+        (metin başka bir alana gitmesin)."""
+        with trace.span("set_text", ref=ref), self._scope():
+            gui = self._gui()
+            bref = self._live(ref)
+            self._agent_cursor_at(bref)
+            with self._lease():
+                if gui.set_text(bref, text):
+                    return True
+                if not gui.focus(bref):
+                    return False
+                self.desktop.key(self.desktop.select_all_combo())
+                if text:
+                    self.desktop.type_text(text)
+                return True
+
+    def fill(self, ref: str, text: str, enter: bool = False) -> bool:
+        """set_text + istenirse Enter (odak öğeye alınarak)."""
+        with self._scope():
+            if not self.set_text(ref, text):
+                return False
+            if enter:
+                bref = self._live(ref, need_enabled=False)
+                with self._lease():
+                    self._gui().focus(bref)
+                    self.desktop.key("enter")
+            return True
+
+    def click_text(self, text: str, window_ref: Optional[str] = None,
+                   role: Optional[str] = None, exact: bool = False) -> dict:
+        """Adıyla bul ve tıkla — tek okuma. Tam ad eşleşmesi (büyük-küçük harf
+        duyarsız) tercih edilir; yoksa içeren. Birden fazla aday varsa tahmin
+        yapılmaz: AMBIGUOUS_TARGET adayların ref'leriyle döner."""
+        q = (text or "").strip().lower()
+        if not q:
+            raise ValueError("aranacak metin boş")
+        with trace.span("click_text", metin=text), self._scope():
+            s, _ = self.snapshot(window_ref)
+            nodes = [n for n, _ in snap._walk(s.root) if n.ref in s.refs]
+            if role:
+                nodes = [n for n in nodes if n.role.value == role]
+            same = [n for n in nodes if n.name.strip().lower() == q]
+            cands = same or ([] if exact else [n for n in nodes if q in n.name.lower()])
+            if not cands:
+                raise NotFound(f"'{text}' adlı eyleme açık öğe yok — `tree -i` ile bakın",
+                               snapshot=s.sid)
+            if len(cands) > 1:
+                raise snap.AmbiguousTarget(
+                    f"'{text}' {len(cands)} öğeyle eşleşiyor — ref ile tıklayın",
+                    candidates=[f"{s.refs[n.ref]} [{n.role.value}] {n.name}" for n in cands[:10]])
+            node = cands[0]
+            if self._memo is not None:
+                self._memo["el:" + node.ref] = node
+            if not node.enabled:
+                # devre dışı: bekleme kuralı ref'li tıklamayla aynı olsun
+                node = self._resolve_el(s.refs[node.ref])
+            ok = self._click_backend(node.ref)
+            return {"ok": ok, "ref": s.refs[cands[0].ref], "role": node.role.value,
+                    "name": node.name}
 
     def key(self, combo: str) -> bool:
-        with input_lease():
+        with trace.span("key", combo=combo), self._lease():
             self.desktop.key(combo)
+        self._forget()
         return True
 
     def type_text(self, text: str) -> bool:
-        with input_lease():
+        with trace.span("type", n=len(text)), self._lease():
             self.desktop.type_text(text)
         return True
+
+    @contextmanager
+    def _lease(self) -> Iterator[None]:
+        with trace.span("kira"):
+            ctx = input_lease()
+            ctx.__enter__()
+        try:
+            yield
+        finally:
+            ctx.__exit__(None, None, None)
 
     # --------------------------------------------------------- gerçek fare
     def click_at(self, x: float, y: float, button: str = "left", count: int = 1,
@@ -332,14 +595,15 @@ class NexRemote:
         from_shot=True: (x, y) son ekran görüntüsü üzerindeki pikseldir.
         """
         self._check_button(button)
-        x, y = self.screen_point(x, y, from_shot)
-        back = self._user_pointer() if restore_pointer else None
-        if show_cursor:
-            self._agent_cursor(x, y)
-        with input_lease():
-            self.desktop.click(x, y, button, int(count))
-            if back is not None:
-                self.desktop.move(*back)
+        with trace.span("click_at", x=x, y=y), self._scope():
+            x, y = self.screen_point(x, y, from_shot)
+            with trace.span("imleç konumu"):
+                back = self._user_pointer() if restore_pointer else None
+            if show_cursor:
+                self._agent_cursor(x, y)
+            with self._lease(), trace.span("gönderim"):
+                self.desktop.click_and_return(x, y, button, int(count), back)
+            self._forget()
         return True
 
     @staticmethod
@@ -356,42 +620,45 @@ class NexRemote:
         return shot.to_screen(x, y)
 
     def move(self, x: int, y: int) -> bool:
-        self.desktop.move(int(x), int(y))
+        with self._lease():
+            self.desktop.move(int(x), int(y))
         return True
 
     def scroll(self, dy: int, dx: int = 0, at: Optional[tuple[int, int]] = None,
                restore_pointer: bool = True) -> bool:
-        back = self._user_pointer() if (at and restore_pointer) else None
-        if at:
-            self._agent_cursor(int(at[0]), int(at[1]), click=False)
-        with input_lease():
+        with trace.span("scroll"), self._scope():
+            back = self._user_pointer() if (at and restore_pointer) else None
             if at:
-                self.desktop.move(int(at[0]), int(at[1]))
-            self.desktop.scroll(int(dy), int(dx))
-            if back is not None:
-                self.desktop.move(*back)
+                self._agent_cursor(int(at[0]), int(at[1]), click=False)
+            with self._lease():
+                if at:
+                    self.desktop.move(int(at[0]), int(at[1]))
+                self.desktop.scroll(int(dy), int(dx))
+                if back is not None:
+                    self.desktop.move(*back)
         return True
 
     def drag(self, x1: int, y1: int, x2: int, y2: int, button: str = "left",
              steps: int = 12) -> bool:
-        import time
         self._check_button(button)
         steps = max(1, int(steps))
-        back = self._user_pointer()
-        self._agent_cursor(int(x1), int(y1), click=False)
-        with input_lease():
-            self.desktop.move(int(x1), int(y1))
-            self.desktop.button(button, True)
-            try:
-                for i in range(1, steps + 1):
-                    self.desktop.move(x1 + (x2 - x1) * i / steps, y1 + (y2 - y1) * i / steps)
-                    time.sleep(0.01)
-            finally:
-                self.desktop.button(button, False)
-        self._agent_cursor(int(x2), int(y2), click=False)
-        if back is not None:
-            with input_lease():
-                self.desktop.move(*back)
+        with trace.span("drag"), self._scope():
+            back = self._user_pointer()
+            self._agent_cursor(int(x1), int(y1), click=False)
+            with self._lease():
+                self.desktop.move(int(x1), int(y1))
+                self.desktop.button(button, True)
+                try:
+                    for i in range(1, steps + 1):
+                        self.desktop.move(x1 + (x2 - x1) * i / steps,
+                                          y1 + (y2 - y1) * i / steps)
+                        time.sleep(0.01)
+                finally:
+                    self.desktop.button(button, False)
+                self._agent_cursor(int(x2), int(y2), click=False)
+                if back is not None:
+                    self.desktop.move(*back)
+            self._forget()
         return True
 
     def _user_pointer(self) -> Optional[tuple[int, int]]:
@@ -401,22 +668,27 @@ class NexRemote:
             return None  # imleci geri koymak isteğe bağlı; konum bilinmiyorsa atla
 
     def _agent_cursor(self, x: int, y: int, click: bool = True) -> None:
-        """Görsel geri bildirim: ajan imleci hedefe gider (varsa; hata yutulur
-        çünkü tıklamanın kendisi imlece bağlı değildir)."""
-        if os.environ.get("NEXREMOTE_CURSOR", "1") == "0" or not self.pointer_available()[0]:
+        """Görsel geri bildirim: ajan imleci hedefe gider. BEKLENMEZ — komutlar
+        gönderilir, gerçek eylem hemen yapılır (imleç ~80 ms süzülür). Daemon
+        yoksa arka planda başlatılır ve bu komutları kendisi çalıştırır; hata
+        yutulur çünkü eylemin kendisi imlece bağlı değildir."""
+        if os.environ.get("NEXREMOTE_CURSOR", "1") == "0":
             return
-        # SHOW: cursor-hide sonrası da görünsün. MOVE yanıtı hareket bitince
-        # gelir; tık halkası beklenmez, gerçek tık onunla aynı anda olur.
-        cmds = ["SHOW", f"MOVE {int(x)} {int(y)}"] + (["CLICK"] if click else [])
+        if not self._m("ptr-ok", lambda: self.pointer_available()[0]):
+            return
+        # SHOW: cursor-hide sonrası da görünsün.
+        cmds = ["SHOW", f"MOVE {int(x)} {int(y)} {cursor_seconds():g}"] + (["CLICK"] if click else [])
         from . import agent_cursor as ac
-        try:
+        with trace.span("imleç"):
             try:
-                ac.batch(cmds, wait=2)
-            except (OSError, ValueError, KeyError):   # daemon yok: başlat, bir kez daha
-                self._cursor_daemon()
-                ac.batch(cmds, wait=2)
-        except Exception:
-            pass
+                ac.batch(cmds, wait=0)
+            except (OSError, ValueError, KeyError):   # daemon yok: başlat, komutları o çalıştırsın
+                try:
+                    ac.spawn_daemon(self._cursor_display(), cmds)
+                except Exception:
+                    pass
+            except Exception:
+                pass
 
     def _agent_cursor_at(self, ref: str) -> None:
         """Ref ile yapılan eylemde de ajan imleci öğenin üstüne gitsin. Konumu
@@ -430,11 +702,15 @@ class NexRemote:
             self._agent_cursor(b[0] + b[2] // 2, b[1] + b[3] // 2)
 
     @staticmethod
-    def _cursor_daemon():
-        """Ajan imleci daemon'ı (gerekirse başlatılır); agent_cursor modülü döner."""
+    def _cursor_display() -> str:
+        return os.environ.get("DISPLAY", "") if sys.platform.startswith("linux") else ""
+
+    @classmethod
+    def _cursor_daemon(cls):
+        """Ajan imleci daemon'ı (gerekirse başlatılır, hazır olması beklenir)."""
         from . import agent_cursor as ac
         if not ac.daemon_running():
-            ac.start_daemon(os.environ.get("DISPLAY", "") if sys.platform.startswith("linux") else "")
+            ac.start_daemon(cls._cursor_display())
         if not ac.daemon_running():
             raise RuntimeError("ajan imleci daemon'ı başlatılamadı")
         return ac
@@ -451,7 +727,12 @@ class NexRemote:
 
     def terminal_send(self, ref: str, text: str = "", enter: bool = False,
                       keys: Optional[list[str]] = None) -> bool:
-        self.desktop.terminal_send(ref, text, enter=enter, keys=keys)
+        if ref.startswith("terminal:"):
+            # Terminal.app gerçek klavye olayıyla yazılır: diğer ajanlarla sıraya gir
+            with self._lease():
+                self.desktop.terminal_send(ref, text, enter=enter, keys=keys)
+        else:
+            self.desktop.terminal_send(ref, text, enter=enter, keys=keys)
         return True
 
     def screenshot(self, path: Optional[str] = None, window_ref: Optional[str] = None,
@@ -461,10 +742,27 @@ class NexRemote:
         Ölçek ve orijin kaydedilir: `click_at(..., from_shot=True)` görüntü
         üzerindeki koordinatı ekran koordinatına kendisi çevirir.
         """
+        with trace.span("screenshot"), self._scope():
+            return self._screenshot(path, window_ref, max_width)
+
+    def _screenshot(self, path, window_ref, max_width) -> Screenshot:
         path = os.path.abspath(path or os.path.join(_runtime_dir(), "nexremote-shot.png"))
-        # Bellekteki kare varsa kırp/küçült, PNG'yi yalnızca son boyutta bir kez kodla
+        wbounds = None
+        if window_ref:
+            w = next((w for w in self.windows() if w.ref == window_ref), None)
+            if w is None or not w.bounds:
+                raise ValueError(f"pencere bulunamadı: {window_ref}")
+            wbounds = w.bounds
+        # Bellekteki kare varsa kırp/küçült, PNG'yi yalnızca son boyutta bir kez kodla.
+        # Yayın servisi kırpmayı kendisi yapabiliyorsa yalnızca pencerenin baytları gelir.
         grab = getattr(self.desktop, "screenshot_image", None)
-        frame = grab() if grab else None
+        frame = None
+        if grab is not None:
+            with trace.span("kare"):
+                try:
+                    frame = grab(crop=wbounds)
+                except TypeError:
+                    frame = grab()
         img = None
         if frame is not None:
             img, origin, scale = frame
@@ -474,18 +772,17 @@ class NexRemote:
         else:
             shot = self.desktop.screenshot(path)
         crop = None
-        if window_ref:
-            w = next((w for w in self.windows() if w.ref == window_ref), None)
-            if w is None or not w.bounds:
-                raise ValueError(f"pencere bulunamadı: {window_ref}")
+        if wbounds:
             # ekran koordinatı → görüntü pikseli (orijin ve ölçek platformdan gelir)
-            x, y, ww, hh = w.bounds
+            x, y, ww, hh = wbounds
             ox, oy, sc = shot.origin[0], shot.origin[1], shot.scale
             crop = (max(0, round((x - ox) * sc)), max(0, round((y - oy) * sc)),
                     min(shot.width, round((x + ww - ox) * sc)),
                     min(shot.height, round((y + hh - oy) * sc)))
             if crop[2] <= crop[0] or crop[3] <= crop[1]:
                 raise ValueError(f"pencere ekranın dışında: {window_ref}")
+            if crop == (0, 0, shot.width, shot.height):
+                crop = None                    # kare zaten pencereye kırpılmış
         if crop or (max_width and shot.width > max_width):
             try:
                 from PIL import Image
@@ -503,10 +800,12 @@ class NexRemote:
                 shot.scale *= factor
                 img = img.resize((max_width, round(img.height * factor)), Image.LANCZOS,
                                  reducing_gap=3.0)
-            img.save(path, compress_level=1)   # dosya biraz büyür, kayıt ~5 kat hızlı
+            with trace.span("png"):
+                img.save(path, compress_level=1)   # dosya biraz büyür, kayıt ~5 kat hızlı
             shot.width, shot.height = img.size
         elif img is not None:
-            img.save(path, compress_level=1)
+            with trace.span("png"):
+                img.save(path, compress_level=1)
         _save_shot_meta(shot)
         return shot
 
@@ -521,10 +820,107 @@ class NexRemote:
             return None
 
     def focus(self, ref: str) -> bool:
-        ref = self._live(ref, need_enabled=False)
-        self._agent_cursor_at(ref)
-        with input_lease():
-            return self._gui().focus(ref)
+        with self._scope():
+            ref = self._live(ref, need_enabled=False)
+            self._agent_cursor_at(ref)
+            with self._lease():
+                return self._gui().focus(ref)
+
+    # --------------------------------------------- eylem sonrası + bekleme
+    def after(self, window_ref: Optional[str] = None,
+              before_windows: Optional[list[Window]] = None,
+              settle: Optional[float] = None) -> str:
+        """Eylemden sonra ne değişti: arayüzün durulması kısa süre beklenir,
+        etkin (ya da verilen) pencerenin eyleme açık öğeleri o pencerenin son
+        anlık görüntüsüyle karşılaştırılır. Yeni öğelerin ref'leri yazılır;
+        eski ref'ler kimlikle çözüldüğü için geçerli kalır. Önceki görüntü
+        yoksa etkileşimli ağacın tamamı döner."""
+        if settle is None:
+            try:
+                settle = float(os.environ.get("NEXREMOTE_SETTLE", "0.15"))
+            except ValueError:
+                settle = 0.15
+        if settle > 0:
+            time.sleep(settle)
+        lines: list[str] = []
+        with trace.span("after"), self._scope():
+            try:
+                wins = self.windows()
+            except Exception:
+                wins = []
+            foc = next((w for w in wins if w.focused), None)
+            if before_windows is not None:
+                old = {w.ref: w for w in before_windows}
+                new = {w.ref: w for w in wins}
+                for r, w in new.items():
+                    if r not in old:
+                        lines.append(f"+ pencere {r}  {w.app}  {w.title!r}")
+                for r, w in old.items():
+                    if r not in new:
+                        lines.append(f"- pencere {r}  {w.title!r}")
+                old_foc = next((w.ref for w in before_windows if w.focused), None)
+                if foc is not None and foc.ref != old_foc:
+                    lines.append(f"* odak → {foc.ref}  {foc.title!r}")
+            target = window_ref or (foc.ref if foc else None)
+            if "gui" not in self.backends:
+                return "\n".join(lines or ["(erişilebilirlik ağacı yok — ekran görüntüsüyle doğrulayın)"])
+            try:
+                s, _ = self.snapshot(target)
+            except Exception as e:
+                lines.append(f"# ağaç okunamadı: {e}")
+                return "\n".join(lines)
+            head = f"# sonrası @{s.sid} — {s.window.title or s.window.app or s.window.ref}"
+            prev = snap.previous(s.window.to_dict(), exclude=s.sid)
+            if prev is None:
+                return "\n".join([head] + lines + [s.render(interactive=True).split("\n", 1)[-1]])
+            changes = snap.diff(prev, s)
+            return "\n".join([head] + lines + (changes or ["(öğelerde değişiklik yok)"]))
+
+    def wait_for(self, element: Optional[str] = None, window_title: Optional[str] = None,
+                 gone: Optional[str] = None, window_ref: Optional[str] = None,
+                 timeout: float = 10.0) -> dict:
+        """Koşul gerçekleşene kadar bekle (içeride yoklar; model uyuyup tekrar
+        sormaz). element: adı/değeri metni içeren öğe görünsün; window_title:
+        başlığı metni içeren pencere açılsın; gone: ref'in öğesi kaybolsun.
+        Süre dolarsa TIMEOUT."""
+        if sum(x is not None for x in (element, window_title, gone)) != 1:
+            raise ValueError("wait: --element, --window-title ya da --gone'dan tam olarak biri")
+        deadline = time.monotonic() + max(0.0, timeout)
+        delay = 0.08
+        q = (element or window_title or "").strip().lower()
+        while True:
+            with self._scope():
+                if window_title is not None:
+                    w = next((w for w in self.windows() if q in w.title.lower()), None)
+                    if w is not None:
+                        return {"window": w.ref, "title": w.title, "app": w.app}
+                elif gone is not None:
+                    try:
+                        self._resolve_el(gone, need_enabled=False, wait=0)
+                    except snap.StaleRef:
+                        return {"gone": gone}
+                    except snap.AmbiguousTarget:
+                        pass
+                else:
+                    target = window_ref or self._focused_ref()
+                    ref = self._gui_ref(target) if target else ""
+                    tree = self._read_tree(ref, light=True)
+                    hit = next((n for n, _ in snap._walk(tree)
+                                if q in n.name.lower() or q in (n.value or "").lower()), None)
+                    if hit is not None:
+                        full = self._read_tree(ref)
+                        s = snap.take(full, self._gwin())
+                        node = next((n for n, _ in snap._walk(full)
+                                     if q in n.name.lower() or q in (n.value or "").lower()), hit)
+                        return {"ref": s.refs.get(node.ref), "role": node.role.value,
+                                "name": node.name, "snapshot": s.sid}
+            if time.monotonic() >= deadline:
+                what = (f"'{element}' öğesi" if element is not None else
+                        f"'{window_title}' penceresi" if window_title is not None else
+                        f"{gone} öğesinin kaybolması")
+                raise snap.ActionTimeout(f"{what} {timeout:g} sn içinde gerçekleşmedi")
+            time.sleep(min(delay, max(0.0, deadline - time.monotonic())))
+            delay = min(delay * 1.5, 0.5)
 
     # ------------------------------------------------- görünür fare imleci
     def cursor(self, x: int, y: int, click: bool = False,
@@ -592,5 +988,11 @@ class NexRemote:
         for b in (self._backends or {}).values():
             try:
                 b.close()
+            except Exception:
+                pass
+        closer = getattr(self.desktop, "close", None)
+        if closer is not None and self.long_lived:
+            try:
+                closer()
             except Exception:
                 pass

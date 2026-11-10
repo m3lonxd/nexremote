@@ -7,7 +7,7 @@ fail=0
 # 77 = gereken bileşimci/araç yok, test atlandı (başarısızlık sayılmaz)
 run() {
     echo; echo "▶ $1"; shift
-    "$@" 2>&1 | grep -E '✓|✗|⊘|SONUÇ|SNAPSHOT|KABUL|SANDBOX|MCP:|HTTP:|WLROOTS|WINDOWS|MACOS|PLATFORM|İMLEÇ|ELECTRON|SWAY|DAEMON|KARE|atlandı'
+    "$@" 2>&1 | grep -E '✓|✗|⊘|SONUÇ|SNAPSHOT|KABUL|SANDBOX|MCP:|HTTP:|WLROOTS|WINDOWS|MACOS|PLATFORM|İMLEÇ|ELECTRON|SWAY|DAEMON|KARE|HIZ|ATSPI|atlandı'
     local rc=${PIPESTATUS[0]}
     [[ $rc -eq 0 || $rc -eq 77 ]] || fail=1
 }
@@ -17,9 +17,11 @@ run "ekran yayını karesi (sahte)"  python3 tests/test_frame.py
 run "kabul (salt okuma)"        python3 tests/test_acceptance.py
 run "MCP stdio (salt okuma)"    python3 tests/test_mcp_stdio.py
 run "HTTP güvenlik (salt okuma)" python3 tests/test_http.py
+run "hız: servis, do, tmux, ajan döngüsü"  python3 tests/test_speed.py
 run "Sway/Hyprland (sahte IPC)"  python3 tests/test_wlroots_fake.py
 run "macOS mantık (sahte Quartz)"  python3 tests/test_macos_logic.py
 run "X11 — Xvfb sandbox"        tests/x11_sandbox.sh python3 tests/test_x11_sandbox.py
+run "AT-SPI hızlı yol — Xvfb + GTK"  tests/x11_sandbox.sh python3 tests/test_atspi_fast.py
 run "imleç teması (sahte tema)"    python3 tests/test_cursor_theme.py
 run "ajan imleci — eylem geri bildirimi"  python3 tests/test_cursor_feedback.py
 run "ajan imleci — daemon/taşıma"  python3 tests/test_cursor_daemon.py

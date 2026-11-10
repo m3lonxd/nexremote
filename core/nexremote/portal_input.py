@@ -13,13 +13,18 @@ Soket protokolü (satır başına bir komut, yanıt tek satır "OK ..."/"ERR ...
     PING
     STATUS
     MOVE x y                 mutlak masaüstü koordinatı (mantıksal piksel)
-    CLICK x y [btn] [n]      btn: left|right|middle, n: tık sayısı
+    CLICK x y [btn] [n] [bx by]
+                             btn: left|right|middle, n: tık sayısı; bx by verilirse
+                             tıktan sonra imleç oraya geri konur (tek gidiş-dönüş)
     DOWN btn | UP btn
     SCROLL dy [dx]           tekerlek adımı (+aşağı / +sağ)
     KEY combo                ör. ctrl+shift+t, Return, alt+F4
     TYPE "<json-metin>"      JSON dizesi (çok satırlı metin güvenle taşınır)
-    FRAME "<json-yol>"       ekran yayınının son karesi → ham bayt dosyası; yanıt
-                             "OK w h satır_adımı pil_ham_modu ekran_x ekran_y ekran_w ekran_h"
+    FRAME "<json-yol>" [x y w h]
+                             ekran yayınının son karesi → ham bayt dosyası; yanıt
+                             "OK w h satır_adımı pil_ham_modu ekran_x ekran_y ekran_w ekran_h
+                             [kırpma_x kırpma_y tam_w tam_h]". x y w h (mantıksal piksel)
+                             verilirse yalnızca o dikdörtgen yazılır (pencere görüntüsü).
     QUIT
 """
 from __future__ import annotations
@@ -68,22 +73,29 @@ def char_keysym(ch: str) -> int:
     return 0x01000000 | cp
 
 
+def _base_parse(combo: str):
+    try:
+        from .platforms.base import parse_combo as base
+    except ImportError:               # daemon dosya yoluyla çalışır (paket bağlamı yok)
+        sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        from nexremote.platforms.base import parse_combo as base
+    return base(combo)
+
+
 def parse_combo(combo: str) -> tuple[list[int], int]:
-    parts = [p for p in combo.replace(" ", "").split("+") if p]
-    if not parts:
-        raise ValueError("boş tuş kombinasyonu")
-    *mods, main = parts
-    mod_syms = []
-    for m in mods:
-        if m.lower() not in _MOD_KEYSYM:
-            raise ValueError(f"bilinmeyen değiştirici: {m}")
-        mod_syms.append(_MOD_KEYSYM[m.lower()])
+    """Diğer platformlarla aynı yazım: 'ctrl++', 'cmd+s', 'option+x', 'ins'.
+    Kombinasyondaki büyük harf (ctrl+A) Shift demektir — Windows/macOS gibi."""
+    mods, main = _base_parse(combo)
+    mod_syms = [_MOD_KEYSYM[m] for m in mods]
     low = main.lower()
     if low in _NAMED_KEYSYM:
         key = _NAMED_KEYSYM[low]
     elif low in _MOD_KEYSYM:
         key = _MOD_KEYSYM[low]
     elif len(main) == 1:
+        if mods and main.isalpha() and main != main.lower():
+            if _MOD_KEYSYM["shift"] not in mod_syms:
+                mod_syms.append(_MOD_KEYSYM["shift"])
         # kombinasyonda harfler küçük gönderilir; shift ayrıca belirtilir
         key = char_keysym(main.lower() if mods else main)
     else:
@@ -367,7 +379,7 @@ class Grabber:
         msg = self.pipe.get_bus().pop_filtered(Gst.MessageType.ERROR)
         return msg.parse_error()[0].message if msg else None
 
-    def frame(self, path: str) -> tuple[int, int, int, str]:
+    def frame(self, path: str, crop=None, stream=None):
         self.last_use = time.monotonic()
         if self.pipe is not None and self._error():
             self.stop()                       # akış koptu (ör. ekran değişti): yeniden kur
@@ -387,10 +399,10 @@ class Grabber:
                 sample = self.sink.get_property("last-sample")
         if sample is None:
             raise RuntimeError("yayından kare gelmedi")
-        return self._save(sample, path)
+        return self._save(sample, path, crop, stream)
 
     @staticmethod
-    def _save(sample, path: str) -> tuple[int, int, int, str]:
+    def _save(sample, path: str, crop=None, stream=None):
         """Kareyi olduğu gibi (ham bayt) yaz: PNG kodlaması istemcide, kırpma ve
         küçültmeden SONRA bir kez yapılır. Dönüş: genişlik, yükseklik, satır
         adımı, PIL ham modu."""
@@ -413,6 +425,9 @@ class Grabber:
         stride = len(data) // h
         if stride < w * 4:
             raise RuntimeError(f"beklenmeyen kare boyutu: {len(data)} bayt, {w}x{h}")
+        full = (w, h)
+        if crop is not None:
+            data, w, h, stride, cx, cy = crop_raw(data, w, h, stride, crop, stream)
         tmp = path + ".tmp"
         fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
         try:
@@ -420,7 +435,26 @@ class Grabber:
         finally:
             os.close(fd)
         os.replace(tmp, path)
+        if crop is not None:
+            return w, h, stride, raw, cx, cy, full[0], full[1]
         return w, h, stride, raw
+
+
+def crop_raw(data: bytes, w: int, h: int, stride: int, crop, stream):
+    """Ham kareden (4 bayt/piksel) mantıksal dikdörtgeni kes; yalnızca pencerenin
+    baytları diske yazılır. Dönüş: (veri, w, h, satır_adımı, kırpma_x, kırpma_y)."""
+    sx = w / stream["w"] if stream.get("w") else 1.0
+    sy = h / stream["h"] if stream.get("h") else 1.0
+    x, y, cw, ch = crop
+    x0 = max(0, min(w, round((x - stream["x"]) * sx)))
+    y0 = max(0, min(h, round((y - stream["y"]) * sy)))
+    x1 = max(0, min(w, round((x + cw - stream["x"]) * sx)))
+    y1 = max(0, min(h, round((y + ch - stream["y"]) * sy)))
+    if x1 <= x0 or y1 <= y0:
+        raise ValueError("kırpma dikdörtgeni ekranın dışında")
+    row = (x1 - x0) * 4
+    out = b"".join(data[r * stride + x0 * 4:r * stride + x0 * 4 + row] for r in range(y0, y1))
+    return out, x1 - x0, y1 - y0, row, x0, y0
 
 
 def _load_token() -> Optional[str]:
@@ -468,15 +502,24 @@ class Daemon:
         if cmd == "CLICK":
             x, y = float(args[0]), float(args[1])
             btn = args[2] if len(args) > 2 else "left"
-            n = int(args[3]) if len(args) > 3 else 1
+            n = max(1, min(int(args[3]) if len(args) > 3 else 1, 3))
             p.move(x, y)
             self.last = (x, y)
             time.sleep(self.GAP * 3)
-            for _ in range(max(1, min(n, 3))):
+            for i in range(n):
                 p.button(btn, True)
                 time.sleep(self.GAP)
                 p.button(btn, False)
-                time.sleep(self.GAP * 4)
+                if i + 1 < n:
+                    time.sleep(self.GAP * 4)   # yalnızca tıklar arasında
+            if len(args) > 5:                  # kullanıcının imlecini geri koy
+                bx, by = float(args[4]), float(args[5])
+                time.sleep(self.GAP)
+                try:
+                    p.move(bx, by)
+                    self.last = (bx, by)
+                except ValueError:
+                    pass                       # eski konum artık hiçbir ekranda değil
             return "OK"
         if cmd in ("DOWN", "UP"):
             p.button(args[0] if args else "left", cmd == "DOWN")
@@ -508,12 +551,20 @@ class Daemon:
                 time.sleep(self.GAP)
             return "OK"
         if cmd == "FRAME":
-            path = json.loads(rest)
+            path, end = json.JSONDecoder().raw_decode(rest.strip())
+            tail = rest.strip()[end:].strip()
             if not isinstance(path, str) or not os.path.isabs(path):
                 raise ValueError("FRAME mutlak yol (JSON dizesi) bekler")
-            w, h, stride, raw = self.grab.frame(path)
+            crop = [float(v) for v in tail.split()] if tail else None
+            if crop is not None and len(crop) != 4:
+                raise ValueError("FRAME kırpma: x y w h")
             s = p.streams[0]   # Grabber tek ekranı destekler
-            return f"OK {w} {h} {stride} {raw} {s['x']} {s['y']} {s['w']} {s['h']}"
+            if crop is None:
+                w, h, stride, raw = self.grab.frame(path)
+                return f"OK {w} {h} {stride} {raw} {s['x']} {s['y']} {s['w']} {s['h']}"
+            w, h, stride, raw, cx, cy, fw, fh = self.grab.frame(path, crop=crop, stream=s)
+            return (f"OK {w} {h} {stride} {raw} {s['x']} {s['y']} {s['w']} {s['h']} "
+                    f"{cx} {cy} {fw} {fh}")
         if cmd == "QUIT":
             self.grab.stop()
             return "OK bye"
@@ -522,6 +573,9 @@ class Daemon:
 
 def serve() -> int:
     from gi.repository import GLib
+    if running():
+        print("[nexremote-input] zaten çalışıyor", file=sys.stderr)
+        return 0
     portal = PortalSession()
     try:
         portal.start()
@@ -611,21 +665,45 @@ def running() -> bool:
         return False
 
 
+def _spawn_lock():
+    """Aynı anda yalnızca bir çağıran servisi başlatsın (yoksa her biri ayrı
+    izin diyaloğu açar ve sonraki öncekinin soketini siler)."""
+    import fcntl
+    fd = os.open(SOCK + ".spawn", os.O_RDWR | os.O_CREAT, 0o600)
+    try:
+        fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        return fd
+    except OSError:
+        os.close(fd)
+        return None
+
+
 def ensure(wait: float = 600.0) -> None:
     """Daemon yoksa başlat; ilk seferde kullanıcı izin diyaloğunu onaylamalı."""
     if running():
         return
     import subprocess
     log = os.path.join(RUNTIME, "nexremote-input.log")
-    with open(log, "ab") as lf:
-        subprocess.Popen([sys.executable, os.path.abspath(__file__), "serve"],
-                         stdout=lf, stderr=lf, stdin=subprocess.DEVNULL,
-                         start_new_session=True)
+    lock = _spawn_lock()
+    if lock is not None:
+        try:
+            if not running():
+                with open(log, "ab") as lf:
+                    subprocess.Popen([sys.executable, os.path.abspath(__file__), "serve"],
+                                     stdout=lf, stderr=lf, stdin=subprocess.DEVNULL,
+                                     start_new_session=True)
+        finally:
+            # kilit servis hazır olana kadar tutulur: bekleyenler ikinci kez başlatmaz
+            pass
     deadline = time.monotonic() + wait
-    while time.monotonic() < deadline:
-        if running():
-            return
-        time.sleep(0.2)
+    try:
+        while time.monotonic() < deadline:
+            if running():
+                return
+            time.sleep(0.2)
+    finally:
+        if lock is not None:
+            os.close(lock)
     try:
         with open(log, encoding="utf-8", errors="replace") as f:
             tail = f.read().strip().splitlines()[-1:]
@@ -636,32 +714,48 @@ def ensure(wait: float = 600.0) -> None:
 
 
 def call(line: str) -> str:
-    """Komutu gönder; ERR ise istisna fırlat."""
+    """Komutu gönder; ERR ise istisna fırlat. Servis zaten çalışıyorsa ayrı
+    bir PING gidiş-dönüşü yapılmaz: bağlantı kurulamazsa başlatılır."""
     if "\n" in line:
         raise ValueError("komut tek satır olmalı (TYPE metni JSON ile kodlanır)")
-    ensure()
-    reply = send(line)
+    try:
+        reply = send(line)
+    except (FileNotFoundError, ConnectionRefusedError):
+        ensure()
+        reply = send(line)
     if not reply.startswith("OK"):
         raise RuntimeError(reply[4:] if reply.startswith("ERR ") else reply or "yanıt yok")
     return reply[3:]
 
 
-def frame_image():
+def frame_image(crop=None):
     """Ekran yayınının son karesi: (PIL RGB görüntüsü, ekran orijini (x, y),
-    ölçek = görüntü pikseli / mantıksal piksel). Servis yoksa ve kayıtlı izin
-    de yoksa başlatmaz (izin diyaloğu açmamak için) — RuntimeError."""
-    if not running():
-        if not _load_token():
-            raise RuntimeError("giriş servisi kapalı ve kayıtlı izin yok")
-        ensure(wait=10.0)
+    ölçek = görüntü pikseli / mantıksal piksel). crop=(x, y, w, h) mantıksal
+    piksel verilirse servis yalnızca o bölgeyi yazar (eski servis bunu bilmez:
+    tam kare gelir, çağıran kırpar). Servis yoksa ve kayıtlı izin de yoksa
+    başlatmaz (izin diyaloğu açmamak için) — RuntimeError."""
     path = os.path.join(RUNTIME, "nexremote-frame.raw")
-    reply = send("FRAME " + json.dumps(path))
+    line = "FRAME " + json.dumps(path)
+    if crop is not None:
+        line += " " + " ".join(f"{float(v):g}" for v in crop)
+    try:
+        reply = send(line)
+    except (FileNotFoundError, ConnectionRefusedError):
+        if not _load_token():
+            raise RuntimeError("giriş servisi kapalı ve kayıtlı izin yok") from None
+        ensure(wait=10.0)
+        reply = send(line)
     if not reply.startswith("OK "):
         raise RuntimeError(reply[4:] if reply.startswith("ERR ") else reply or "yanıt yok")
-    w, h, stride, raw, sx, sy, sw, _sh = reply[3:].split()
+    f = reply[3:].split()
+    w, h, stride, raw, sx, sy, sw, _sh = f[:8]
+    cx = cy = 0
+    full_w = int(w)
+    if len(f) >= 12:
+        cx, cy, full_w = int(f[8]), int(f[9]), int(f[10])
     try:
-        with open(path, "rb") as f:
-            data = f.read()
+        with open(path, "rb") as fh:
+            data = fh.read()
     finally:
         try:
             os.remove(path)      # ~8 MB; tmpfs'te bekletme
@@ -670,7 +764,11 @@ def frame_image():
     from PIL import Image
     img = Image.frombuffer("RGBA", (int(w), int(h)), data, "raw", raw,
                            int(stride), 1).convert("RGB")
-    return img, (int(sx), int(sy)), (int(w) / int(sw) if int(sw) else 1.0)
+    scale = full_w / int(sw) if int(sw) else 1.0
+    origin = (int(sx), int(sy))
+    if cx or cy:
+        origin = (round(int(sx) + cx / scale), round(int(sy) + cy / scale))
+    return img, origin, scale
 
 
 def _keyable(ch: str) -> bool:

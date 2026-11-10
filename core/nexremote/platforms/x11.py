@@ -289,6 +289,18 @@ class X11:
             codes.append(kc)
         ks = self._keysym(main)
         kc = self.d.keysym_to_keycode(ks)
+        if kc and len(main) == 1:
+            # '?', 'A', '!' gibi karakterler düzende shift'li konumda olabilir:
+            # tuş kodunu bulmak yetmez, o düzeyin değiştiricisi de basılmalı
+            # (aksi halde key "?" → "/", key "A" → "a").
+            hit = next(((c, idx) for c, idx in self.d.keysym_to_keycodes(ks) if idx in (0, 1)),
+                       None)
+            if hit is not None:
+                kc = hit[0]
+                if hit[1] == 1 and "shift" not in mods:
+                    shift_kc = self.d.keysym_to_keycode(self._keysym("shift"))
+                    if shift_kc:
+                        codes.append(shift_kc)
         if not kc and len(main) == 1:
             # düzende olmayan karakter (ör. ctrl+ğ): geçici eşlemeyle bas
             kc = self._spare_keycode()

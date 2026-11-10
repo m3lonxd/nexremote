@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Schibsted+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/assets/site.css?v=0.6.0">
+<link rel="stylesheet" href="/assets/site.css?v=0.7.0">
 <script>
   // JS varsa "js" sınıfı: yalnızca o zaman, görünmeden önce gizlenecek öğeler gizlenir.
   // Tema, boyamadan önce uygulanır (yanıp sönme olmasın).
@@ -96,7 +96,7 @@
           <a class="btn btn-invert" href="/download/nexremote.zip" download data-magnet>
             <svg class="ico" aria-hidden="true"><use href="#i-download"/></svg>
             <span>Download</span>
-            <span class="btn-meta">v0.6.0 · zip · 260 KB</span>
+            <span class="btn-meta">v0.7.0 · zip · 299 KB</span>
           </a>
           <a class="btn btn-ghost" href="#replay" data-magnet>
             <svg class="ico" aria-hidden="true"><use href="#i-play"/></svg>
@@ -475,11 +475,60 @@ Should I fix them? (y/n, or tell me)</code></pre>
   </div>
 </section>
 
+<!-- =============================================================== SPEED -->
+<section id="speed" class="speed sec" aria-labelledby="speed-h">
+  <div class="wrap">
+    <div class="sec-head" data-reveal>
+      <span class="bignum" aria-hidden="true" data-parallax>03</span>
+      <div><p class="kicker">Speed</p><h2 id="speed-h" class="big">A click takes milliseconds, not a model turn.</h2></div>
+      <p>Since v0.7 an agent no longer waits seconds between clicks. The slow parts were a fresh process for every command, rereading the whole window before each click, a cursor animation that held the click, and a separate model turn to check every step.</p>
+    </div>
+    <ul class="surfaces" data-stagger>
+      <li class="surface" data-reveal data-tilt>
+        <svg class="ico ico-lg" aria-hidden="true"><use href="#i-plug"/></svg>
+        <h3>A warm service</h3>
+        <p>The first <code>nexremote</code> call starts a background service; later calls reuse its open connections instead of rebuilding them. It restarts itself when the code changes and quits when idle.</p>
+        <dl><dt>Measured</dt><dd>CLI call 120 → 55–70 ms</dd></dl>
+      </li>
+      <li class="surface" data-reveal data-tilt>
+        <svg class="ico ico-lg" aria-hidden="true"><use href="#i-toggle"/></svg>
+        <h3>No rereading the window</h3>
+        <p>Before a click only the path to the element is read. If its identity still matches, the rest of the tree is skipped; if anything moved, a full read finds it by identity, never by position.</p>
+        <dl><dt>Measured</dt><dd>ref lookup 18 → 3 ms</dd></dl>
+      </li>
+      <li class="surface" data-reveal data-tilt>
+        <svg class="ico ico-lg" aria-hidden="true"><use href="#i-checklist"/></svg>
+        <h3>Fewer model turns</h3>
+        <p><code>do</code> runs several steps in one call and stops at the first failure. <code>--after</code> reports what changed, new refs included, so checking is not a separate turn. <code>wait</code> polls inside.</p>
+        <dl><dt>Measured</dt><dd>N actions + check = 1 call</dd></dl>
+      </li>
+    </ul>
+    <figure class="sample speed-sample" data-reveal>
+      <div class="sample-bar" aria-hidden="true"><i></i><i></i><i></i><span>bash — nexremote</span></div>
+<pre><code data-typeon><span class="c">$</span> nexremote click-text Ekle --after
+tıklandı: [button] Ekle  ref=@sp9w74h5y:e5
+# sonrası @s92x34git — NexTest
++ [button] Tamam  ref=@s92x34git:e2
+
+<span class="c">$</span> NEXREMOTE_TRACE=1 nexremote click @shi7xh2dc:e1
+tıklandı
+[trace]     çözümleme 6.1 ms ref=@shi7xh2dc:e1 yol=hızlı
+[trace]     ağaç pencereleri 1.8 ms
+[trace]     pencereler 1.3 ms
+[trace]     kira 0.1 ms
+[trace]     gönderim 1.1 ms
+[trace]   click 10.7 ms ref=@shi7xh2dc:e1
+[trace] komut click (servis) 10.8 ms</code></pre>
+      <figcaption>Real output from a GTK test app on Xvfb; the numbers come from <code>nexremote bench</code> and <code>NEXREMOTE_TRACE=1</code> there. Not yet measured on a real KDE desktop.</figcaption>
+    </figure>
+  </div>
+</section>
+
 <!-- ============================================================== REPLAY -->
 <section id="replay" class="replay sec" aria-labelledby="replay-h">
   <div class="wrap">
     <div class="sec-head" data-reveal>
-      <span class="bignum" aria-hidden="true" data-parallax>03</span>
+      <span class="bignum" aria-hidden="true" data-parallax>04</span>
       <div><p class="kicker">Replay</p><h2 id="replay-h" class="big">A session, replayed</h2></div>
       <p>Commands and output are in the exact format the CLI prints. The desktop is drawn, so you can see where each command lands.</p>
     </div>
@@ -548,7 +597,7 @@ Should I fix them? (y/n, or tell me)</code></pre>
 <section id="reach" class="reach sec" aria-labelledby="reach-h">
   <div class="wrap">
     <div class="sec-head" data-reveal>
-      <span class="bignum" aria-hidden="true" data-parallax>04</span>
+      <span class="bignum" aria-hidden="true" data-parallax>05</span>
       <div><p class="kicker">Reach</p><h2 id="reach-h" class="big">What it reaches</h2></div>
       <p>The same commands on Linux, Windows and macOS. Each surface takes the most direct channel the system offers (the platform table below names it), and <code>nexremote caps</code> says when one is missing.</p>
     </div>
@@ -621,7 +670,7 @@ Should I fix them? (y/n, or tell me)</code></pre>
 <section id="platforms" class="platforms sec" aria-labelledby="platforms-h">
   <div class="wrap">
     <div class="sec-head" data-reveal>
-      <span class="bignum" aria-hidden="true" data-parallax>05</span>
+      <span class="bignum" aria-hidden="true" data-parallax>06</span>
       <div><p class="kicker">Platforms</p><h2 id="platforms-h" class="big">Three desktops, one set of commands.</h2></div>
       <p>Refs, output and flags are the same everywhere. Underneath, each platform gets its own channel, named in the table. How far each one is tested is stated per environment, not rounded up.</p>
     </div>
@@ -668,7 +717,7 @@ Should I fix them? (y/n, or tell me)</code></pre>
   <div class="grid-bg" data-parallax aria-hidden="true"></div>
   <div class="wrap watch-grid">
     <div data-reveal>
-      <span class="bignum bignum-inline" aria-hidden="true">06</span>
+      <span class="bignum bignum-inline" aria-hidden="true">07</span>
       <p class="kicker">Terminals</p>
       <h2 id="watch-h" class="big">Eight agents open? One of them can run the others.</h2>
       <p>Every Konsole tab and tmux pane is listed with the program in its foreground, and so are Windows consoles and Terminal.app and iTerm2 windows. An agent can read another agent's screen, answer its question, or stop it with <code>--key C-c</code>.</p>
@@ -696,7 +745,7 @@ bash-5.2$</code></pre>
 <section class="pixels sec" aria-labelledby="pixels-h">
   <div class="wrap pixels-grid">
     <div data-reveal>
-      <span class="bignum bignum-inline" aria-hidden="true">07</span>
+      <span class="bignum bignum-inline" aria-hidden="true">08</span>
       <p class="kicker">Last resort</p>
       <h2 id="pixels-h" class="big">When an app has nothing to read, it looks.</h2>
       <p>Games, canvas apps and Chromium apps started without <code>nexremote launch</code> publish no controls. Take a screenshot cropped to one window and scaled for the model; it clicks on pixels in that image and NexRemote converts them back to the screen.</p>
@@ -735,7 +784,7 @@ bash-5.2$</code></pre>
 <section id="compare" class="compare sec" aria-labelledby="compare-h">
   <div class="wrap">
     <div class="sec-head" data-reveal>
-      <span class="bignum" aria-hidden="true" data-parallax>08</span>
+      <span class="bignum" aria-hidden="true" data-parallax>09</span>
       <div><p class="kicker">Compare</p><h2 id="compare-h" class="big">Where it stands</h2></div>
       <p>Compared with the kinds of tools in use today, not with named products. Each approach has its place; this is how they do on the work NexRemote is built for.</p>
     </div>
@@ -808,18 +857,18 @@ bash-5.2$</code></pre>
   <div class="grid-bg" data-parallax aria-hidden="true"></div>
   <div class="wrap">
     <div class="sec-head" data-reveal>
-      <span class="bignum" aria-hidden="true" data-parallax>09</span>
+      <span class="bignum" aria-hidden="true" data-parallax>10</span>
       <div><p class="kicker">Numbers</p><h2 id="numbers-h" class="big">By the numbers</h2></div>
-      <p>Counted from the v0.6.0 source every time this page is built. No estimates, no projections.</p>
+      <p>Counted from the v0.7.0 source every time this page is built. No estimates, no projections.</p>
     </div>
     <dl class="stats" data-stagger>
-      <div class="stat" data-reveal><dt>MCP tools</dt><dd data-count="23">23</dd></div>
-      <div class="stat" data-reveal><dt>CLI commands</dt><dd data-count="28">28</dd></div>
+      <div class="stat" data-reveal><dt>MCP tools</dt><dd data-count="28">28</dd></div>
+      <div class="stat" data-reveal><dt>CLI commands</dt><dd data-count="35">35</dd></div>
       <div class="stat" data-reveal><dt>ways to plug in: shell, MCP, HTTP, text loop</dt><dd data-count="4">4</dd></div>
       <div class="stat" data-reveal><dt>desktop surfaces it reaches</dt><dd data-count="9">9</dd></div>
       <div class="stat" data-reveal><dt>harness setups documented</dt><dd data-count="11">11</dd></div>
-      <div class="stat" data-reveal><dt>test suites, 4 of them in a throwaway desktop</dt><dd data-count="18">18</dd></div>
-      <div class="stat stat-wide" data-reveal><dt>lines of Python, core and adapters</dt><dd data-count="12168">12,168</dd></div>
+      <div class="stat" data-reveal><dt>test suites, 4 of them in a throwaway desktop</dt><dd data-count="20">20</dd></div>
+      <div class="stat stat-wide" data-reveal><dt>lines of Python, core and adapters</dt><dd data-count="14295">14,295</dd></div>
       <div class="stat stat-zero" data-reveal><dt>root or admin rights needed</dt><dd data-count="0">0</dd></div>
     </dl>
   </div>
@@ -829,7 +878,7 @@ bash-5.2$</code></pre>
 <section id="why" class="why sec" aria-labelledby="why-h">
   <div class="wrap">
     <div class="sec-head" data-reveal>
-      <span class="bignum" aria-hidden="true" data-parallax>10</span>
+      <span class="bignum" aria-hidden="true" data-parallax>11</span>
       <div><p class="kicker">Why now</p><h2 id="why-h" class="big">The pieces are in place.</h2></div>
       <p>No forecast needed. This is where the tools already are.</p>
     </div>
@@ -857,18 +906,18 @@ bash-5.2$</code></pre>
 <section id="roadmap" class="roadmap sec" aria-labelledby="roadmap-h">
   <div class="wrap">
     <div class="sec-head" data-reveal>
-      <span class="bignum" aria-hidden="true" data-parallax>11</span>
+      <span class="bignum" aria-hidden="true" data-parallax>12</span>
       <div><p class="kicker">Roadmap</p><h2 id="roadmap-h" class="big">What exists, what comes next</h2></div>
       <p>The left column ships in the download today. The right column is planned, not built.</p>
     </div>
     <div class="track">
       <div class="track-col" data-reveal>
-        <h3 class="track-h"><svg class="ico" aria-hidden="true"><use href="#i-yes"/></svg>In v0.6.0 today</h3>
+        <h3 class="track-h"><svg class="ico" aria-hidden="true"><use href="#i-yes"/></svg>In v0.7.0 today</h3>
         <ul class="track-list done" data-stagger>
           <li data-reveal>KDE Plasma: every window through KWin scripting, mouse and keyboard through the RemoteDesktop portal, approved once</li>
           <li data-reveal>X11 (XTEST, EWMH), Sway and Hyprland (their own IPC) behind the same commands; on Sway the mouse needs no extra package</li>
           <li data-reveal>Reading and typing into open Konsole tabs and tmux panes</li>
-          <li data-reveal>23 MCP tools, 28 CLI commands, an HTTP API and a text loop for models without tool calling</li>
+          <li data-reveal>28 MCP tools, 35 CLI commands, an HTTP API and a text loop for models without tool calling</li>
           <li data-reveal>Windows: Win32 windows, Unicode input through SendInput, GDI screenshots, UI Automation, reading and typing into open consoles</li>
           <li data-reveal>macOS preview: Quartz input, CGWindowList windows, the accessibility tree, Terminal.app, iTerm2 and tmux</li>
           <li data-reveal>Electron and Chromium apps by name: <code>nexremote launch vesktop</code> starts them with their tree switched on</li>
@@ -877,6 +926,7 @@ bash-5.2$</code></pre>
           <li data-reveal>A user service for the HTTP adapter, with a token file and TLS, to drive another machine</li>
           <li data-reveal>A visible agent cursor on Linux, Windows and macOS that never touches your mouse, from every adapter: MCP, HTTP, CLI</li>
           <li data-reveal>Faster on Linux: screenshots from the live PipeWire stream (about 0.2 s instead of 1.5 s), clicks that never wait on the cursor animation</li>
+          <li data-reveal>v0.7 speed: a background service for the CLI, a ref fast path, batches with <code>do</code> and <code>nexremote_batch</code>, <code>--after</code> change reports, <code>wait</code>, <code>click-text</code>, <code>fill</code>, <code>bench</code> and per-step timing</li>
           <li data-reveal>A pip package: <code>pip install .[all]</code> on Linux, Windows and macOS</li>
           <li data-reveal>Input tests in an isolated sandbox desktop, X11 in Xvfb, Sway on a headless compositor, Windows under Wine</li>
         </ul>
@@ -886,6 +936,7 @@ bash-5.2$</code></pre>
         <ul class="track-list next" data-stagger>
           <li data-reveal><strong>Real Windows and Mac hardware.</strong> Run the suites on Windows 10 and 11 and on a Mac, then drop the preview label.</li>
           <li data-reveal><strong>GNOME and a real Hyprland.</strong> Test the portal path and the window list on GNOME, and run Hyprland on a real compositor instead of fake IPC.</li>
+          <li data-reveal><strong>Event-driven refresh.</strong> Listen to accessibility change events so an unchanged window is not read at all, and measure v0.7 on a real KDE desktop.</li>
         </ul>
       </div>
     </div>
@@ -896,7 +947,7 @@ bash-5.2$</code></pre>
 <section id="connect" class="connect sec" aria-labelledby="connect-h">
   <div class="wrap">
     <div class="sec-head" data-reveal>
-      <span class="bignum" aria-hidden="true" data-parallax>12</span>
+      <span class="bignum" aria-hidden="true" data-parallax>13</span>
       <div><p class="kicker">Connect</p><h2 id="connect-h" class="big">Plug it into your agent</h2></div>
       <p>Same core, four ways in. Pick whatever your harness already speaks.</p>
     </div>
@@ -914,7 +965,7 @@ bash-5.2$</code></pre>
 nexremote observe --json</code></pre>
       </div>
       <div class="panel" role="tabpanel" id="p-mcp" aria-labelledby="tab-mcp" tabindex="0" hidden>
-        <p>23 tools over stdio for Claude Code, Claude Desktop, Cursor and other MCP clients. Screenshots come back as images the model can look at.</p>
+        <p>28 tools over stdio for Claude Code, Claude Desktop, Cursor and other MCP clients. Screenshots come back as images the model can look at; <code>nexremote_batch</code> runs several steps in one call.</p>
 <pre><code>claude mcp add nexremote -- ~/bin/nexremote-mcp</code></pre>
       </div>
       <div class="panel" role="tabpanel" id="p-http" aria-labelledby="tab-http" tabindex="0" hidden>
@@ -935,7 +986,7 @@ curl -s -H "Authorization: Bearer $SECRET" -X POST localhost:8788/terminals</cod
 <section id="trust" class="trust sec" aria-labelledby="trust-h">
   <div class="wrap trust-grid">
     <div data-reveal>
-      <span class="bignum bignum-inline" aria-hidden="true">13</span>
+      <span class="bignum bignum-inline" aria-hidden="true">14</span>
       <p class="kicker">Safety</p>
       <h2 id="trust-h" class="big">What it does to your machine</h2>
     </div>
@@ -943,7 +994,7 @@ curl -s -H "Authorization: Bearer $SECRET" -X POST localhost:8788/terminals</cod
       <div data-reveal><dt><svg class="ico" aria-hidden="true"><use href="#i-shield"/></svg>Asks once</dt><dd>On Wayland the desktop shows a remote-control dialog the first time; tick <em>Allow restoring</em> and it won't ask again (delete <code>~/.config/nexremote/portal.json</code> to take it back). On macOS you allow Accessibility and Screen Recording once. Windows and X11 don't ask.</dd></div>
       <div data-reveal><dt><svg class="ico" aria-hidden="true"><use href="#i-pointer"/></svg>Gives your pointer back</dt><dd>There is one pointer. A click borrows it and puts it back where it was.</dd></div>
       <div data-reveal><dt><svg class="ico" aria-hidden="true"><use href="#i-lock"/></svg>No root, no admin</dt><dd>No <code>/dev/uinput</code>, no driver, no service running as another user. On Windows it runs as you; windows running as administrator stay out of reach unless NexRemote is elevated too.</dd></div>
-      <div data-reveal><dt><svg class="ico" aria-hidden="true"><use href="#i-globe"/></svg>Closed to the network</dt><dd>The HTTP adapter will not listen beyond localhost without a token of at least 24 characters. The token can live in a file instead of the command line, and traffic can run over TLS.</dd></div>
+      <div data-reveal><dt><svg class="ico" aria-hidden="true"><use href="#i-globe"/></svg>Closed to the network</dt><dd>The HTTP adapter will not listen beyond localhost without a token of at least 24 characters. The token can live in a file instead of the command line, and traffic can run over TLS. Requests from a browser are refused, so a web page cannot drive your desktop through localhost.</dd></div>
       <div data-reveal><dt><svg class="ico" aria-hidden="true"><use href="#i-flask"/></svg>Tested where it can&#x27;t hurt you</dt><dd>Input tests run in a throwaway desktop with its own D-Bus, a virtual KWin, its own portal and PipeWire. X11 runs in Xvfb, Windows in its own Wine prefix on a headless display.</dd></div>
     </dl>
     <div class="limits" data-reveal>
@@ -964,7 +1015,7 @@ curl -s -H "Authorization: Bearer $SECRET" -X POST localhost:8788/terminals</cod
 <section id="install" class="install sec" aria-labelledby="install-h">
   <div class="wrap">
     <div class="sec-head sec-head-solo" data-reveal>
-      <span class="bignum" aria-hidden="true" data-parallax>14</span>
+      <span class="bignum" aria-hidden="true" data-parallax>15</span>
       <div><p class="kicker">Install</p><h2 id="install-h" class="big">Install in three steps</h2></div>
     </div>
     <div class="tabs os-tabs" data-tabs data-os-tabs data-reveal>
@@ -980,7 +1031,7 @@ curl -s -H "Authorization: Bearer $SECRET" -X POST localhost:8788/terminals</cod
           <li>
             <h3>Download and unpack</h3>
             <div class="copyline"><code id="cmd-l1">unzip nexremote.zip &amp;&amp; cd nexremote</code><button class="copy" type="button" data-copy="#cmd-l1" data-done="Copied"><span class="copy-ico" aria-hidden="true"><svg class="ico i1"><use href="#i-copy"/></svg><svg class="ico i2"><use href="#i-check"/></svg></span><span data-label>Copy</span></button></div>
-            <p><a href="/download/nexremote.zip" download>nexremote.zip</a> (260 KB) · <a href="/download/nexremote.tar.gz" download>nexremote.tar.gz</a> (211 KB)</p>
+            <p><a href="/download/nexremote.zip" download>nexremote.zip</a> (299 KB) · <a href="/download/nexremote.tar.gz" download>nexremote.tar.gz</a> (245 KB)</p>
           </li>
           <li>
             <h3>Install the commands</h3>
@@ -1001,7 +1052,7 @@ curl -s -H "Authorization: Bearer $SECRET" -X POST localhost:8788/terminals</cod
           <li>
             <h3>Download and unpack</h3>
             <div class="copyline"><code id="cmd-w1">Expand-Archive nexremote.zip -DestinationPath .; cd nexremote</code><button class="copy" type="button" data-copy="#cmd-w1" data-done="Copied"><span class="copy-ico" aria-hidden="true"><svg class="ico i1"><use href="#i-copy"/></svg><svg class="ico i2"><use href="#i-check"/></svg></span><span data-label>Copy</span></button></div>
-            <p><a href="/download/nexremote.zip" download>nexremote.zip</a> (260 KB)</p>
+            <p><a href="/download/nexremote.zip" download>nexremote.zip</a> (299 KB)</p>
           </li>
           <li>
             <h3>Install with pip</h3>
@@ -1022,7 +1073,7 @@ curl -s -H "Authorization: Bearer $SECRET" -X POST localhost:8788/terminals</cod
           <li>
             <h3>Download and unpack</h3>
             <div class="copyline"><code id="cmd-m1">unzip nexremote.zip &amp;&amp; cd nexremote</code><button class="copy" type="button" data-copy="#cmd-m1" data-done="Copied"><span class="copy-ico" aria-hidden="true"><svg class="ico i1"><use href="#i-copy"/></svg><svg class="ico i2"><use href="#i-check"/></svg></span><span data-label>Copy</span></button></div>
-            <p><a href="/download/nexremote.zip" download>nexremote.zip</a> (260 KB) · <a href="/download/nexremote.tar.gz" download>nexremote.tar.gz</a> (211 KB)</p>
+            <p><a href="/download/nexremote.zip" download>nexremote.zip</a> (299 KB) · <a href="/download/nexremote.tar.gz" download>nexremote.tar.gz</a> (245 KB)</p>
           </li>
           <li>
             <h3>Install with pip</h3>
@@ -1053,7 +1104,7 @@ curl -s -H "Authorization: Bearer $SECRET" -X POST localhost:8788/terminals</cod
           <a class="btn btn-invert" href="/download/nexremote.zip" download data-magnet>
             <svg class="ico" aria-hidden="true"><use href="#i-download"/></svg>
             <span>Download</span>
-            <span class="btn-meta">v0.6.0 · zip · 260 KB</span>
+            <span class="btn-meta">v0.7.0 · zip · 299 KB</span>
           </a>
           <a class="btn btn-ghost" href="mailto:omeralibayrakcii@gmail.com?subject=NexRemote" data-magnet>
             <svg class="ico" aria-hidden="true"><use href="#i-mail"/></svg>
@@ -1064,7 +1115,7 @@ curl -s -H "Authorization: Bearer $SECRET" -X POST localhost:8788/terminals</cod
           <code id="cmd-cta" data-typeline>./install.sh &amp;&amp; nexremote setup</code>
           <button class="copy" type="button" data-copy="#cmd-cta" data-done="Copied"><span class="copy-ico" aria-hidden="true"><svg class="ico i1"><use href="#i-copy"/></svg><svg class="ico i2"><use href="#i-check"/></svg></span><span data-label>Copy</span></button>
         </div>
-        <p class="meta"><a href="/download/nexremote.tar.gz" download>nexremote.tar.gz</a> (211 KB) · MIT · Linux · Windows · macOS (preview) · Python 3.9+</p>
+        <p class="meta"><a href="/download/nexremote.tar.gz" download>nexremote.tar.gz</a> (245 KB) · MIT · Linux · Windows · macOS (preview) · Python 3.9+</p>
       </div>
     </div>
   </div>
@@ -1076,7 +1127,7 @@ curl -s -H "Authorization: Bearer $SECRET" -X POST localhost:8788/terminals</cod
   <div class="wrap foot-row">
     <span class="foot-brand">
       <svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="5.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 1.5v5M12 17.5v5M1.5 12h5M17.5 12h5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/></svg>
-      NexRemote v0.6.0 · MIT
+      NexRemote v0.7.0 · MIT
     </span>
     <a href="#how">How it works</a>
     <a href="#install">Install</a>
@@ -1087,6 +1138,6 @@ curl -s -H "Authorization: Bearer $SECRET" -X POST localhost:8788/terminals</cod
 </footer>
 
 <script id="replay-i18n" type="application/json">{"captions": ["The agent asks what is on screen: every window with its ref, every terminal with the program in it.", "It reads another agent's terminal. Konsole hands over the visible text; no screenshot, no focus change.", "It answers in that terminal as if typed on its keyboard. The window never had to come forward.", "It finds the switch by its name and presses it through accessibility. The mouse does not move.", "The player publishes no controls, so it looks: a screenshot of that window, then a click on the pixel it saw. Your pointer goes back where it was."], "termMsg": "Fix both, then rerun the suite"}</script>
-<script src="/assets/site.js?v=0.6.0" defer></script>
+<script src="/assets/site.js?v=0.7.0" defer></script>
 </body>
 </html>

@@ -65,16 +65,17 @@ def make(gui, sent, available=True, send_error=False, missing=0):
         waits.append(wait)
         return ["OK"] * wait
 
-    def start():
+    def spawn(display, initial=None):
+        # daemon arka planda başlar ve komutları kendisi çalıştırır: çağıran beklemez
         state["started"] += 1
-        return ac
+        sent.extend(initial or [])
     ac.batch = batch
-    nr._cursor_daemon = start
+    ac.spawn_daemon = spawn
     nr._fake = state
     return nr
 
 
-FULL = ["SHOW", "MOVE 120 210", "CLICK"]
+FULL = ["SHOW", "MOVE 120 210 0.08", "CLICK"]
 
 for name in ("click", "focus"):
     gui, sent = FakeGui(), []
@@ -86,13 +87,20 @@ gui, sent = FakeGui(), []
 check("set_text sonucu doğru", make(gui, sent).set_text("r", "x") is True)
 check("set_text imleci gösterir", sent == FULL, str(sent))
 
-check("tek bağlantı; tık halkası beklenmez", waits and all(w == 2 for w in waits), str(waits))
+check("tek bağlantı; hiçbir yanıt beklenmez (tık imleci beklemez)",
+      waits and all(w == 0 for w in waits), str(waits))
 
 gui, sent = FakeGui(), []
 nr = make(gui, sent, missing=1)
 nr.click("r")
-check("daemon yoksa bir kez başlatılır ve imleç yine gider",
+check("daemon yoksa arka planda başlatılır, komutları o çalıştırır",
       nr._fake["started"] == 1 and sent == FULL and "click" in gui.calls, str(sent))
+
+with mock.patch.dict(os.environ, {"NEXREMOTE_CURSOR_MS": "0"}):
+    gui, sent = FakeGui(), []
+    make(gui, sent).click("r")
+    check("NEXREMOTE_CURSOR_MS=0 → anında (sıfır değil, en küçük süre)",
+          sent[1] == "MOVE 120 210 0.001", str(sent))
 
 gui, sent = FakeGui(), []
 nr = make(gui, sent)
@@ -225,6 +233,14 @@ if os.name != "nt":
               out == ["OK", "OK"] and took < 0.25, f"{out} {took:.2f}s")
         time.sleep(0.5)
         check("batch: bekletilmeyen CLICK yine çalışır", ("pulse",) in cur.log, str(cur.log))
+        cur.log.clear()
+        t0 = time.monotonic()
+        out = REAL_BATCH(["SHOW", "MOVE 50 60", "CLICK"], wait=0)
+        took = time.monotonic() - t0
+        check("batch wait=0: hemen döner", out == [] and took < 0.05, f"{took:.3f}s")
+        time.sleep(0.6)
+        check("batch wait=0: istemci kapansa da üç komut sırayla çalışır",
+              cur.log[-2:] == [("move", 50.0, 60.0), ("pulse",)], str(cur.log))
         time.sleep(0.4)
         check("boşta imleç gizlenir, süreç yaşar",
               cur.log[-1] == ("vis", False) and th.is_alive() and not cur.closed, str(cur.log))

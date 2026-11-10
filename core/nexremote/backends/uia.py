@@ -232,6 +232,17 @@ class UiaBackend(Backend):
                        focused=w.active, bounds=(w.x, w.y, w.w, w.h))
                 for w in self._desk().windows()]
 
+    @staticmethod
+    def ref_for_window(win) -> Optional[str]:
+        """win:0xHWND → uia:0xHWND (aynı kimlik; tahmin gerekmez)."""
+        r = getattr(win, "ref", "") or ""
+        if not r.startswith("win:"):
+            return None
+        try:
+            return make_ref(parse_ref(r)[0])
+        except ValueError:
+            return None
+
     def _resolve(self, ref: str):
         """ref → önbellekli UIA öğesi; pencere/öğe artık yoksa None."""
         import comtypes
@@ -250,7 +261,7 @@ class UiaBackend(Backend):
         return el if el else None
 
     # ------------------------------------------------------------ ağaç
-    def tree(self, window_ref: str) -> Element:
+    def tree(self, window_ref: str, light: bool = False) -> Element:
         if not window_ref:
             w = self._desk().active_window()
             if w is None:

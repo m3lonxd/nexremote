@@ -106,8 +106,14 @@ def launch(argv: list[str], list_windows: Callable[[], list], wait: float = 15.0
         except Exception:
             new = []
         if new:
-            mine = [w for w in new if w.pid == proc.pid] or new
-            result["window"], result["title"] = mine[0].ref, mine[0].title
+            mine = [w for w in new if w.pid == proc.pid]
+            pick = (mine or new)[0]
+            result["window"], result["title"] = pick.ref, pick.title
+            if not mine:
+                # süreç başka bir süreç başlatmış olabilir (sarmalayıcı betik) — ya da
+                # bu arada BAŞKA bir uygulama pencere açtı; çağıran bilsin
+                result["note"] = (f"yeni pencerenin süreci ({pick.pid}) başlatılan süreç "
+                                  f"({proc.pid}) değil — doğru pencere olduğundan emin olun")
             return result
         code = proc.poll()
         if code is not None and time.monotonic() - start > 3:

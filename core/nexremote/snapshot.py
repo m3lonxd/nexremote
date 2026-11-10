@@ -15,6 +15,12 @@ kod bu proje için yeniden yazıldı:
   kapatır.
 * Eylem öncesi otomatik bekleme: öğe bulunup etkin olana kadar sınırlı süre
   yoklanır (varsayılan 5 sn), olmazsa ``TIMEOUT``.
+* Hızlı yol (v0.7): arka uç ``probe`` sunuyorsa önce yalnızca ref'in yolundaki
+  düğüm ve ataları okunur; rol, kararlı ad, adlı atalar ve pencere (süreç +
+  başlık) saklı kanıtla birebir tutarsa öğe odur — ağacın tamamı okunmaz.
+  Tutmazsa ya da öğenin eşi varsa tam (hafif) okumaya düşülür. Bu yol, ağacın
+  BAŞKA bir yerinde sonradan ortaya çıkan ikizi fark etmez; ``NEXREMOTE_STRICT=1``
+  her eylemde tam okumayı zorlar.
 """
 from __future__ import annotations
 
@@ -26,6 +32,7 @@ import time
 from dataclasses import dataclass, field
 from typing import Callable, Iterator, Optional
 
+from . import trace
 from .models import Element, Role, Window
 from .platforms.base import runtime_dir
 
@@ -37,7 +44,7 @@ VOLATILE_NAME = {Role.ENTRY, Role.TEXT, Role.COMBOBOX, Role.SLIDER, Role.TERMINA
 # Tek başına "eyleme açık" saymayan eylemler (web her düğüme focus verir).
 _PASSIVE_ACTIONS = {"focus", "scroll"}
 _ANCESTORS = 3
-_KEEP = 64                      # diskte tutulan en fazla anlık görüntü
+_KEEP = 256                     # diskte tutulan en fazla anlık görüntü
 _ALPHABET = string.ascii_lowercase + string.digits
 DEFAULT_WAIT = 5.0
 
@@ -218,6 +225,7 @@ def take(root: Element, windows: list[Window]) -> Snapshot:
             "role": k[0], "name": k[1], "ancestors": [list(a) for a in k[2]],
             "dup_index": dup, "dup_count": len(groups[k]),
             "bounds": list(node.bounds) if node.bounds else None,
+            "value": (node.value or "")[:60],        # kimlik değil: `after` farkı için
         }
         refs[node.ref] = f"@{sid}:{eid}"
     snap = Snapshot(sid=sid, window=ident, entries=entries, root=root, refs=refs)
@@ -283,23 +291,107 @@ def resolve_in(entry: dict, root: Element, sid: str, eid: str) -> Element:
                    "— yeniden `tree` alın", ref=ref)
 
 
+def strict() -> bool:
+    return os.environ.get("NEXREMOTE_STRICT", "") not in ("", "0")
+
+
+def _fast(entry: dict, ident: dict, probe: Callable[[str], Optional[dict]]) -> Optional[Element]:
+    """Hızlı yol: saklı yoldaki düğüm kanıtla birebir tutuyorsa onu döndür."""
+    if entry.get("dup_count") != 1 or ident.get("pid") is None:
+        return None
+    p = probe(entry["backend_ref"])
+    if not p or p.get("pid") != ident["pid"] or (p.get("title") or "") != (ident.get("title") or ""):
+        return None
+    el = p["element"]
+    want = (entry["role"], entry["name"], tuple(tuple(a) for a in entry["ancestors"]))
+    got = (el.role.value, stable_name(el), tuple(tuple(a) for a in p["ancestors"]))
+    if want != got or not actionable(el):
+        return None
+    return el
+
+
 def resolve(ref: str, read_tree: Callable[[str], Element],
             list_windows: Callable[[], list[Window]],
-            wait: float = DEFAULT_WAIT, need_enabled: bool = True) -> Element:
+            wait: float = DEFAULT_WAIT, need_enabled: bool = True,
+            probe: Optional[Callable[[str], Optional[dict]]] = None) -> Element:
     """``@sid:eN`` → canlı öğe. Öğe devre dışıysa ``wait`` saniye etkinleşmesi
-    beklenir. Bayat/belirsiz ref beklenmez: o bir gözlem hatasıdır, zaman değil."""
+    beklenir. Bayat/belirsiz ref beklenmez: o bir gözlem hatasıdır, zaman değil.
+    probe: arka ucun yol + kimlik hızlı yolu (bkz. modül açıklaması)."""
     sid, eid = parse_ref(ref)
     data = load(sid)
     entry = data["entries"].get(eid)
     if entry is None:
         raise InvalidRef(f"@{sid} içinde {eid} yok", ref=ref)
+    use_fast = probe is not None and not strict()
     deadline = time.monotonic() + max(0.0, wait)
     while True:
-        win = find_window(data["window"], list_windows())
-        el = resolve_in(entry, read_tree(win.ref), sid, eid)
+        with trace.span("çözümleme", ref=ref) as info:
+            el = _fast(entry, data["window"], probe) if use_fast else None
+            info["yol"] = "hızlı" if el is not None else "tam"
+            if el is None:
+                win = find_window(data["window"], list_windows())
+                el = resolve_in(entry, read_tree(win.ref), sid, eid)
         if el.enabled or not need_enabled:
             return el
         if time.monotonic() >= deadline:
             raise ActionTimeout(f"@{sid}:{eid} [{entry['role']}] {entry['name']} "
                                 f"{wait:g} sn içinde etkinleşmedi", ref=ref)
         time.sleep(0.15)
+
+
+# ------------------------------------------------------------ eylem sonrası fark
+def _ident_match(a: dict, b: dict) -> bool:
+    if a.get("pid") is not None and b.get("pid") is not None:
+        return a["pid"] == b["pid"] and (a.get("title") or "") == (b.get("title") or "")
+    return a.get("ref") == b.get("ref")
+
+
+def previous(ident: dict, exclude: str = "", within: float = 3600.0) -> Optional[dict]:
+    """Aynı pencerenin `exclude` dışındaki en yeni anlık görüntüsü (yoksa None)."""
+    d = store_dir()
+    try:
+        files = sorted((os.path.join(d, f) for f in os.listdir(d)
+                        if f.endswith(".json") and f != f"{exclude}.json"),
+                       key=os.path.getmtime, reverse=True)
+    except OSError:
+        return None
+    now = time.time()
+    for f in files[:64]:
+        try:
+            if now - os.path.getmtime(f) > within:
+                break
+            with open(f, encoding="utf-8") as fh:
+                data = json.load(fh)
+        except (OSError, ValueError):
+            continue
+        if _ident_match(data.get("window") or {}, ident):
+            return data
+    return None
+
+
+def _entry_key(e: dict) -> tuple:
+    return (e["role"], e["name"], tuple(tuple(a) for a in e["ancestors"]), e["dup_index"])
+
+
+def diff(old: dict, new: Snapshot, limit: int = 40) -> list[str]:
+    """Önceki anlık görüntüye göre değişen eyleme açık öğeler (+ eklendi, - gitti,
+    ~ değeri değişti). Ref'ler yeni anlık görüntünündür."""
+    olds = {_entry_key(e): e for e in old.get("entries", {}).values()}
+    news = {_entry_key(e): (eid, e) for eid, e in new.entries.items()}
+    lines: list[str] = []
+
+    def label(e: dict) -> str:
+        return f"[{e['role']}] {e['name']}".rstrip()
+
+    for k, (eid, e) in news.items():
+        if k not in olds:
+            lines.append(f"+ {label(e)}  ref=@{new.sid}:{eid}")
+        elif (olds[k].get("value") or "") != (e.get("value") or ""):
+            lines.append(f"~ {label(e)}: {olds[k].get('value') or ''!r} → "
+                         f"{e.get('value') or ''!r}  ref=@{new.sid}:{eid}")
+    for k, e in olds.items():
+        if k not in news:
+            lines.append(f"- {label(e)}")
+    if len(lines) > limit:
+        lines = lines[:limit] + [f"… {len(lines) - limit} değişiklik daha (tam liste: tree -i)"]
+    return lines

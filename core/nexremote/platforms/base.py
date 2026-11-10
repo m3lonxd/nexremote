@@ -134,11 +134,25 @@ class Desktop(ABC):
         import time
         self.move(x, y)
         time.sleep(0.03)
-        for _ in range(max(1, min(int(count), 3))):
+        n = max(1, min(int(count), 3))
+        for i in range(n):
             self.button(button, True)
             time.sleep(0.012)
             self.button(button, False)
-            time.sleep(0.05)
+            if i + 1 < n:
+                time.sleep(0.05)          # yalnızca tıklar ARASINDA (çift tık)
+
+    def click_and_return(self, x: float, y: float, button: str = "left", count: int = 1,
+                         back: Optional[tuple[int, int]] = None) -> None:
+        """Tıkla ve kullanıcının imlecini `back`'e geri koy. Platform bunu tek
+        gidiş-dönüşte yapabiliyorsa geçersiz kılar (Wayland giriş servisi)."""
+        self.click(x, y, button, count)
+        if back is not None:
+            self.move(*back)
+
+    def select_all_combo(self) -> str:
+        """Odaktaki alanda tümünü seç (set_text yedeği)."""
+        return "ctrl+a"
 
     @abstractmethod
     def scroll(self, dy: int, dx: int = 0) -> None:

@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Schibsted+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/assets/site.css?v=0.6.0">
+<link rel="stylesheet" href="/assets/site.css?v=0.7.0">
 <script>
   // JS varsa "js" sınıfı: yalnızca o zaman, görünmeden önce gizlenecek öğeler gizlenir.
   // Tema, boyamadan önce uygulanır (yanıp sönme olmasın).
@@ -96,7 +96,7 @@
           <a class="btn btn-invert" href="/download/nexremote.zip" download data-magnet>
             <svg class="ico" aria-hidden="true"><use href="#i-download"/></svg>
             <span>İndir</span>
-            <span class="btn-meta">v0.6.0 · zip · 260 KB</span>
+            <span class="btn-meta">v0.7.0 · zip · 299 KB</span>
           </a>
           <a class="btn btn-ghost" href="#replay" data-magnet>
             <svg class="ico" aria-hidden="true"><use href="#i-play"/></svg>
@@ -475,11 +475,60 @@ Should I fix them? (y/n, or tell me)</code></pre>
   </div>
 </section>
 
+<!-- =============================================================== SPEED -->
+<section id="speed" class="speed sec" aria-labelledby="speed-h">
+  <div class="wrap">
+    <div class="sec-head" data-reveal>
+      <span class="bignum" aria-hidden="true" data-parallax>03</span>
+      <div><p class="kicker">Hız</p><h2 id="speed-h" class="big">Bir tık bir model turu değil, milisaniye.</h2></div>
+      <p>v0.7&#x27;den beri ajan tıklar arasında saniyelerce beklemiyor. Yavaşlık dört yerdeydi: her komut için yeni süreç, her tıktan önce pencerenin baştan okunması, tıkı bekleten imleç animasyonu ve her adımı doğrulamak için ayrı bir model turu.</p>
+    </div>
+    <ul class="surfaces" data-stagger>
+      <li class="surface" data-reveal data-tilt>
+        <svg class="ico ico-lg" aria-hidden="true"><use href="#i-plug"/></svg>
+        <h3>Sıcak servis</h3>
+        <p>İlk <code>nexremote</code> çağrısı arka planda bir servis başlatır; sonraki çağrılar bağlantıları yeniden kurmak yerine onunkileri kullanır. Kod değişince kendini yeniler, boşta kalınca kapanır.</p>
+        <dl><dt>Ölçülen</dt><dd>CLI çağrısı 120 → 55–70 ms</dd></dl>
+      </li>
+      <li class="surface" data-reveal data-tilt>
+        <svg class="ico ico-lg" aria-hidden="true"><use href="#i-toggle"/></svg>
+        <h3>Pencere baştan okunmaz</h3>
+        <p>Tıktan önce yalnızca öğeye giden yol okunur. Kimliği hâlâ tutuyorsa ağacın geri kalanı atlanır; bir şey kaydıysa tam okuma öğeyi konumla değil kimlikle bulur.</p>
+        <dl><dt>Ölçülen</dt><dd>ref çözümleme 18 → 3 ms</dd></dl>
+      </li>
+      <li class="surface" data-reveal data-tilt>
+        <svg class="ico ico-lg" aria-hidden="true"><use href="#i-checklist"/></svg>
+        <h3>Daha az model turu</h3>
+        <p><code>do</code> birden çok adımı tek çağrıda çalıştırır, ilk hatada durur. <code>--after</code> neyin değiştiğini yeni ref'lerle yazar; doğrulama ayrı tur olmaz. <code>wait</code> içeride yoklar.</p>
+        <dl><dt>Ölçülen</dt><dd>N eylem + doğrulama = 1 çağrı</dd></dl>
+      </li>
+    </ul>
+    <figure class="sample speed-sample" data-reveal>
+      <div class="sample-bar" aria-hidden="true"><i></i><i></i><i></i><span>bash — nexremote</span></div>
+<pre><code data-typeon><span class="c">$</span> nexremote click-text Ekle --after
+tıklandı: [button] Ekle  ref=@sp9w74h5y:e5
+# sonrası @s92x34git — NexTest
++ [button] Tamam  ref=@s92x34git:e2
+
+<span class="c">$</span> NEXREMOTE_TRACE=1 nexremote click @shi7xh2dc:e1
+tıklandı
+[trace]     çözümleme 6.1 ms ref=@shi7xh2dc:e1 yol=hızlı
+[trace]     ağaç pencereleri 1.8 ms
+[trace]     pencereler 1.3 ms
+[trace]     kira 0.1 ms
+[trace]     gönderim 1.1 ms
+[trace]   click 10.7 ms ref=@shi7xh2dc:e1
+[trace] komut click (servis) 10.8 ms</code></pre>
+      <figcaption>Xvfb'de bir GTK test uygulamasının gerçek çıktısı; değerler orada <code>nexremote bench</code> ve <code>NEXREMOTE_TRACE=1</code> ile ölçüldü. Gerçek KDE masaüstünde henüz ölçülmedi.</figcaption>
+    </figure>
+  </div>
+</section>
+
 <!-- ============================================================== REPLAY -->
 <section id="replay" class="replay sec" aria-labelledby="replay-h">
   <div class="wrap">
     <div class="sec-head" data-reveal>
-      <span class="bignum" aria-hidden="true" data-parallax>03</span>
+      <span class="bignum" aria-hidden="true" data-parallax>04</span>
       <div><p class="kicker">Oturum</p><h2 id="replay-h" class="big">Bir oturumun tekrarı</h2></div>
       <p>Komutlar ve çıktılar, CLI&#x27;ın yazdığı biçimin birebir aynısı. Masaüstü çizimdir; her komutun nereye dokunduğunu görebilesin diye.</p>
     </div>
@@ -548,7 +597,7 @@ Should I fix them? (y/n, or tell me)</code></pre>
 <section id="reach" class="reach sec" aria-labelledby="reach-h">
   <div class="wrap">
     <div class="sec-head" data-reveal>
-      <span class="bignum" aria-hidden="true" data-parallax>04</span>
+      <span class="bignum" aria-hidden="true" data-parallax>05</span>
       <div><p class="kicker">Erişim</p><h2 id="reach-h" class="big">Neye uzanır</h2></div>
       <p>Linux'ta, Windows'ta ve macOS'ta aynı komutlar. Her yüzey, sistemin sunduğu en doğrudan kanalı kullanır (aşağıdaki platform tablosu hangisi olduğunu gösterir); biri eksikse <code>nexremote caps</code> bunu söyler.</p>
     </div>
@@ -621,7 +670,7 @@ Should I fix them? (y/n, or tell me)</code></pre>
 <section id="platforms" class="platforms sec" aria-labelledby="platforms-h">
   <div class="wrap">
     <div class="sec-head" data-reveal>
-      <span class="bignum" aria-hidden="true" data-parallax>05</span>
+      <span class="bignum" aria-hidden="true" data-parallax>06</span>
       <div><p class="kicker">Platformlar</p><h2 id="platforms-h" class="big">Üç masaüstü, tek komut seti.</h2></div>
       <p>Ref&#x27;ler, çıktı ve bayraklar her yerde aynı. Altta her platform kendi kanalını kullanır; tablo hangisi olduğunu gösterir. Her birinin ne kadar test edildiği ortam ortam yazılı, yuvarlanmadan.</p>
     </div>
@@ -668,7 +717,7 @@ Should I fix them? (y/n, or tell me)</code></pre>
   <div class="grid-bg" data-parallax aria-hidden="true"></div>
   <div class="wrap watch-grid">
     <div data-reveal>
-      <span class="bignum bignum-inline" aria-hidden="true">06</span>
+      <span class="bignum bignum-inline" aria-hidden="true">07</span>
       <p class="kicker">Terminaller</p>
       <h2 id="watch-h" class="big">Sekiz ajan açık mı? Biri diğerlerini yönetebilir.</h2>
       <p>Her Konsole sekmesi ve tmux bölmesi ön plandaki programıyla listelenir; Windows konsolları, Terminal.app ve iTerm2 pencereleri de listededir. Bir ajan başka bir ajanın ekranını okuyabilir, sorusuna cevap verebilir ya da <code>--key C-c</code> ile durdurabilir.</p>
@@ -696,7 +745,7 @@ bash-5.2$</code></pre>
 <section class="pixels sec" aria-labelledby="pixels-h">
   <div class="wrap pixels-grid">
     <div data-reveal>
-      <span class="bignum bignum-inline" aria-hidden="true">07</span>
+      <span class="bignum bignum-inline" aria-hidden="true">08</span>
       <p class="kicker">Son çare</p>
       <h2 id="pixels-h" class="big">Okunacak bir şey yoksa bakar.</h2>
       <p>Oyunlar, canvas uygulamaları ve <code>nexremote launch</code> olmadan başlatılan Chromium uygulamaları kontrollerini yayınlamaz. Tek pencereye kırpılmış ve modele göre küçültülmüş bir ekran görüntüsü alın; model o görüntüdeki piksele tıklar, NexRemote onu ekrana geri çevirir.</p>
@@ -735,7 +784,7 @@ bash-5.2$</code></pre>
 <section id="compare" class="compare sec" aria-labelledby="compare-h">
   <div class="wrap">
     <div class="sec-head" data-reveal>
-      <span class="bignum" aria-hidden="true" data-parallax>08</span>
+      <span class="bignum" aria-hidden="true" data-parallax>09</span>
       <div><p class="kicker">Karşılaştırma</p><h2 id="compare-h" class="big">Nerede duruyor</h2></div>
       <p>Ürünlerle değil, bugün kullanılan araç türleriyle karşılaştırma. Her yaklaşımın bir yeri var; tablo, NexRemote&#x27;un yapmak için tasarlandığı işte nerede durduklarını gösteriyor.</p>
     </div>
@@ -808,18 +857,18 @@ bash-5.2$</code></pre>
   <div class="grid-bg" data-parallax aria-hidden="true"></div>
   <div class="wrap">
     <div class="sec-head" data-reveal>
-      <span class="bignum" aria-hidden="true" data-parallax>09</span>
+      <span class="bignum" aria-hidden="true" data-parallax>10</span>
       <div><p class="kicker">Rakamlar</p><h2 id="numbers-h" class="big">Rakamlarla</h2></div>
-      <p>Bu sayfa her üretildiğinde v0.6.0 kaynak kodundan sayılır. Tahmin yok, öngörü yok.</p>
+      <p>Bu sayfa her üretildiğinde v0.7.0 kaynak kodundan sayılır. Tahmin yok, öngörü yok.</p>
     </div>
     <dl class="stats" data-stagger>
-      <div class="stat" data-reveal><dt>MCP aracı</dt><dd data-count="23">23</dd></div>
-      <div class="stat" data-reveal><dt>CLI komutu</dt><dd data-count="28">28</dd></div>
+      <div class="stat" data-reveal><dt>MCP aracı</dt><dd data-count="28">28</dd></div>
+      <div class="stat" data-reveal><dt>CLI komutu</dt><dd data-count="35">35</dd></div>
       <div class="stat" data-reveal><dt>bağlanma yolu: kabuk, MCP, HTTP, metin döngüsü</dt><dd data-count="4">4</dd></div>
       <div class="stat" data-reveal><dt>ulaştığı masaüstü yüzeyi</dt><dd data-count="9">9</dd></div>
       <div class="stat" data-reveal><dt>kurulumu belgelenmiş harness</dt><dd data-count="11">11</dd></div>
-      <div class="stat" data-reveal><dt>test paketi; 4 tanesi atılabilir bir masaüstünde</dt><dd data-count="18">18</dd></div>
-      <div class="stat stat-wide" data-reveal><dt>satır Python, çekirdek ve adaptörler</dt><dd data-count="12168">12.168</dd></div>
+      <div class="stat" data-reveal><dt>test paketi; 4 tanesi atılabilir bir masaüstünde</dt><dd data-count="20">20</dd></div>
+      <div class="stat stat-wide" data-reveal><dt>satır Python, çekirdek ve adaptörler</dt><dd data-count="14295">14.295</dd></div>
       <div class="stat stat-zero" data-reveal><dt>gereken root ya da yönetici yetkisi</dt><dd data-count="0">0</dd></div>
     </dl>
   </div>
@@ -829,7 +878,7 @@ bash-5.2$</code></pre>
 <section id="why" class="why sec" aria-labelledby="why-h">
   <div class="wrap">
     <div class="sec-head" data-reveal>
-      <span class="bignum" aria-hidden="true" data-parallax>10</span>
+      <span class="bignum" aria-hidden="true" data-parallax>11</span>
       <div><p class="kicker">Neden şimdi</p><h2 id="why-h" class="big">Parçalar yerine oturdu.</h2></div>
       <p>Öngörüye gerek yok. Araçlar zaten bu noktada.</p>
     </div>
@@ -857,18 +906,18 @@ bash-5.2$</code></pre>
 <section id="roadmap" class="roadmap sec" aria-labelledby="roadmap-h">
   <div class="wrap">
     <div class="sec-head" data-reveal>
-      <span class="bignum" aria-hidden="true" data-parallax>11</span>
+      <span class="bignum" aria-hidden="true" data-parallax>12</span>
       <div><p class="kicker">Yol haritası</p><h2 id="roadmap-h" class="big">Bugün olan, sırada olan</h2></div>
       <p>Sol sütun bugün indirdiğiniz pakette var. Sağ sütun planlandı, henüz yapılmadı.</p>
     </div>
     <div class="track">
       <div class="track-col" data-reveal>
-        <h3 class="track-h"><svg class="ico" aria-hidden="true"><use href="#i-yes"/></svg>Bugün v0.6.0 içinde</h3>
+        <h3 class="track-h"><svg class="ico" aria-hidden="true"><use href="#i-yes"/></svg>Bugün v0.7.0 içinde</h3>
         <ul class="track-list done" data-stagger>
           <li data-reveal>KDE Plasma: KWin betikleriyle her pencere, bir kez onaylanan RemoteDesktop portalı üzerinden fare ve klavye</li>
           <li data-reveal>Aynı komutların arkasında X11 (XTEST, EWMH), Sway ve Hyprland (kendi IPC&#x27;leri); Sway&#x27;de fare için ek paket gerekmez</li>
           <li data-reveal>Açık Konsole sekmelerini ve tmux bölmelerini okuma ve onlara yazma</li>
-          <li data-reveal>23 MCP aracı, 28 CLI komutu, bir HTTP API ve tool calling&#x27;i olmayan modeller için metin döngüsü</li>
+          <li data-reveal>28 MCP aracı, 35 CLI komutu, bir HTTP API ve tool calling&#x27;i olmayan modeller için metin döngüsü</li>
           <li data-reveal>Windows: Win32 pencereleri, SendInput ile Unicode girdi, GDI ekran görüntüsü, UI Automation, açık konsolları okuma ve onlara yazma</li>
           <li data-reveal>macOS önizlemesi: Quartz girdisi, CGWindowList pencereleri, erişilebilirlik ağacı, Terminal.app, iTerm2 ve tmux</li>
           <li data-reveal>Electron ve Chromium uygulamaları adıyla: <code>nexremote launch vesktop</code> onları ağaçları açık başlatır</li>
@@ -877,6 +926,7 @@ bash-5.2$</code></pre>
           <li data-reveal>Başka bir makineyi yönetmek için HTTP adaptörüne token dosyalı ve TLS&#x27;li kullanıcı servisi</li>
           <li data-reveal>Linux, Windows ve macOS&#x27;ta farenize dokunmayan görünür ajan imleci; her adaptörden: MCP, HTTP, CLI</li>
           <li data-reveal>Linux&#x27;ta daha hızlı: ekran görüntüsü canlı PipeWire yayınından (1,5 sn yerine yaklaşık 0,2 sn), imleç animasyonunu hiç beklemeyen tıklamalar</li>
+          <li data-reveal>v0.7 hız: CLI için arka plan servisi, ref hızlı yolu, <code>do</code> ve <code>nexremote_batch</code> ile toplu adımlar, <code>--after</code> değişiklik raporu, <code>wait</code>, <code>click-text</code>, <code>fill</code>, <code>bench</code> ve adım adım süre</li>
           <li data-reveal>Bir pip paketi: Linux'ta, Windows'ta ve macOS'ta <code>pip install .[all]</code></li>
           <li data-reveal>Yalıtılmış bir sandbox masaüstünde girdi testleri; X11 Xvfb&#x27;de, Sway ekransız bir compositor&#x27;da, Windows Wine altında</li>
         </ul>
@@ -886,6 +936,7 @@ bash-5.2$</code></pre>
         <ul class="track-list next" data-stagger>
           <li data-reveal><strong>Gerçek Windows ve Mac donanımı.</strong> Testleri Windows 10 ve 11&#x27;de ve bir Mac&#x27;te koşmak, sonra önizleme etiketini kaldırmak.</li>
           <li data-reveal><strong>GNOME ve gerçek Hyprland.</strong> Portal yolunu ve pencere listesini GNOME&#x27;da test etmek; Hyprland&#x27;i sahte IPC yerine gerçek bir compositor&#x27;da çalıştırmak.</li>
+          <li data-reveal><strong>Olay güdümlü yenileme.</strong> Erişilebilirlik değişiklik olaylarını dinleyip değişmemiş pencereyi hiç okumamak; v0.7&#x27;yi gerçek KDE masaüstünde ölçmek.</li>
         </ul>
       </div>
     </div>
@@ -896,7 +947,7 @@ bash-5.2$</code></pre>
 <section id="connect" class="connect sec" aria-labelledby="connect-h">
   <div class="wrap">
     <div class="sec-head" data-reveal>
-      <span class="bignum" aria-hidden="true" data-parallax>12</span>
+      <span class="bignum" aria-hidden="true" data-parallax>13</span>
       <div><p class="kicker">Bağlantı</p><h2 id="connect-h" class="big">Ajanına bağla</h2></div>
       <p>Aynı çekirdek, dört giriş. Harness&#x27;ın hangisini konuşuyorsa onu seç.</p>
     </div>
@@ -914,7 +965,7 @@ bash-5.2$</code></pre>
 nexremote observe --json</code></pre>
       </div>
       <div class="panel" role="tabpanel" id="p-mcp" aria-labelledby="tab-mcp" tabindex="0" hidden>
-        <p>Claude Code, Claude Desktop, Cursor ve diğer MCP istemcileri için stdio üzerinden 23 araç. Ekran görüntüleri, modelin bakabildiği görsel olarak döner.</p>
+        <p>Claude Code, Claude Desktop, Cursor ve diğer MCP istemcileri için stdio üzerinden 28 araç. Ekran görüntüleri, modelin bakabildiği görsel olarak döner; <code>nexremote_batch</code> birden çok adımı tek çağrıda yapar.</p>
 <pre><code>claude mcp add nexremote -- ~/bin/nexremote-mcp</code></pre>
       </div>
       <div class="panel" role="tabpanel" id="p-http" aria-labelledby="tab-http" tabindex="0" hidden>
@@ -935,7 +986,7 @@ curl -s -H "Authorization: Bearer $SECRET" -X POST localhost:8788/terminals</cod
 <section id="trust" class="trust sec" aria-labelledby="trust-h">
   <div class="wrap trust-grid">
     <div data-reveal>
-      <span class="bignum bignum-inline" aria-hidden="true">13</span>
+      <span class="bignum bignum-inline" aria-hidden="true">14</span>
       <p class="kicker">Güvenlik</p>
       <h2 id="trust-h" class="big">Makinene ne yapar</h2>
     </div>
@@ -943,7 +994,7 @@ curl -s -H "Authorization: Bearer $SECRET" -X POST localhost:8788/terminals</cod
       <div data-reveal><dt><svg class="ico" aria-hidden="true"><use href="#i-shield"/></svg>Bir kez sorar</dt><dd>Wayland'de masaüstü ilk seferde bir uzaktan kontrol penceresi açar; <em>Allow restoring</em> kutusunu işaretleyin, bir daha sormaz (geri almak için <code>~/.config/nexremote/portal.json</code> dosyasını silin). macOS'ta Erişilebilirlik ve Ekran Kaydı izni bir kez verilir. Windows ve X11 sormaz.</dd></div>
       <div data-reveal><dt><svg class="ico" aria-hidden="true"><use href="#i-pointer"/></svg>İmlecini geri verir</dt><dd>Ekranda tek imleç vardır. Tık onu ödünç alır ve eski yerine geri koyar.</dd></div>
       <div data-reveal><dt><svg class="ico" aria-hidden="true"><use href="#i-lock"/></svg>Root yok, yönetici yok</dt><dd><code>/dev/uinput</code> yok, sürücü yok, başka kullanıcı olarak çalışan servis yok. Windows'ta sizin hesabınızla çalışır; yönetici olarak çalışan pencerelere ancak NexRemote da yönetici olarak çalışırsa ulaşır.</dd></div>
-      <div data-reveal><dt><svg class="ico" aria-hidden="true"><use href="#i-globe"/></svg>Ağa kapalı</dt><dd>HTTP adaptörü en az 24 karakterlik bir token olmadan localhost dışını dinlemez. Token komut satırı yerine bir dosyada durabilir, trafik TLS üzerinden akabilir.</dd></div>
+      <div data-reveal><dt><svg class="ico" aria-hidden="true"><use href="#i-globe"/></svg>Ağa kapalı</dt><dd>HTTP adaptörü en az 24 karakterlik bir token olmadan localhost dışını dinlemez. Token komut satırı yerine bir dosyada durabilir, trafik TLS üzerinden akabilir. Tarayıcıdan gelen istekler reddedilir; bir web sayfası localhost üzerinden masaüstünüzü süremez.</dd></div>
       <div data-reveal><dt><svg class="ico" aria-hidden="true"><use href="#i-flask"/></svg>Zarar veremeyeceği yerde test edilir</dt><dd>Girdi testleri, kendi D-Bus&#x27;ı, sanal KWin&#x27;i, kendi portalı ve PipeWire&#x27;ı olan atılabilir bir masaüstünde koşar. X11 Xvfb&#x27;de, Windows ekransız bir görüntüde ayrı bir Wine prefix&#x27;inde çalışır.</dd></div>
     </dl>
     <div class="limits" data-reveal>
@@ -964,7 +1015,7 @@ curl -s -H "Authorization: Bearer $SECRET" -X POST localhost:8788/terminals</cod
 <section id="install" class="install sec" aria-labelledby="install-h">
   <div class="wrap">
     <div class="sec-head sec-head-solo" data-reveal>
-      <span class="bignum" aria-hidden="true" data-parallax>14</span>
+      <span class="bignum" aria-hidden="true" data-parallax>15</span>
       <div><p class="kicker">Kurulum</p><h2 id="install-h" class="big">Üç adımda kurulum</h2></div>
     </div>
     <div class="tabs os-tabs" data-tabs data-os-tabs data-reveal>
@@ -980,7 +1031,7 @@ curl -s -H "Authorization: Bearer $SECRET" -X POST localhost:8788/terminals</cod
           <li>
             <h3>İndir ve aç</h3>
             <div class="copyline"><code id="cmd-l1">unzip nexremote.zip &amp;&amp; cd nexremote</code><button class="copy" type="button" data-copy="#cmd-l1" data-done="Kopyalandı"><span class="copy-ico" aria-hidden="true"><svg class="ico i1"><use href="#i-copy"/></svg><svg class="ico i2"><use href="#i-check"/></svg></span><span data-label>Kopyala</span></button></div>
-            <p><a href="/download/nexremote.zip" download>nexremote.zip</a> (260 KB) · <a href="/download/nexremote.tar.gz" download>nexremote.tar.gz</a> (211 KB)</p>
+            <p><a href="/download/nexremote.zip" download>nexremote.zip</a> (299 KB) · <a href="/download/nexremote.tar.gz" download>nexremote.tar.gz</a> (245 KB)</p>
           </li>
           <li>
             <h3>Komutları kur</h3>
@@ -1001,7 +1052,7 @@ curl -s -H "Authorization: Bearer $SECRET" -X POST localhost:8788/terminals</cod
           <li>
             <h3>İndir ve aç</h3>
             <div class="copyline"><code id="cmd-w1">Expand-Archive nexremote.zip -DestinationPath .; cd nexremote</code><button class="copy" type="button" data-copy="#cmd-w1" data-done="Kopyalandı"><span class="copy-ico" aria-hidden="true"><svg class="ico i1"><use href="#i-copy"/></svg><svg class="ico i2"><use href="#i-check"/></svg></span><span data-label>Kopyala</span></button></div>
-            <p><a href="/download/nexremote.zip" download>nexremote.zip</a> (260 KB)</p>
+            <p><a href="/download/nexremote.zip" download>nexremote.zip</a> (299 KB)</p>
           </li>
           <li>
             <h3>pip ile kur</h3>
@@ -1022,7 +1073,7 @@ curl -s -H "Authorization: Bearer $SECRET" -X POST localhost:8788/terminals</cod
           <li>
             <h3>İndir ve aç</h3>
             <div class="copyline"><code id="cmd-m1">unzip nexremote.zip &amp;&amp; cd nexremote</code><button class="copy" type="button" data-copy="#cmd-m1" data-done="Kopyalandı"><span class="copy-ico" aria-hidden="true"><svg class="ico i1"><use href="#i-copy"/></svg><svg class="ico i2"><use href="#i-check"/></svg></span><span data-label>Kopyala</span></button></div>
-            <p><a href="/download/nexremote.zip" download>nexremote.zip</a> (260 KB) · <a href="/download/nexremote.tar.gz" download>nexremote.tar.gz</a> (211 KB)</p>
+            <p><a href="/download/nexremote.zip" download>nexremote.zip</a> (299 KB) · <a href="/download/nexremote.tar.gz" download>nexremote.tar.gz</a> (245 KB)</p>
           </li>
           <li>
             <h3>pip ile kur</h3>
@@ -1053,7 +1104,7 @@ curl -s -H "Authorization: Bearer $SECRET" -X POST localhost:8788/terminals</cod
           <a class="btn btn-invert" href="/download/nexremote.zip" download data-magnet>
             <svg class="ico" aria-hidden="true"><use href="#i-download"/></svg>
             <span>İndir</span>
-            <span class="btn-meta">v0.6.0 · zip · 260 KB</span>
+            <span class="btn-meta">v0.7.0 · zip · 299 KB</span>
           </a>
           <a class="btn btn-ghost" href="mailto:omeralibayrakcii@gmail.com?subject=NexRemote%20hakk%C4%B1nda" data-magnet>
             <svg class="ico" aria-hidden="true"><use href="#i-mail"/></svg>
@@ -1064,7 +1115,7 @@ curl -s -H "Authorization: Bearer $SECRET" -X POST localhost:8788/terminals</cod
           <code id="cmd-cta" data-typeline>./install.sh &amp;&amp; nexremote setup</code>
           <button class="copy" type="button" data-copy="#cmd-cta" data-done="Kopyalandı"><span class="copy-ico" aria-hidden="true"><svg class="ico i1"><use href="#i-copy"/></svg><svg class="ico i2"><use href="#i-check"/></svg></span><span data-label>Kopyala</span></button>
         </div>
-        <p class="meta"><a href="/download/nexremote.tar.gz" download>nexremote.tar.gz</a> (211 KB) · MIT · Linux · Windows · macOS (önizleme) · Python 3.9+</p>
+        <p class="meta"><a href="/download/nexremote.tar.gz" download>nexremote.tar.gz</a> (245 KB) · MIT · Linux · Windows · macOS (önizleme) · Python 3.9+</p>
       </div>
     </div>
   </div>
@@ -1076,7 +1127,7 @@ curl -s -H "Authorization: Bearer $SECRET" -X POST localhost:8788/terminals</cod
   <div class="wrap foot-row">
     <span class="foot-brand">
       <svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="5.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 1.5v5M12 17.5v5M1.5 12h5M17.5 12h5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/></svg>
-      NexRemote v0.6.0 · MIT
+      NexRemote v0.7.0 · MIT
     </span>
     <a href="#how">Nasıl çalışır</a>
     <a href="#install">Kurulum</a>
@@ -1087,6 +1138,6 @@ curl -s -H "Authorization: Bearer $SECRET" -X POST localhost:8788/terminals</cod
 </footer>
 
 <script id="replay-i18n" type="application/json">{"captions": ["Ajan ekranda ne olduğunu sorar: ref'iyle her pencere, içinde çalışan programla her terminal.", "Başka bir ajanın terminalini okur. Konsole görünen metni verir; ekran görüntüsü yok, odak değişmez.", "O terminale, klavyesinden yazılmış gibi cevap verir. Pencerenin öne gelmesi gerekmedi.", "Anahtarı adıyla bulur ve erişilebilirlik üzerinden basar. Fare hiç oynamaz.", "Oynatıcı kontrollerini yayınlamıyor; ajan bakar: o pencerenin ekran görüntüsü, sonra gördüğü piksele tık. İmleciniz yerine döner."], "termMsg": "İkisini düzelt, sonra testleri tekrar çalıştır"}</script>
-<script src="/assets/site.js?v=0.6.0" defer></script>
+<script src="/assets/site.js?v=0.7.0" defer></script>
 </body>
 </html>

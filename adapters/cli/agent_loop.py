@@ -20,7 +20,10 @@ Kullanım:
 
 Protokol (modelin uyması gereken):
   - Eylem için satır:   nexremote <alt-komut> [args]      ya da  TOOL: nexremote ...
-  - Bitince satır:      DONE: <özet>
+  - Bir turda BİRDEN ÇOK satır yazılabilir: sırayla çalışır, ilk hatada durur
+    (her eylem için ayrı model turu beklemek yavaştır).
+  - Bitince satır:      DONE: <özet>   (aynı turdaki eylemler önce çalışır; hata
+    olursa görev bitmiş sayılmaz)
   - Düşünce serbest metin; yalnızca `nexremote` ile başlayan satırlar çalışır.
 """
 from __future__ import annotations
@@ -45,9 +48,12 @@ SYSTEM = """Sen bir masaüstü/terminal kontrol ajanısın. Görevi adım adım 
 
 ELİNDEKİ TEK ARAÇ: `nexremote` kabuk komutu. Kullanılabilir alt komutlar:
   nexremote observe                  # İLK BUNU YAP: pencereler (win:{..}) + açık terminaller
-  nexremote find "Ad" --window REF   # öğe ara -> atspi ref döner
-  nexremote click REF                # öğeye isimle tıkla
-  nexremote tree --window REF        # anlık görüntü; tıklanabilir satırlar ref=@s…:eN ile biter (UI değişirse STALE_REF → yeniden tree)
+  nexremote tree --window REF -i     # eyleme açık öğeler; satırlar ref=@s…:eN ile biter
+  nexremote click REF --after        # öğeye tıkla + ekranda neyin değiştiğini gör
+  nexremote click-text "Kaydet"      # adıyla bul ve tıkla (tek adım)
+  nexremote fill REF "metin" --enter # alanı doldur ve Enter
+  nexremote wait --element "Tamam"   # görünene kadar bekle (uyuyup tekrar bakma)
+  nexremote find "Ad" --window REF   # öğe ara -> ref döner
   nexremote launch PROGRAM           # Electron'u ağacı açık başlat (ağaç boş + ipucu çıkarsa)
   nexremote set-text REF "metin"     # alanın içeriğini değiştir
   nexremote window REF activate      # pencereyi öne getir (yazmadan önce)
@@ -61,11 +67,11 @@ ELİNDEKİ TEK ARAÇ: `nexremote` kabuk komutu. Kullanılabilir alt komutlar:
   nexremote run "komut"              # kendi terminalinde komut çalıştır, çıktıyı al
 
 KURALLAR:
-- Bir eylem yapmak için ÇOK SATIRDA tam olarak bir `nexremote ...` satırı yaz.
-- Birden çok eylem gerekiyorsa sırayla yaz; her turda sonuçları göreceksin.
-- Sonucu doğrulamak için eylemden sonra `observe` veya `term-read` ile tekrar bak.
+- Her eylem bir satır: `nexremote ...`. Bildiğin adımları AYNI turda alt alta yaz;
+  sırayla çalışırlar, ilk hatada durulur ve sonuçları birlikte görürsün.
+- Doğrulama için ayrı tur harcama: son eyleme `--after` ekle (ne değiştiğini yazar).
+- Ref'ler arayüz değişse de geçerli kalır; STALE_REF/AMBIGUOUS_TARGET gelirse yeni `tree -i`.
 - Görev bitince `DONE: <kısa özet>` yaz.
-- ASLA birden fazla `nexremote` satırını aynı turda çalıştırmayı bekleme; tek tek.
 """
 
 
@@ -81,15 +87,15 @@ def call_model(model_cmd: str, prompt: str, timeout: float = 120.0) -> str:
         return f"[model hatası: {e}]"
 
 
-def run_tool(line: str, timeout: float = 60.0) -> str:
-    """nexremote satırını çalıştır, çıktıyı döndür."""
+def run_tool(line: str, timeout: float = 60.0) -> tuple[str, bool]:
+    """nexremote satırını çalıştır: (çıktı, başarılı mı)."""
     import shlex
     try:
         argv = shlex.split(line.strip())
     except ValueError as e:
-        return f"[araç satırı ayrıştırılamadı: {e}]"
+        return f"[araç satırı ayrıştırılamadı: {e}]", False
     if not argv or argv[0] != "nexremote":
-        return "[geçersiz araç satırı]"
+        return "[geçersiz araç satırı]", False
     # `nexremote` PATH'te olmayabilir — CLI'yi bu Python ile doğrudan çağır.
     # Kabuk kullanılmaz: model çıktısı kabukta yorumlanmaz, Windows'ta da aynı çalışır.
     cmd = [sys.executable, os.path.join(CLI, "nexremote_cli.py"), *argv[1:]]
@@ -104,11 +110,27 @@ def run_tool(line: str, timeout: float = 60.0) -> str:
         # DeprecationWarning gürültüsünü temizle
         err = "\n".join(l for l in err.splitlines() if "DeprecationWarning" not in l
                         and "get_action_name" not in l)
-        return (out + (("\n[stderr] " + err) if err else ""))[:4000] or "(çıktı yok)"
+        text = (out + (("\n[stderr] " + err) if err else ""))[:4000] or "(çıktı yok)"
+        if p.returncode != 0:
+            text += f"\n[çıkış kodu {p.returncode}]"
+        return text, p.returncode == 0
     except subprocess.TimeoutExpired:
-        return "[araç zaman aşımı]"
+        return "[araç zaman aşımı]", False
     except Exception as e:
-        return f"[araç hatası: {e}]"
+        return f"[araç hatası: {e}]", False
+
+
+def _trim(history: list[str], keep: int, head: int = 3, old_limit: int = 1500) -> list[str]:
+    """Her turda bütün geçmişi yeniden göndermek modeli yavaşlatır: ilk `head`
+    girdi (talimat + görev) ve son `keep` girdi tam kalır; aradakiler kısaltılır."""
+    if len(history) <= head + keep:
+        return history
+    middle = history[head:-keep]
+    short = [h if len(h) <= old_limit else h[:old_limit] + "\n… (kısaltıldı)" for h in middle]
+    if len(short) > 2 * keep:
+        dropped = len(short) - 2 * keep
+        short = [f"(önceki {dropped} girdi atlandı)"] + short[-2 * keep:]
+    return history[:head] + short + history[-keep:]
 
 
 def main(argv=None) -> int:
@@ -119,6 +141,7 @@ def main(argv=None) -> int:
     p.add_argument("--max-steps", type=int, default=20)
     p.add_argument("--timeout", type=float, default=120.0)
     p.add_argument("--verbose", action="store_true")
+    p.add_argument("--keep", type=int, default=8, help="tam tutulacak son geçmiş girdisi")
     a = p.parse_args(argv)
 
     history: list[str] = [SYSTEM,
@@ -126,9 +149,10 @@ def main(argv=None) -> int:
                           "İlk adımın: `nexremote caps` çalıştır ve ne "
                           "yapabildiğini öğren.\n"]
     steps = 0
+    idle = 0                       # art arda araçsız tur
     while steps < a.max_steps:
         steps += 1
-        prompt = "\n".join(history) + "\n\nSıradaki hamlen (yalnızca bir adım):\n"
+        prompt = "\n".join(_trim(history, a.keep)) + "\n\nSıradaki hamlen:\n"
         if a.verbose:
             print(f"\n{'='*60}\n[tur {steps}] modele gönderiliyor...\n")
         raw = call_model(a.model_cmd, prompt, a.timeout)
@@ -136,31 +160,45 @@ def main(argv=None) -> int:
             print(f"--- model yanıtı ---\n{raw}\n")
 
         done = _DONE_RE.search(raw)
-        if done:
-            print(f"\n✅ DONE: {done.group(1).strip() or '(özet yok)'}")
-            print(f"   ({steps} adımda tamamlandı)")
-            return 0
-
         tools = _TOOL_RE.findall(raw)
         if not tools:
+            if done:
+                print(f"\n✅ DONE: {done.group(1).strip() or '(özet yok)'}")
+                print(f"   ({steps} turda tamamlandı)")
+                return 0
+            idle += 1
             # model araç çağırmadı; ona yol göster
             history.append(f"ASİSTAN: {raw}")
             history.append("SİSTEM: Geçerli bir `nexremote ...` satırı yaz ya da "
                            "`DONE: ...` ile bitir.")
-            if steps >= 3:
-                # birkaç turdur araç yok — çıkmazı önle
+            if idle >= 3:
+                # üst üste üç turdur araç yok — çıkmazı önle
                 print("⚠️  Model araç çağırmadı. Son yanıt:")
                 print(raw[:800])
                 return 1
             continue
+        idle = 0
 
-        # tek tek çalıştır (ilkini), sonucu geri besle
-        line = tools[0]
-        result = run_tool(line)
-        print(f"[{steps}] $ {line}")
-        print(f"      → {result[:300]}")
+        # Turdaki tüm araç satırları sırayla; ilk hatada dur, sonuçlar birlikte döner.
         history.append(f"ASİSTAN: {raw}")
-        history.append(f"ARAÇ SONUCU ({line}):\n{result}\n")
+        failed = False
+        for line in tools:
+            result, ok = run_tool(line)
+            print(f"[{steps}] $ {line}")
+            print(f"      → {result[:300]}")
+            history.append(f"ARAÇ SONUCU ({line}){'' if ok else ' [HATA]'}:\n{result}\n")
+            if not ok:
+                failed = True
+                skipped = len(tools) - tools.index(line) - 1
+                if skipped:
+                    history.append(f"SİSTEM: hata nedeniyle sonraki {skipped} satır çalıştırılmadı.")
+                break
+        if done and not failed:
+            print(f"\n✅ DONE: {done.group(1).strip() or '(özet yok)'}")
+            print(f"   ({steps} turda tamamlandı)")
+            return 0
+        if done and failed:
+            history.append("SİSTEM: DONE kabul edilmedi — bir adım başarısız oldu.")
 
     print(f"\n⚠️  {a.max_steps} adımda bitmedi.")
     return 1

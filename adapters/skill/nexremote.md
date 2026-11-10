@@ -26,6 +26,22 @@ If `caps` says something needs approval, run `nexremote setup` once:
   Privacy & Security → **Accessibility** and **Screen Recording**.
 - Windows and X11 need no approval.
 
+## Be fast: fewer round trips
+Every separate command costs you a full model turn. Plan the steps you already
+know and send them in ONE call; check once at the end with `--after`:
+```bash
+nexremote do 'click-text "New"' 'fill @s7k2m9qx:e9 "report.txt" --enter' \
+             'wait --element "Saved"' --after
+nexremote click @s7k2m9qx:e4 --after       # act + see what changed (new refs included)
+nexremote click-text "Save"                # find by name and press: one read, one call
+nexremote wait --element "Done" --timeout 15   # instead of sleep + re-read loops
+```
+`do` stops at the first failing step and says which one. `--after` prints
+`+` new elements (with refs), `-` gone, `~` changed values — no separate
+`tree`/`screenshot` needed to verify. Refs stay valid after the UI changes
+(they are matched by identity, not position), so keep using them.
+Prefer `tree -i` over screenshots: text is faster to read than an image.
+
 ## 2. Act on GUI apps — structure first, pixels second
 ```bash
 nexremote tree --window win:{...}          # snapshot; actionable lines end in ref=@s7k2m9qx:e4
@@ -102,7 +118,8 @@ nexremote cleanup                          # close only the sessions you created
 ```
 
 ## Rules
-- Verify every action: `observe`, `term-read` or a new screenshot. Do not assume.
+- Verify what matters, cheaply: `--after` on the last action of a `do` batch,
+  `term-read` for terminals. Do not assume — but do not spend a turn per click either.
 - Activate the window before `type`/`key`; keystrokes go to the focused window.
 - Closing windows, sending to someone's terminal, or typing into a shell is
   real and visible to the user. Say what you are about to do when it matters.

@@ -114,6 +114,15 @@ try:
     d.key("BackSpace")
     check("ctrl+a + BackSpace temizledi", wait_for(lambda: last_text() == "", 3) is not None
           and last_text() == "", repr(last_text()))
+    d.key("A")
+    d.key("?")
+    d.key("a")
+    got = wait_for(lambda: last_text() == "A?a" and last_text(), 3)
+    check("key: shift düzeyindeki karakterler (A, ?) shift'le basılır", got == "A?a",
+          repr(last_text()))
+    d.key("ctrl+a")
+    d.key("BackSpace")
+    wait_for(lambda: last_text() == "", 3)
     try:
         d.key("hyper+x")
         check("bilinmeyen değiştirici → ValueError", False)
