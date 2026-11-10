@@ -69,6 +69,7 @@
       <a href="#compare">{{nav_compare}}</a>
       <a href="#roadmap">{{nav_roadmap}}</a>
       <a href="#install">{{nav_install}}</a>
+      <a href="#faq">{{nav_faq}}</a>
     </nav>
     <div class="top-tools">
       <a class="btn btn-sm" href="/download/nexremote.zip" download><svg class="ico" aria-hidden="true"><use href="#i-download"/></svg><span>{{cta_download}}</span></a>
@@ -943,11 +944,23 @@ bash-5.2$</code></pre>
   </div>
 </section>
 
+<!-- ======================================================= RELEASE NOTES -->
+<section id="changes" class="changes sec" aria-labelledby="changes-h">
+  <div class="wrap">
+    <div class="sec-head" data-reveal>
+      <span class="bignum" aria-hidden="true" data-parallax>13</span>
+      <div><p class="kicker">{{rel_kicker}}</p><h2 id="changes-h" class="big">{{rel_h}}</h2></div>
+      <p>{{rel_p}}</p>
+    </div>
+    <div class="rel-list" data-reveal>{{rel_html}}</div>
+  </div>
+</section>
+
 <!-- ============================================================= CONNECT -->
 <section id="connect" class="connect sec" aria-labelledby="connect-h">
   <div class="wrap">
     <div class="sec-head" data-reveal>
-      <span class="bignum" aria-hidden="true" data-parallax>13</span>
+      <span class="bignum" aria-hidden="true" data-parallax>14</span>
       <div><p class="kicker">{{connect_kicker}}</p><h2 id="connect-h" class="big">{{connect_h}}</h2></div>
       <p>{{connect_note}}</p>
     </div>
@@ -986,7 +999,7 @@ curl -s -H "Authorization: Bearer $SECRET" -X POST localhost:8788/terminals</cod
 <section id="trust" class="trust sec" aria-labelledby="trust-h">
   <div class="wrap trust-grid">
     <div data-reveal>
-      <span class="bignum bignum-inline" aria-hidden="true">14</span>
+      <span class="bignum bignum-inline" aria-hidden="true">15</span>
       <p class="kicker">{{trust_kicker}}</p>
       <h2 id="trust-h" class="big">{{trust_h}}</h2>
     </div>
@@ -1015,7 +1028,7 @@ curl -s -H "Authorization: Bearer $SECRET" -X POST localhost:8788/terminals</cod
 <section id="install" class="install sec" aria-labelledby="install-h">
   <div class="wrap">
     <div class="sec-head sec-head-solo" data-reveal>
-      <span class="bignum" aria-hidden="true" data-parallax>15</span>
+      <span class="bignum" aria-hidden="true" data-parallax>16</span>
       <div><p class="kicker">{{install_kicker}}</p><h2 id="install-h" class="big">{{install_h}}</h2></div>
     </div>
     <div class="tabs os-tabs" data-tabs data-os-tabs data-reveal>
@@ -1092,6 +1105,19 @@ curl -s -H "Authorization: Bearer $SECRET" -X POST localhost:8788/terminals</cod
   </div>
 </section>
 
+<!-- ================================================================= FAQ -->
+<section id="faq" class="faq sec" aria-labelledby="faq-h">
+  <div class="wrap">
+    <div class="sec-head" data-reveal>
+      <span class="bignum" aria-hidden="true" data-parallax>17</span>
+      <div><p class="kicker">{{faq_kicker}}</p><h2 id="faq-h" class="big">{{faq_h}}</h2></div>
+      <p>{{faq_p}}</p>
+    </div>
+    <div class="faq-list" data-reveal>{{faq_html}}</div>
+  </div>
+  <script type="application/ld+json">{{faq_ld}}</script>
+</section>
+
 <!-- ========================================================= CLOSING CTA -->
 <section class="cta band" data-wipe aria-labelledby="cta-h">
   <div class="grid-bg" data-parallax aria-hidden="true"></div>
@@ -1131,6 +1157,8 @@ curl -s -H "Authorization: Bearer $SECRET" -X POST localhost:8788/terminals</cod
     </span>
     <a href="#how">{{nav_how}}</a>
     <a href="#install">{{nav_install}}</a>
+    <a href="#changes">{{rel_kicker}}</a>
+    <a href="#faq">{{nav_faq}}</a>
     <a href="/download/nexremote.zip" download>{{cta_download}}</a>
     <span class="foot-contact">{{foot_contact}}: <a href="{{mailto}}">{{email}}</a></span>
     <a href="{{other_lang_href}}" hreflang="{{other_lang}}" data-lang="{{other_lang}}" class="lang-foot" lang="{{other_lang}}">{{other_lang_name}}</a>
